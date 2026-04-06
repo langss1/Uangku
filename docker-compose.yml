@@ -1,0 +1,24 @@
+services:
+  db:
+    image: postgres:16
+    container_name: uangku_db
+    restart: always
+    environment:
+      POSTGRES_USER: ihab_admin
+      POSTGRES_PASSWORD: password_rahasia
+      POSTGRES_DB: uangku_finansial
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build: ./backend
+    container_name: uangku_api
+    ports:
+      - "8000:8000"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - DATABASE_URL=postgresql://ihab_admin:password_rahasia@db:5432/uangku_finansial
+    depends_on:
+      - db
