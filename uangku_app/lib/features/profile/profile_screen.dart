@@ -2,9 +2,28 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uangku_app/core/theme/app_colors.dart';
 import 'package:uangku_app/features/splash/splash_screen.dart';
+import 'package:intl/intl.dart';
+import 'package:uangku_app/features/profile/screens/export_preview_screen.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  DateTimeRange? _selectedDateRange;
+
+  @override
+  void initState() {
+    super.initState();
+    // Default to last 30 days
+    _selectedDateRange = DateTimeRange(
+      start: DateTime.now().subtract(const Duration(days: 30)),
+      end: DateTime.now(),
+    );
+  }
 
   Future<void> _logout(BuildContext context) async {
     final prefs = await SharedPreferences.getInstance();
@@ -18,6 +37,144 @@ class ProfileScreen extends StatelessWidget {
     }
   }
 
+  Future<void> _selectCustomDateRange() async {
+    DateTime? tempStart = _selectedDateRange?.start ?? DateTime.now().subtract(const Duration(days: 30));
+    DateTime? tempEnd = _selectedDateRange?.end ?? DateTime.now();
+
+    final picked = await showDialog<DateTimeRange>(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: const Text(
+                'Custom Date Range',
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('Select your start and end date below:', style: TextStyle(color: Colors.black54, fontSize: 13)),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () async {
+                            final date = await showDatePicker(
+                              context: context,
+                              initialDate: tempStart!,
+                              firstDate: DateTime(2000),
+                              lastDate: DateTime(2101),
+                            );
+                            if (date != null) {
+                              setDialogState(() => tempStart = date);
+                            }
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF1F5F9),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Column(
+                              children: [
+                                const Text('Start Date', style: TextStyle(fontSize: 11, color: Colors.black54)),
+                                const SizedBox(height: 4),
+                                Text(
+                                  DateFormat('dd MMM yyyy').format(tempStart!),
+                                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () async {
+                            final date = await showDatePicker(
+                              context: context,
+                              initialDate: tempEnd ?? tempStart!,
+                              firstDate: tempStart!,
+                              lastDate: DateTime(2101),
+                            );
+                            if (date != null) {
+                              setDialogState(() => tempEnd = date);
+                            }
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF1F5F9),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Column(
+                              children: [
+                                const Text('End Date', style: TextStyle(fontSize: 11, color: Colors.black54)),
+                                const SizedBox(height: 4),
+                                Text(
+                                  tempEnd != null ? DateFormat('dd MMM yyyy').format(tempEnd!) : 'Select',
+                                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel', style: TextStyle(color: Colors.black54)),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    if (tempStart != null && tempEnd != null) {
+                      Navigator.pop(context, DateTimeRange(start: tempStart!, end: tempEnd!));
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2962FF),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    elevation: 0,
+                  ),
+                  child: const Text('Apply', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (picked != null) {
+      setState(() {
+        _selectedDateRange = picked;
+      });
+    }
+  }
+
+  void _navigateToPreview(String format) {
+    if (_selectedDateRange == null) return;
+    
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ExportPreviewScreen(
+          dateRange: _selectedDateRange!,
+          exportFormat: format,
+          userName: 'Sarah Johnson', // Hardcoded as per existing UI
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -27,10 +184,7 @@ class ProfileScreen extends StatelessWidget {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.textDark),
-          onPressed: () {
-            // Usually goes back to home tab, but parent controls the tab.
-            // Leaving as placeholder or call a callback.
-          },
+          onPressed: () {},
         ),
         title: const Text(
           'Export & Profile',
@@ -51,7 +205,6 @@ class ProfileScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Profile Management Section
             const Text(
               'Profile Management',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.textDark),
@@ -63,7 +216,6 @@ class ProfileScreen extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             
-            // User Card
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -81,7 +233,6 @@ class ProfileScreen extends StatelessWidget {
                       CircleAvatar(
                         radius: 30,
                         backgroundColor: Colors.grey.shade200,
-                        // Using a generic person icon if no picture is loaded
                         child: const Icon(Icons.person, size: 36, color: Colors.grey),
                       ),
                       Positioned(
@@ -124,7 +275,6 @@ class ProfileScreen extends StatelessWidget {
             
             const SizedBox(height: 20),
             
-            // Settings List
             _buildSettingTile(
               icon: Icons.person_outline,
               iconBgColor: const Color(0xFFDBEAFE),
@@ -173,7 +323,6 @@ class ProfileScreen extends StatelessWidget {
             
             const SizedBox(height: 32),
             
-            // Export Reports Section
             const Text(
               'Export Reports',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.textDark),
@@ -185,43 +334,75 @@ class ProfileScreen extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             
-            _buildInputLabel('Select Date Range'),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _buildInputLabel('Select Date Range'),
+                GestureDetector(
+                  onTap: _selectCustomDateRange,
+                  child: const Text(
+                    'Change',
+                    style: TextStyle(
+                      color: Color(0xFF2962FF),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 8),
-            _buildDatePicker(label: 'Start Date', value: '2024-01-01'),
+            GestureDetector(
+              onTap: _selectCustomDateRange,
+              child: _buildDatePicker(
+                label: 'Start Date', 
+                value: DateFormat('dd MMM yyyy').format(_selectedDateRange!.start)
+              ),
+            ),
             const SizedBox(height: 12),
-            _buildDatePicker(label: 'End Date', value: '2024-12-31'),
+            GestureDetector(
+              onTap: _selectCustomDateRange,
+              child: _buildDatePicker(
+                label: 'End Date', 
+                value: DateFormat('dd MMM yyyy').format(_selectedDateRange!.end)
+              ),
+            ),
             
             const SizedBox(height: 24),
             
             _buildInputLabel('Choose Export Format'),
             const SizedBox(height: 12),
             
-            // Export formats
-            _buildFormatTile(
-              icon: Icons.picture_as_pdf,
-              iconBgColor: const Color(0xFFFEE2E2),
-              iconColor: const Color(0xFFDC2626),
-              title: 'PDF Report',
-              subtitle: 'Formatted financial report',
+            GestureDetector(
+              onTap: () => _navigateToPreview('PDF'),
+              child: _buildFormatTile(
+                icon: Icons.picture_as_pdf,
+                iconBgColor: const Color(0xFFFEE2E2),
+                iconColor: const Color(0xFFDC2626),
+                title: 'PDF Report',
+                subtitle: 'Formatted financial report',
+              ),
             ),
             const SizedBox(height: 12),
-            _buildFormatTile(
-              icon: Icons.insert_drive_file_outlined,
-              iconBgColor: const Color(0xFFD1FAE5),
-              iconColor: const Color(0xFF059669),
-              title: 'CSV File',
-              subtitle: 'Raw data for analysis',
+            GestureDetector(
+              onTap: () => _navigateToPreview('CSV'),
+              child: _buildFormatTile(
+                icon: Icons.insert_drive_file_outlined,
+                iconBgColor: const Color(0xFFD1FAE5),
+                iconColor: const Color(0xFF059669),
+                title: 'CSV File',
+                subtitle: 'Raw data for analysis',
+              ),
             ),
             
             const SizedBox(height: 40),
             
-            // Logout Button
             ElevatedButton.icon(
               onPressed: () => _logout(context),
               icon: const Icon(Icons.logout, size: 20, color: Colors.white),
               label: const Text('Logout', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFE11D48), // Bright Red
+                backgroundColor: const Color(0xFFE11D48),
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
