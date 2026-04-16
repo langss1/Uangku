@@ -3,6 +3,7 @@ import 'package:uangku_app/core/theme/app_colors.dart';
 import 'package:uangku_app/core/models/transaction_model.dart';
 import 'package:uangku_app/core/data/transaction_data.dart';
 import 'package:uangku_app/features/transaction/screens/transaction_success_screen.dart';
+import 'package:intl/intl.dart';
 
 class AddTransactionScreen extends StatefulWidget {
   final VoidCallback onBack;
@@ -159,20 +160,27 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                   children: [
                     const Text('Rp', style: TextStyle(fontSize: 24, color: AppColors.textLight)),
                     const SizedBox(height: 8),
-                    TextField(
-                      controller: _amountController,
-                      keyboardType: TextInputType.number,
-                      textAlign: TextAlign.center,
-                      onChanged: (val) {
-                        setState(() {
-                          _amount = double.tryParse(val) ?? 0;
-                        });
+                    ValueListenableBuilder<List<TransactionModel>>(
+                      valueListenable: TransactionData().transactionsNotifier,
+                      builder: (context, transactions, child) {
+                        double totalIncome = 0;
+                        double totalExpense = 0;
+                        for (var tx in transactions) {
+                          if (tx.isIncome) {
+                            totalIncome += tx.amount;
+                          } else {
+                            totalExpense += tx.amount;
+                          }
+                        }
+                        
+                        final format = NumberFormat.currency(locale: 'id_ID', symbol: '', decimalDigits: 0);
+                        final displayAmount = _isIncome ? totalIncome : totalExpense;
+
+                        return Text(
+                          format.format(displayAmount).trim(),
+                          style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold),
+                        );
                       },
-                      style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold),
-                      decoration: const InputDecoration(
-                        border: InputBorder.none,
-                        hintText: '0',
-                      ),
                     ),
                   ],
                 ),
@@ -316,6 +324,38 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                         style: const TextStyle(fontSize: 16),
                       ),
                     ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 32),
+
+              // Amount Input
+              const Text('Amount', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    )
+                  ],
+                ),
+                child: TextField(
+                  controller: _amountController,
+                  keyboardType: TextInputType.number,
+                  onChanged: (val) {
+                    setState(() {
+                      _amount = double.tryParse(val) ?? 0;
+                    });
+                  },
+                  decoration: const InputDecoration(
+                    border: InputBorder.none,
+                    hintText: 'Input transaction amount (e.g. 50000)',
                   ),
                 ),
               ),

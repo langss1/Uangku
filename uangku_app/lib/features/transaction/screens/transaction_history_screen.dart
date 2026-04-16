@@ -5,8 +5,15 @@ import 'package:uangku_app/core/data/transaction_data.dart';
 import 'package:uangku_app/features/transaction/screens/transaction_detail_screen.dart';
 import 'package:intl/intl.dart';
 
-class TransactionHistoryScreen extends StatelessWidget {
+class TransactionHistoryScreen extends StatefulWidget {
   const TransactionHistoryScreen({super.key});
+
+  @override
+  State<TransactionHistoryScreen> createState() => _TransactionHistoryScreenState();
+}
+
+class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
+  DateTime? _selectedDate;
 
   @override
   Widget build(BuildContext context) {
@@ -26,9 +33,47 @@ class TransactionHistoryScreen extends StatelessWidget {
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.search, color: AppColors.textDark),
-            onPressed: () {},
+            icon: const Icon(Icons.calendar_month, color: AppColors.primaryBlue),
+            onPressed: () async {
+              final DateTime? picked = await showDatePicker(
+                context: context,
+                initialDate: _selectedDate ?? DateTime.now(),
+                firstDate: DateTime(2020),
+                lastDate: DateTime(2030),
+                builder: (context, child) {
+                  return Theme(
+                    data: Theme.of(context).copyWith(
+                      colorScheme: const ColorScheme.light(
+                        primary: AppColors.primaryBlue, // header background color
+                        onPrimary: Colors.white, // header text color
+                        onSurface: AppColors.textDark, // body text color
+                      ),
+                      textButtonTheme: TextButtonThemeData(
+                        style: TextButton.styleFrom(
+                          foregroundColor: AppColors.primaryBlue, // button text color
+                        ),
+                      ),
+                    ),
+                    child: child!,
+                  );
+                },
+              );
+              if (picked != null) {
+                setState(() {
+                  _selectedDate = picked;
+                });
+              }
+            },
           ),
+          if (_selectedDate != null)
+            IconButton(
+              icon: const Icon(Icons.clear, color: Colors.redAccent),
+              onPressed: () {
+                setState(() {
+                  _selectedDate = null;
+                });
+              },
+            ),
           const SizedBox(width: 8),
         ],
       ),
@@ -36,20 +81,29 @@ class TransactionHistoryScreen extends StatelessWidget {
         valueListenable: TransactionData().transactionsNotifier,
         builder: (context, transactions, child) {
           
+          // Apply calendar filter
+          var filteredTransactions = transactions;
+          if (_selectedDate != null) {
+            filteredTransactions = transactions.where((tx) {
+              return tx.date.year == _selectedDate!.year &&
+                     tx.date.month == _selectedDate!.month &&
+                     tx.date.day == _selectedDate!.day;
+            }).toList();
+          }
+
           double totalIncome = 0;
           double totalExpense = 0;
-          for (var tx in transactions) {
+          for (var tx in filteredTransactions) {
             if (tx.isIncome) {
               totalIncome += tx.amount;
             } else {
               totalExpense += tx.amount;
             }
           }
-          double totalBalance = totalIncome - totalExpense;
 
           // Group by date
           final groupedTransactions = <String, List<TransactionModel>>{};
-          for (var tx in transactions) {
+          for (var tx in filteredTransactions) {
             String dateKey;
             final now = DateTime.now();
             final today = DateTime(now.year, now.month, now.day);
@@ -70,7 +124,6 @@ class TransactionHistoryScreen extends StatelessWidget {
             groupedTransactions[dateKey]!.add(tx);
           }
           
-          // Sort keys (Today, Yesterday, others... basic sort for now)
           final sortedKeys = groupedTransactions.keys.toList();
 
           return SingleChildScrollView(
@@ -79,6 +132,34 @@ class TransactionHistoryScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Filter Active Indicator
+                  if (_selectedDate != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 16.0),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryBlue.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.event_available, size: 16, color: AppColors.primaryBlue),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Showing transactions for: ${DateFormat('MMM dd, yyyy').format(_selectedDate!)}',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primaryBlue,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
                   // Summary Cards
                   Row(
                     children: [
@@ -87,6 +168,7 @@ class TransactionHistoryScreen extends StatelessWidget {
                           title: 'INCOME',
                           amount: _formatCurrency(totalIncome),
                           isIncome: true,
+                          dateFilterActive: _selectedDate != null,
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -95,12 +177,30 @@ class TransactionHistoryScreen extends StatelessWidget {
                           title: 'EXPENSE',
                           amount: _formatCurrency(totalExpense),
                           isIncome: false,
+                          dateFilterActive: _selectedDate != null,
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 32),
                   
+                  if (filteredTransactions.isEmpty)
+                     Center(
+                       child: Padding(
+                         padding: const EdgeInsets.only(top: 40.0),
+                         child: Column(
+                           children: [
+                             Icon(Icons.receipt_long, size: 64, color: Colors.grey[300]),
+                             const SizedBox(height: 16),
+                             Text(
+                               'No transactions found',
+                               style: TextStyle(color: Colors.grey[500], fontSize: 16),
+                             ),
+                           ],
+                         ),
+                       ),
+                     ),
+
                   // List
                   ...sortedKeys.map((dateKey) {
                     return Column(
@@ -145,7 +245,7 @@ class TransactionHistoryScreen extends StatelessWidget {
     return format.format(amount);
   }
 
-  Widget _buildSummaryCard({required String title, required String amount, required bool isIncome}) {
+  Widget _buildSummaryCard({required String title, required String amount, required bool isIncome, required bool dateFilterActive}) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -198,9 +298,9 @@ class TransactionHistoryScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
-            'This month',
-            style: TextStyle(
+          Text(
+            dateFilterActive ? 'On this date' : 'This month',
+            style: const TextStyle(
               fontSize: 12,
               color: AppColors.textLight,
             ),
