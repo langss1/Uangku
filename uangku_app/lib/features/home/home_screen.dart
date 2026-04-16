@@ -7,6 +7,7 @@ import 'package:uangku_app/core/models/transaction_model.dart';
 import 'package:uangku_app/core/data/transaction_data.dart';
 import 'package:uangku_app/features/transaction/screens/add_transaction_screen.dart';
 import 'package:uangku_app/features/transaction/screens/transaction_history_screen.dart';
+import 'package:uangku_app/features/analytics/screens/analytics_screen.dart';
 import 'package:intl/intl.dart';
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -39,6 +40,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildBody() {
+    if (_selectedIndex == 1) {
+      return const AnalyticsScreen();
+    }
     if (_selectedIndex == 2) {
       return AddTransactionScreen(onBack: () {
         setState(() {
