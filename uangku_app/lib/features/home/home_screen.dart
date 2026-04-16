@@ -8,6 +8,7 @@ import 'package:uangku_app/core/data/transaction_data.dart';
 import 'package:uangku_app/features/transaction/screens/add_transaction_screen.dart';
 import 'package:uangku_app/features/transaction/screens/transaction_history_screen.dart';
 import 'package:uangku_app/features/analytics/screens/analytics_screen.dart';
+import 'package:uangku_app/features/chat/screens/chat_screen.dart';
 import 'package:intl/intl.dart';
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -280,10 +281,16 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
               ),
               _buildActionItem(
-                icon: Icons.arrow_forward,
-                label: 'Transfer',
+                icon: Icons.smart_toy_outlined,
+                label: 'AI Chat',
                 color: const Color(0xFFF3E8FF),
                 iconColor: const Color(0xFF7C3AED),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const ChatScreen()),
+                  );
+                },
               ),
               _buildActionItem(
                 icon: Icons.history,
