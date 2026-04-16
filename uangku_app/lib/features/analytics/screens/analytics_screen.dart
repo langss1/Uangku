@@ -14,25 +14,117 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   DateTimeRange? _customDateRange;
 
   Future<void> _selectCustomDateRange() async {
-    final DateTimeRange? picked = await showDateRangePicker(
+    DateTime? tempStart = _customDateRange?.start ?? DateTime.now().subtract(const Duration(days: 7));
+    DateTime? tempEnd = _customDateRange?.end ?? DateTime.now();
+
+    final picked = await showDialog<DateTimeRange>(
       context: context,
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2101),
-      initialDateRange: _customDateRange ??
-          DateTimeRange(
-            start: DateTime.now().subtract(const Duration(days: 7)),
-            end: DateTime.now(),
-          ),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Color(0xFF2962FF), // header background color
-              onPrimary: Colors.white, // header text color
-              onSurface: Colors.black, // body text color
-            ),
-          ),
-          child: child!,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: const Text(
+                'Custom Date Range',
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('Select your start and end date below:', style: TextStyle(color: Colors.black54, fontSize: 13)),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () async {
+                            final date = await showDatePicker(
+                              context: context,
+                              initialDate: tempStart!,
+                              firstDate: DateTime(2000),
+                              lastDate: DateTime(2101),
+                            );
+                            if (date != null) {
+                              setDialogState(() => tempStart = date);
+                            }
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF1F5F9),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Column(
+                              children: [
+                                const Text('Start Date', style: TextStyle(fontSize: 11, color: Colors.black54)),
+                                const SizedBox(height: 4),
+                                Text(
+                                  DateFormat('dd MMM yyyy').format(tempStart!),
+                                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () async {
+                            final date = await showDatePicker(
+                              context: context,
+                              initialDate: tempEnd ?? tempStart!,
+                              firstDate: tempStart!,
+                              lastDate: DateTime(2101),
+                            );
+                            if (date != null) {
+                              setDialogState(() => tempEnd = date);
+                            }
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF1F5F9),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Column(
+                              children: [
+                                const Text('End Date', style: TextStyle(fontSize: 11, color: Colors.black54)),
+                                const SizedBox(height: 4),
+                                Text(
+                                  tempEnd != null ? DateFormat('dd MMM yyyy').format(tempEnd!) : 'Select',
+                                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel', style: TextStyle(color: Colors.black54)),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    if (tempStart != null && tempEnd != null) {
+                      Navigator.pop(context, DateTimeRange(start: tempStart!, end: tempEnd!));
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2962FF),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    elevation: 0,
+                  ),
+                  child: const Text('Apply', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                ),
+              ],
+            );
+          },
         );
       },
     );
@@ -42,7 +134,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         _customDateRange = picked;
         _selectedFilter = 'Custom';
       });
-      // TODO: Panggil fungsi fetch data (seperti Provider/Bloc/TransactionData) di sini
+      // TODO: Panggil fungsi fetch data di sini
       // berdasarkan range tanggal: picked.start hingga picked.end
     }
   }
