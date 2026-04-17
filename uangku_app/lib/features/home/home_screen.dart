@@ -9,6 +9,7 @@ import 'package:uangku_app/features/transaction/screens/add_transaction_screen.d
 import 'package:uangku_app/features/transaction/screens/transaction_history_screen.dart';
 import 'package:uangku_app/features/analytics/screens/analytics_screen.dart';
 import 'package:uangku_app/features/chat/screens/chat_screen.dart';
+import 'package:uangku_app/features/scan/screens/scan_screen.dart';
 import 'package:intl/intl.dart';
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -268,6 +269,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 label: 'Scan',
                 color: const Color(0xFFDBEAFE),
                 iconColor: const Color(0xFF2563EB),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const ScanScreen()),
+                  );
+                },
               ),
               _buildActionItem(
                 icon: Icons.add,
@@ -394,7 +401,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   final timeFormat = DateFormat('hh:mm a');
                   return _buildTransactionItem(
                     title: tx.title,
-                    category: "${tx.category} • ${timeFormat.format(tx.date)}",
+                    category: tx.currencyCode == 'IDR' 
+                        ? "${tx.category} • ${timeFormat.format(tx.date)}"
+                        : "${tx.category} • ${tx.currencyCode} ${tx.originalAmount.toInt()} • ${timeFormat.format(tx.date)}",
                     amount: "${tx.isIncome ? '+' : '-'}${format.format(tx.amount)}",
                     date: DateFormat('MMM dd').format(tx.date),
                     icon: tx.icon,

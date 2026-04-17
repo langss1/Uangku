@@ -3,6 +3,7 @@ import 'package:uangku_app/core/theme/app_colors.dart';
 import 'package:uangku_app/core/models/transaction_model.dart';
 import 'package:uangku_app/core/data/transaction_data.dart';
 import 'package:uangku_app/features/transaction/screens/transaction_success_screen.dart';
+import 'package:uangku_app/core/services/currency_service.dart';
 import 'package:intl/intl.dart';
 
 class AddTransactionScreen extends StatefulWidget {
@@ -22,6 +23,12 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   DateTime _selectedDate = DateTime.now();
   final TextEditingController _amountController = TextEditingController();
   final TextEditingController _notesController = TextEditingController();
+  
+  // Currency state
+  String _selectedCurrency = 'IDR';
+  Map<String, double> _rates = {'IDR': 1.0};
+  bool _isLoadingRates = false;
+  final List<String> _popularCurrencies = ['IDR', 'USD', 'SGD', 'EUR', 'JPY', 'MYR'];
 
   final List<Map<String, dynamic>> _categories = [
     {'name': 'Groceries', 'icon': Icons.shopping_cart, 'color': Color(0xFFFDE68A), 'iconColor': Color(0xFFD97706)},
@@ -35,13 +42,30 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   @override
   void initState() {
     super.initState();
+    _loadRates();
     if (widget.transactionToEdit != null) {
       _isIncome = widget.transactionToEdit!.isIncome;
       _amount = widget.transactionToEdit!.amount;
-      _amountController.text = _amount.toInt().toString();
+      _selectedCurrency = widget.transactionToEdit!.currencyCode;
+      _amountController.text = (widget.transactionToEdit!.currencyCode == 'IDR') 
+          ? _amount.toInt().toString() 
+          : widget.transactionToEdit!.originalAmount.toInt().toString();
       _selectedCategory = widget.transactionToEdit!.category;
       _selectedDate = widget.transactionToEdit!.date;
       _notesController.text = widget.transactionToEdit!.note;
+    }
+  }
+
+  Future<void> _loadRates() async {
+    setState(() => _isLoadingRates = true);
+    try {
+      final fetchedRates = await CurrencyService().fetchExchangeRates();
+      setState(() {
+        _rates = fetchedRates;
+        _isLoadingRates = false;
+      });
+    } catch (e) {
+      setState(() => _isLoadingRates = false);
     }
   }
 
@@ -53,7 +77,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     if (widget.transactionToEdit != null) {
       // Edit
       final updatedTx = widget.transactionToEdit!.copyWith(
-        amount: _amount,
+        amount: _selectedCurrency == 'IDR' ? _amount : CurrencyService().convertToIdr(_amount, _selectedCurrency, _rates),
+        originalAmount: _amount,
+        currencyCode: _selectedCurrency,
+        exchangeRate: _rates[_selectedCurrency] ?? 1.0,
         isIncome: _isIncome,
         category: _selectedCategory,
         date: _selectedDate,
@@ -69,7 +96,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         title: _selectedCategory,
         category: _selectedCategory,
-        amount: _amount,
+        amount: _selectedCurrency == 'IDR' ? _amount : CurrencyService().convertToIdr(_amount, _selectedCurrency, _rates),
+        originalAmount: _amount,
+        currencyCode: _selectedCurrency,
+        exchangeRate: _rates[_selectedCurrency] ?? 1.0,
         date: _selectedDate,
         icon: categoryMap['icon'],
         bgColor: categoryMap['color'],
@@ -333,7 +363,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
               const Text('Amount', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               const SizedBox(height: 16),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
@@ -345,20 +375,64 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                     )
                   ],
                 ),
-                child: TextField(
-                  controller: _amountController,
-                  keyboardType: TextInputType.number,
-                  onChanged: (val) {
-                    setState(() {
-                      _amount = double.tryParse(val) ?? 0;
-                    });
-                  },
-                  decoration: const InputDecoration(
-                    border: InputBorder.none,
-                    hintText: 'Input transaction amount (e.g. 50000)',
-                  ),
+                child: Row(
+                  children: [
+                    // Currency Dropdown
+                    DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: _selectedCurrency,
+                        items: _popularCurrencies.map((String value) {
+                          return DropdownMenuItem<String>(
+                            value: value,
+                            child: Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
+                          );
+                        }).toList(),
+                        onChanged: (newValue) {
+                          setState(() {
+                            _selectedCurrency = newValue!;
+                          });
+                        },
+                      ),
+                    ),
+                    const VerticalDivider(width: 20, thickness: 1, indent: 10, endIndent: 10),
+                    Expanded(
+                      child: TextField(
+                        controller: _amountController,
+                        keyboardType: TextInputType.number,
+                        onChanged: (val) {
+                          setState(() {
+                            _amount = double.tryParse(val) ?? 0;
+                          });
+                        },
+                        decoration: const InputDecoration(
+                          border: InputBorder.none,
+                          hintText: 'Input amount',
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
+              if (_selectedCurrency != 'IDR') ...[
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.sync, size: 14, color: AppColors.primaryBlue),
+                      const SizedBox(width: 4),
+                      Text(
+                        "Estimated: Rp ${NumberFormat.currency(locale: 'id_ID', symbol: '', decimalDigits: 0).format(CurrencyService().convertToIdr(_amount, _selectedCurrency, _rates))}",
+                        style: const TextStyle(
+                          color: AppColors.primaryBlue,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               const SizedBox(height: 32),
 
               // Notes
