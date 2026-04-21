@@ -4,9 +4,9 @@ services:
     container_name: uangku_db
     restart: always
     environment:
-      POSTGRES_USER: ihab_admin
-      POSTGRES_PASSWORD: password_rahasia
-      POSTGRES_DB: uangku_finansial
+      POSTGRES_USER: ihab
+      POSTGRES_PASSWORD: apayhh
+      POSTGRES_DB: finance_uangku
     ports:
       - "5432:5432"
     volumes:
@@ -19,6 +19,6 @@ services:
       - "8000:8000"
     environment:
       - GEMINI_API_KEY=${GEMINI_API_KEY}
-      - DATABASE_URL=postgresql://ihab_admin:password_rahasia@db:5432/uangku_finansial
+      - DATABASE_URL=postgresql://ihab:apayhh@db:5432/finance_uangku
     depends_on:
       - db
