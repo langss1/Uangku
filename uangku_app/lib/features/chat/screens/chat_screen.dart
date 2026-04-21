@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:google_generative_ai/google_generative_ai.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({Key? key}) : super(key: key);
@@ -12,32 +14,15 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
   
   bool _isTyping = false;
+  late final ChatSession _chatSession;
 
-  // Data Dummy Pesan
+  // Data Pesan
   final List<Map<String, dynamic>> _messages = [
     {
       'isTop': true,
       'isUser': false,
       'text': 'Halo! Saya UANGKU AI, asisten keuangan pribadi Anda. Bagaimana saya bisa membantu mengelola keuangan Anda hari ini?',
       'time': '09:30',
-    },
-    {
-      'isTop': false,
-      'isUser': true,
-      'text': 'Bisakah kamu analisis pengeluaran saya bulan ini?',
-      'time': '09:32',
-    },
-    {
-      'isTop': false,
-      'isUser': false,
-      'text': 'Tentu! Berdasarkan data transaksi Anda, berikut analisis pengeluaran bulan ini:\n\nMakanan & Minuman          Rp 2,450,000\nTransport                              Rp 850,000\nEntertainment                       Rp 1,200,000',
-      'time': '09:33',
-    },
-    {
-      'isTop': false,
-      'isUser': true,
-      'text': 'Ada saran untuk mengurangi pengeluaran entertainment?',
-      'time': '09:35',
     },
   ];
 
@@ -50,6 +35,20 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
       vsync: this,
       duration: const Duration(milliseconds: 1200),
     )..repeat();
+    
+    final apiKey = dotenv.env['GEMINI_API_KEY'] ?? '';
+    final model = GenerativeModel(
+      model: 'gemini-1.5-flash',
+      apiKey: apiKey,
+    );
+    _chatSession = model.startChat(
+      history: [
+        Content.system('Kamu adalah UANGKU AI, asisten keuangan pribadi di aplikasi Flutter. Bantulah user untuk urusan finansial. Jawab dalam bahasa Indonesia yang ringkas, jelas, dan profesional.'),
+        Content.model([
+          TextPart('Halo! Saya UANGKU AI, asisten keuangan pribadi Anda. Bagaimana saya bisa membantu mengelola keuangan Anda hari ini?')
+        ])
+      ]
+    );
   }
 
   @override
@@ -60,7 +59,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     super.dispose();
   }
 
-  void _sendMessage() {
+  Future<void> _sendMessage() async {
     if (_msgController.text.trim().isEmpty) return;
 
     final newMsg = _msgController.text.trim();
@@ -78,20 +77,32 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
 
     _scrollToBottom();
 
-    // Simulasi delay AI balas
-    Future.delayed(const Duration(seconds: 3), () {
+    try {
+      final response = await _chatSession.sendMessage(Content.text(newMsg));
       if (!mounted) return;
       setState(() {
         _isTyping = false;
         _messages.add({
           'isTop': false,
           'isUser': false,
-          'text': 'Berikut beberapa tips yang bisa Anda coba:\n1. Batasi langganan streaming.\n2. Cari hiburan gratis di akhir pekan.',
+          'text': response.text?.trim() ?? 'Maaf, saya tidak dapat merespons saat ini.',
           'time': _getCurrentTime(),
         });
       });
       _scrollToBottom();
-    });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isTyping = false;
+        _messages.add({
+          'isTop': false,
+          'isUser': false,
+          'text': 'Maaf, terjadi kesalahan atau API key tidak valid.',
+          'time': _getCurrentTime(),
+        });
+      });
+      _scrollToBottom();
+    }
   }
 
   String _getCurrentTime() {

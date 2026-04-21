@@ -47,6 +47,9 @@ dependencies:
   csv: ^8.0.0
   share_plus: ^13.0.0
   path_provider: ^2.1.5
+  flutter_dotenv: ^6.0.1
+  sqflite: ^2.4.2
+  connectivity_plus: ^7.1.1
 
 dev_dependencies:
   flutter_test:
@@ -74,6 +77,7 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - assets/images/logo.png
+    - .env
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
