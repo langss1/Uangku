@@ -38,17 +38,13 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     
     final apiKey = dotenv.env['GEMINI_API_KEY'] ?? '';
     final model = GenerativeModel(
-      model: 'gemini-1.5-flash',
+      model: 'gemini-flash-latest',
       apiKey: apiKey,
     );
-    _chatSession = model.startChat(
-      history: [
-        Content.system('Kamu adalah UANGKU AI, asisten keuangan pribadi di aplikasi Flutter. Bantulah user untuk urusan finansial. Jawab dalam bahasa Indonesia yang ringkas, jelas, dan profesional.'),
-        Content.model([
-          TextPart('Halo! Saya UANGKU AI, asisten keuangan pribadi Anda. Bagaimana saya bisa membantu mengelola keuangan Anda hari ini?')
-        ])
-      ]
-    );
+    
+    // History harus dimulai dari user, jadi kita kosongkan saja history awalnya.
+    // Pesan sapaan pertama cukup tampil di UI saja.
+    _chatSession = model.startChat();
   }
 
   @override
@@ -78,7 +74,13 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     _scrollToBottom();
 
     try {
-      final response = await _chatSession.sendMessage(Content.text(newMsg));
+      // Inject persona ke pesan pertama secara manual untuk menghindari bug systemInstruction di SDK lama
+      String prompt = newMsg;
+      if (_messages.length <= 2) { 
+        prompt = "Kamu adalah UANGKU AI, asisten keuangan pribadi. Jawab dalam bahasa Indonesia yang ringkas, jelas, dan profesional.\n\nPertanyaan User: $newMsg";
+      }
+
+      final response = await _chatSession.sendMessage(Content.text(prompt));
       if (!mounted) return;
       setState(() {
         _isTyping = false;
@@ -91,13 +93,14 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
       });
       _scrollToBottom();
     } catch (e) {
+      print('Chatbot Error: $e'); // Print error ke console
       if (!mounted) return;
       setState(() {
         _isTyping = false;
         _messages.add({
           'isTop': false,
           'isUser': false,
-          'text': 'Maaf, terjadi kesalahan atau API key tidak valid.',
+          'text': 'Error detail:\n$e',
           'time': _getCurrentTime(),
         });
       });
