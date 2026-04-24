@@ -120,6 +120,60 @@ const authController = {
       console.error('Profile Fetch Error:', error);
       return res.status(500).json({ error: 'Internal server error while fetching profile.' });
     }
+  },
+
+  // Update user profile
+  updateProfile: async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const { full_name, email } = req.body;
+      
+      const result = await pool.query(
+        'UPDATE users SET full_name = COALESCE($1, full_name), email = COALESCE($2, email), updated_at = CURRENT_TIMESTAMP WHERE id = $3 RETURNING id, full_name, email',
+        [full_name, email, userId]
+      );
+      
+      return res.status(200).json({ message: 'Profile updated', user: result.rows[0] });
+    } catch (error) {
+      console.error('Update Profile Error:', error);
+      return res.status(500).json({ error: 'Failed to update profile.' });
+    }
+  },
+
+  // Update security
+  updateSecurity: async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const { password, is_2fa_active } = req.body;
+      let updates = [];
+      let values = [];
+      let counter = 1;
+
+      if (password) {
+        const saltRounds = 10;
+        const password_hash = await bcrypt.hash(password, saltRounds);
+        updates.push(`password_hash = $${counter}`);
+        values.push(password_hash);
+        counter++;
+      }
+      if (is_2fa_active !== undefined) {
+        updates.push(`is_2fa_active = $${counter}`);
+        values.push(is_2fa_active);
+        counter++;
+      }
+
+      if (updates.length > 0) {
+        values.push(userId);
+        await pool.query(
+          `UPDATE users SET ${updates.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = $${counter}`,
+          values
+        );
+      }
+      return res.status(200).json({ message: 'Security updated successfully' });
+    } catch (error) {
+      console.error('Update Security Error:', error);
+      return res.status(500).json({ error: 'Failed to update security parameters.' });
+    }
   }
 };
 

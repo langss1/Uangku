@@ -7,6 +7,7 @@ import 'package:uangku_app/core/models/transaction_model.dart';
 import 'package:uangku_app/core/data/transaction_data.dart';
 import 'package:uangku_app/features/transaction/screens/add_transaction_screen.dart';
 import 'package:uangku_app/features/transaction/screens/transaction_history_screen.dart';
+import 'package:uangku_app/features/transaction/screens/transaction_detail_screen.dart';
 import 'package:uangku_app/features/analytics/screens/analytics_screen.dart';
 import 'package:uangku_app/features/chat/screens/chat_screen.dart';
 import 'package:uangku_app/features/scan/screens/scan_screen.dart';
@@ -422,6 +423,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   final format = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
                   final timeFormat = DateFormat('hh:mm a');
                   return _buildTransactionItem(
+                    id: tx.id,
                     title: tx.title,
                     category: tx.currencyCode == 'IDR' 
                         ? "${tx.category} • ${timeFormat.format(tx.date)}"
@@ -432,6 +434,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     bgColor: tx.bgColor,
                     iconColor: tx.iconColor,
                     isIncome: tx.isIncome,
+                    context: context,
                   );
                 }).toList(),
               );
@@ -443,6 +446,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildTransactionItem({
+    required String id,
     required String title,
     required String category,
     required String amount,
@@ -451,23 +455,31 @@ class _HomeScreenState extends State<HomeScreen> {
     required Color bgColor,
     required Color iconColor,
     required bool isIncome,
+    required BuildContext context,
   }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFF1F5F9), width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.01),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => TransactionDetailScreen(transactionId: id)),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 14),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFF1F5F9), width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.01),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
         children: [
           Container(
             width: 50,
@@ -527,6 +539,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
+    ),
     );
   }
 

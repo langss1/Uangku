@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:uangku_app/features/profile/screens/export_preview_screen.dart';
+import 'package:uangku_app/features/profile/screens/settings_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -324,6 +325,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
               iconColor: const Color(0xFF2563EB),
               title: 'Personal Information',
               subtitle: 'Update name, email, phone',
+              onTap: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => SettingsEditorScreen(
+                      title: 'Personal Information',
+                      subtitle: 'Update your profile information',
+                      isSecurity: false,
+                      initialName: _userName,
+                      initialEmail: _userEmail,
+                    ),
+                  ),
+                );
+                if (result == true) {
+                  _loadUserProfile(); // Reload to reflect changes
+                }
+              },
             ),
             _buildSettingTile(
               icon: Icons.security_outlined,
@@ -331,6 +349,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
               iconColor: const Color(0xFF059669),
               title: 'Security Settings',
               subtitle: 'Password, 2FA, sessions',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const SettingsEditorScreen(
+                      title: 'Security Settings',
+                      subtitle: 'Update your password and security',
+                      isSecurity: true,
+                    ),
+                  ),
+                );
+              },
             ),
             _buildSettingTile(
               icon: Icons.smartphone,
@@ -341,6 +371,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               trailingText: 'Enabled',
               trailingColor: const Color(0xFFD1FAE5),
               trailingTextColor: const Color(0xFF059669),
+              onTap: () {},
             ),
             _buildSettingTile(
               icon: Icons.notifications_none_outlined,
@@ -348,6 +379,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               iconColor: const Color(0xFFD97706),
               title: 'Notifications',
               subtitle: 'Email, push preferences',
+              onTap: () {},
             ),
             _buildSettingTile(
               icon: Icons.settings_outlined,
@@ -355,6 +387,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               iconColor: const Color(0xFF475569),
               title: 'App Preferences',
               subtitle: 'Theme, language, currency',
+              onTap: () {},
             ),
             _buildSettingTile(
               icon: Icons.help_outline,
@@ -362,6 +395,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               iconColor: const Color(0xFFEA580C),
               title: 'Help & Support',
               subtitle: 'FAQ, contact support',
+              onTap: () {},
             ),
             
             const SizedBox(height: 32),
@@ -504,37 +538,41 @@ class _ProfileScreenState extends State<ProfileScreen> {
     String? trailingText,
     Color? trailingColor,
     Color? trailingTextColor,
+    VoidCallback? onTap,
   }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(color: iconBgColor, borderRadius: BorderRadius.circular(12)),
-            child: Icon(icon, color: iconColor, size: 22),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textDark)),
-                const SizedBox(height: 2),
-                Text(subtitle, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Color(0xFF64748B))),
-              ],
-            ),
-          ),
-          if (trailingText != null)
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        child: Row(
+          children: [
             Container(
-              margin: const EdgeInsets.only(right: 12),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(color: trailingColor, borderRadius: BorderRadius.circular(20)),
-              child: Text(trailingText, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: trailingTextColor)),
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(color: iconBgColor, borderRadius: BorderRadius.circular(12)),
+              child: Icon(icon, color: iconColor, size: 22),
             ),
-          const Icon(Icons.chevron_right, color: Color(0xFFCBD5E1), size: 24),
-        ],
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textDark)),
+                  const SizedBox(height: 2),
+                  Text(subtitle, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Color(0xFF64748B))),
+                ],
+              ),
+            ),
+            if (trailingText != null)
+              Container(
+                margin: const EdgeInsets.only(right: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(color: trailingColor, borderRadius: BorderRadius.circular(20)),
+                child: Text(trailingText, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: trailingTextColor)),
+              ),
+            const Icon(Icons.chevron_right, color: Color(0xFFCBD5E1), size: 24),
+          ],
+        ),
       ),
     );
   }

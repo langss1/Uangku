@@ -9,5 +9,7 @@ router.post('/login', authController.login);
 
 // Protected Routes (requires Bearer token)
 router.get('/profile', authMiddleware, authController.getProfile);
+router.put('/profile', authMiddleware, authController.updateProfile);
+router.put('/security', authMiddleware, authController.updateSecurity);
 
 module.exports = router;
