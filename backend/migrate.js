@@ -19,16 +19,31 @@ const migrate = async () => {
       );
     `;
 
-    // Ensure transactions table exists and correctly matching our logic
+    // Transactions table linked to users
     const createTransactionsTable = `
-      CREATE TABLE IF NOT EXISTS transactions (
-        id TEXT PRIMARY KEY,
+      DROP TABLE IF EXISTS transactions;
+      CREATE TABLE transactions (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
         title TEXT NOT NULL,
         amount REAL NOT NULL,
         date TEXT NOT NULL,
         type TEXT NOT NULL,
         category TEXT,
         is_synced INTEGER DEFAULT 1
+      );
+    `;
+
+    // Notifications table
+    const createNotificationsTable = `
+      CREATE TABLE IF NOT EXISTS notifications (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        title TEXT NOT NULL,
+        message TEXT NOT NULL,
+        type VARCHAR(50) DEFAULT 'info',
+        is_read BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
     `;
 
@@ -39,6 +54,9 @@ const migrate = async () => {
     
     console.log('📦 Creating/Verifying transactions table...');
     await client.query(createTransactionsTable);
+
+    console.log('📦 Creating/Verifying notifications table...');
+    await client.query(createNotificationsTable);
     
     await client.query('COMMIT');
     console.log('✅ Database migration completed successfully!');

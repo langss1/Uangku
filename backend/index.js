@@ -4,6 +4,7 @@ const pool = require('./config/db');
 
 // Import routes
 const authRoutes = require('./routes/authRoutes');
+const apiRoutes = require('./routes/apiRoutes');
 
 const app = express();
 const port = process.env.PORT || 8000;
@@ -14,6 +15,7 @@ app.use(express.json());
 
 // Routes Mount
 app.use('/api/auth', authRoutes);
+app.use('/api/data', apiRoutes);
 
 // Test endpoint
 app.get('/', (req, res) => {

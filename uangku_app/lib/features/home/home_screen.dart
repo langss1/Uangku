@@ -34,6 +34,8 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _userName = prefs.getString('user_name') ?? 'Guest';
     });
+    // Trigger sync
+    TransactionData().fetchFromBackend();
   }
 
   // Placeholder function for Logout (Moved to ProfileScreen but kept here just in case)

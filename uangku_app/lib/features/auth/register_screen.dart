@@ -25,10 +25,29 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
   final TextEditingController _confirmPassController = TextEditingController();
   
   bool _isLoading = false;
+  int _passwordStrength = 0; // 0: None, 1: Weak, 2: Fair, 3: Strong
+
+  void _checkPasswordStrength() {
+    final password = _passwordController.text;
+    int strength = 0;
+
+    if (password.isNotEmpty) {
+      if (password.length >= 8) strength++;
+      if (password.contains(RegExp(r'[A-Z]')) && password.contains(RegExp(r'[a-z]'))) strength++;
+      if (password.contains(RegExp(r'[0-9]')) || password.contains(RegExp(r'[!@#\$&*~]'))) strength++;
+    }
+
+    if (strength != _passwordStrength) {
+      setState(() {
+        _passwordStrength = strength;
+      });
+    }
+  }
 
   @override
   void initState() {
     super.initState();
+    _passwordController.addListener(_checkPasswordStrength);
     _animController = AnimationController(
        vsync: this,
        duration: const Duration(milliseconds: 1000),
@@ -47,6 +66,7 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
 
   @override
   void dispose() {
+    _passwordController.removeListener(_checkPasswordStrength);
     _animController.dispose();
     _fullNameController.dispose();
     _emailController.dispose();
@@ -66,6 +86,11 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
       return;
     }
 
+    if (_passwordStrength < 3) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please use a stronger password (min. 8 chars, letters, & numbers)')));
+      return;
+    }
+
     if (password != confirmPassword) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Passwords do not match')));
       return;
@@ -77,8 +102,8 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
 
     try {
       final response = await http.post(
-        // Replace with your API Url, e.g., 'http://10.0.2.2:8000/api/auth/register' for Android emulator
-        Uri.parse('http://10.0.2.2:8000/api/auth/register'),
+        // API Url targeting the VPS
+        Uri.parse('http://145.79.10.157:8000/api/auth/register'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'full_name': fullName,
@@ -306,36 +331,64 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
   }
 
   Widget _buildPasswordStrength() {
+    Color color1 = const Color(0xFFE2E8F0);
+    Color color2 = const Color(0xFFE2E8F0);
+    Color color3 = const Color(0xFFE2E8F0);
+    String label = 'Strength: Weak';
+    Color labelColor = const Color(0xFF94A3B8);
+
+    if (_passwordStrength >= 1) {
+      color1 = const Color(0xFFEF4444); // Red
+      label = 'Strength: Weak';
+      labelColor = color1;
+    }
+    if (_passwordStrength >= 2) {
+      color1 = const Color(0xFFEAB308); // Yellow
+      color2 = color1;
+      label = 'Strength: Fair';
+      labelColor = color1;
+    }
+    if (_passwordStrength >= 3) {
+      color1 = const Color(0xFF22C55E); // Green
+      color2 = color1;
+      color3 = color1;
+      label = 'Strength: Strong';
+      labelColor = color1;
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Row(
           children: [
             Expanded(
-              child: Container(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
                 height: 4,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF0066CC),
+                  color: color1,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
             ),
             const SizedBox(width: 4),
             Expanded(
-              child: Container(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
                 height: 4,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF78B5F6),
+                  color: color2,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
             ),
             const SizedBox(width: 4),
             Expanded(
-              child: Container(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
                 height: 4,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE2E8F0),
+                  color: color3,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -343,12 +396,12 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
           ],
         ),
         const SizedBox(height: 6),
-        const Text(
-          'Strength: Better than average',
+        Text(
+          _passwordController.text.isEmpty ? 'Strength: None' : label,
           style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w700,
-            color: Color(0xFF0066CC),
+            color: _passwordController.text.isEmpty ? const Color(0xFF94A3B8) : labelColor,
           ),
         ),
       ],
