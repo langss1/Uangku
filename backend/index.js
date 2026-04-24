@@ -1,6 +1,9 @@
 const express = require('express');
 const cors = require('cors');
-const { Pool } = require('pg');
+const pool = require('./config/db');
+
+// Import routes
+const authRoutes = require('./routes/authRoutes');
 
 const app = express();
 const port = process.env.PORT || 8000;
@@ -9,41 +12,8 @@ const port = process.env.PORT || 8000;
 app.use(cors());
 app.use(express.json());
 
-// PostgreSQL Connection
-// DATABASE_URL format: postgresql://username:password@host:port/database_name
-const connectionString = process.env.DATABASE_URL || 'postgresql://ihab:apayhh@db:5432/finance_uangku';
-
-const pool = new Pool({
-  connectionString: connectionString,
-});
-
-pool.on('error', (err, client) => {
-  console.error('Unexpected error on idle client', err);
-  process.exit(-1);
-});
-
-// Initialize database table if not exists
-const initDb = async () => {
-  const createTableQuery = `
-    CREATE TABLE IF NOT EXISTS transactions (
-      id TEXT PRIMARY KEY,
-      title TEXT NOT NULL,
-      amount REAL NOT NULL,
-      date TEXT NOT NULL,
-      type TEXT NOT NULL,
-      category TEXT,
-      is_synced INTEGER DEFAULT 1
-    );
-  `;
-  try {
-    await pool.query(createTableQuery);
-    console.log('Database initialized: transactions table is ready.');
-  } catch (err) {
-    console.error('Error initializing database', err);
-  }
-};
-
-initDb();
+// Routes Mount
+app.use('/api/auth', authRoutes);
 
 // Test endpoint
 app.get('/', (req, res) => {

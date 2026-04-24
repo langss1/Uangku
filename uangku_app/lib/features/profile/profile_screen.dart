@@ -3,6 +3,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uangku_app/core/theme/app_colors.dart';
 import 'package:uangku_app/features/splash/splash_screen.dart';
 import 'package:intl/intl.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:uangku_app/features/profile/screens/export_preview_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -14,6 +16,8 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   DateTimeRange? _selectedDateRange;
+  String _userName = 'Loading...';
+  String _userEmail = 'Loading...';
 
   @override
   void initState() {
@@ -23,6 +27,45 @@ class _ProfileScreenState extends State<ProfileScreen> {
       start: DateTime.now().subtract(const Duration(days: 30)),
       end: DateTime.now(),
     );
+    _loadUserProfile();
+  }
+
+  Future<void> _loadUserProfile() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+    
+    // Load cached first
+    if (mounted) {
+      setState(() {
+        _userName = prefs.getString('user_name') ?? 'Guest User';
+        _userEmail = prefs.getString('user_email') ?? '-';
+      });
+    }
+
+    if (token == null) return;
+
+    try {
+      final response = await http.get(
+        Uri.parse('http://10.0.2.2:8000/api/auth/profile'),
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200 && mounted) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          _userName = data['user']['full_name'];
+          _userEmail = data['user']['email'];
+        });
+        
+        // Update cache
+        await prefs.setString('user_name', _userName);
+        await prefs.setString('user_email', _userEmail);
+      }
+    } catch (e) {
+      debugPrint('Error fetching profile: $e');
+    }
   }
 
   Future<void> _logout(BuildContext context) async {
@@ -251,14 +294,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Sarah Johnson',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.textDark),
+                        Text(
+                          _userName,
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.textDark),
                         ),
                         const SizedBox(height: 2),
-                        const Text(
-                          'sarah.johnson@email.com',
-                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Color(0xFF64748B)),
+                        Text(
+                          _userEmail,
+                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Color(0xFF64748B)),
                         ),
                         const SizedBox(height: 6),
                         Container(

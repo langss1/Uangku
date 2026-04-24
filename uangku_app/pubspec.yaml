@@ -42,14 +42,14 @@ dependencies:
   shared_preferences: ^2.5.3
   google_fonts: ^6.3.2
   intl: ^0.20.2
-  pdf: ^3.12.0
-  printing: ^5.14.3
-  csv: ^8.0.0
-  share_plus: ^13.0.0
+  pdf: any
+  printing: any
+  csv: any
+  share_plus: any
   path_provider: ^2.1.5
-  flutter_dotenv: ^6.0.1
-  sqflite: ^2.4.2
-  connectivity_plus: ^7.1.1
+  flutter_dotenv: any
+  sqflite: any
+  connectivity_plus: any
 
 dev_dependencies:
   flutter_test:

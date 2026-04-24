@@ -190,27 +190,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                   children: [
                     const Text('Rp', style: TextStyle(fontSize: 24, color: AppColors.textLight)),
                     const SizedBox(height: 8),
-                    ValueListenableBuilder<List<TransactionModel>>(
-                      valueListenable: TransactionData().transactionsNotifier,
-                      builder: (context, transactions, child) {
-                        double totalIncome = 0;
-                        double totalExpense = 0;
-                        for (var tx in transactions) {
-                          if (tx.isIncome) {
-                            totalIncome += tx.amount;
-                          } else {
-                            totalExpense += tx.amount;
-                          }
-                        }
-                        
-                        final format = NumberFormat.currency(locale: 'id_ID', symbol: '', decimalDigits: 0);
-                        final displayAmount = _isIncome ? totalIncome : totalExpense;
-
-                        return Text(
-                          format.format(displayAmount).trim(),
-                          style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold),
-                        );
-                      },
+                    Text(
+                      NumberFormat.currency(locale: 'id_ID', symbol: '', decimalDigits: 0).format(_amount).trim(),
+                      style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),

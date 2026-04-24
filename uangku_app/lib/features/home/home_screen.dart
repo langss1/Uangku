@@ -10,6 +10,7 @@ import 'package:uangku_app/features/transaction/screens/transaction_history_scre
 import 'package:uangku_app/features/analytics/screens/analytics_screen.dart';
 import 'package:uangku_app/features/chat/screens/chat_screen.dart';
 import 'package:uangku_app/features/scan/screens/scan_screen.dart';
+import 'package:uangku_app/features/notification/screens/notification_screen.dart';
 import 'package:intl/intl.dart';
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -20,6 +21,20 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
+  String _userName = 'Guest';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUser();
+  }
+
+  Future<void> _loadUser() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _userName = prefs.getString('user_name') ?? 'Guest';
+    });
+  }
 
   // Placeholder function for Logout (Moved to ProfileScreen but kept here just in case)
   Future<void> _logout() async {
@@ -96,13 +111,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       color: Colors.white.withOpacity(0.8),
                       shape: BoxShape.circle,
                     ),
-                    child: const Center(
+                    child: Center(
                       child: Text(
-                        'SJ',
-                        style: TextStyle(
+                        _userName.isNotEmpty ? _userName[0].toUpperCase() : 'G',
+                        style: const TextStyle(
                           color: Color(0xFF2962FF),
                           fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                          fontSize: 18,
                         ),
                       ),
                     ),
@@ -111,8 +126,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   // Greeting
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Text(
+                    children: [
+                      const Text(
                         'Good Morning',
                         style: TextStyle(
                           color: Colors.white70,
@@ -120,10 +135,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                      SizedBox(height: 4),
+                      const SizedBox(height: 4),
                       Text(
-                        'Sarah Johnson',
-                        style: TextStyle(
+                        _userName,
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
@@ -135,7 +150,12 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               // Notification Icon
               IconButton(
-                onPressed: _logout, // Use this for logout for now
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const NotificationScreen()),
+                  );
+                },
                 icon: const Icon(Icons.notifications_none_outlined, color: Colors.white, size: 28),
               ),
             ],
