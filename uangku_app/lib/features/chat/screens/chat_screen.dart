@@ -77,7 +77,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
       // Inject persona ke pesan pertama secara manual untuk menghindari bug systemInstruction di SDK lama
       String prompt = newMsg;
       if (_messages.length <= 2) { 
-        prompt = "Kamu adalah UANGKU AI, asisten keuangan pribadi. Jawab dalam bahasa Indonesia yang ringkas, jelas, dan profesional.\n\nPertanyaan User: $newMsg";
+        prompt = "System Prompt: Kamu adalah UANGKU AI, penasihat dan asisten ahli keuangan pribadi pengguna. Berikan saran alokasi budgeting, investasi, dan analisis pengeluaran dalam bahasa Indonesia yang ringkas, profesional, dan bersahabat. Hindari pengatur paragraf ganda. Jangan mengaku sebagai AI biasa.\n\nPertanyaan User: $newMsg";
       }
 
       final response = await _chatSession.sendMessage(Content.text(prompt));

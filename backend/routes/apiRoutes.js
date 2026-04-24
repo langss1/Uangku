@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const apiController = require('../controllers/apiController');
-const { protect } = require('../middleware/authMiddleware');
+const authMiddleware = require('../middleware/authMiddleware');
 
-router.use(protect);
+router.use(authMiddleware);
 
 router.get('/dashboard', apiController.getDashboard);
 router.get('/transactions', apiController.getTransactions);
