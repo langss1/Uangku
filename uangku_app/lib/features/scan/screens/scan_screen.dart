@@ -1,6 +1,12 @@
 import 'dart:ui';
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
+import 'package:intl/intl.dart';
+import 'package:google_generative_ai/google_generative_ai.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:uangku_app/core/theme/app_colors.dart';
 
 class ScanScreen extends StatefulWidget {
@@ -15,6 +21,9 @@ class _ScanScreenState extends State<ScanScreen> with TickerProviderStateMixin {
   List<CameraDescription>? _cameras;
   bool _isInitialized = false;
   bool _isFlashOn = false;
+  bool _isProcessing = false;
+
+  final TextRecognizer _textRecognizer = TextRecognizer();
 
   late AnimationController _scanAnimationController;
   late Animation<double> _scanAnimation;
@@ -74,27 +83,210 @@ class _ScanScreenState extends State<ScanScreen> with TickerProviderStateMixin {
 
     try {
       final XFile image = await _controller!.takePicture();
+      
+      setState(() {
+        _isProcessing = true;
+      });
+
+      // 1. Try Premium Multimodal AI Analysis (Image -> Gemini)
+      // This is much more accurate than local OCR
+      final bytes = await image.readAsBytes();
+      final aiResult = await _processImageWithGemini(bytes);
+      
+      double? extractedAmount;
+      String? storeName;
+
+      if (aiResult != null && aiResult['amount'] > 0) {
+        extractedAmount = aiResult['amount'];
+        storeName = aiResult['store'];
+      } else {
+        // 2. Fallback to Local OCR if Gemini fails or can't find amount
+        final inputImage = InputImage.fromFilePath(image.path);
+        final RecognizedText recognizedText = await _textRecognizer.processImage(inputImage);
+        extractedAmount = _parseAmount(recognizedText);
+        storeName = "Receipt Scan";
+      }
+
       if (mounted) {
-        // Subtle haptic-like effect or visual feedback
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: const [
-                Icon(Icons.check_circle, color: Colors.white, size: 20),
-                SizedBox(width: 12),
-                Text('Scan Successful! Processing...'),
-              ],
+        setState(() {
+          _isProcessing = false;
+        });
+
+        if (extractedAmount != null && extractedAmount > 0) {
+          final formatter = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+          final formattedAmount = formatter.format(extractedAmount);
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                   const Icon(Icons.auto_awesome, color: Colors.amber, size: 20),
+                   const SizedBox(width: 12),
+                   Expanded(
+                     child: Text(
+                       'AI detected $formattedAmount at $storeName',
+                       overflow: TextOverflow.ellipsis,
+                     ),
+                   ),
+                ],
+              ),
+              backgroundColor: const Color(0xFF1E293B),
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 4),
             ),
-            duration: const Duration(seconds: 2),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            backgroundColor: AppColors.primaryBlue,
-          ),
-        );
+          );
+          
+          Navigator.pop(context, {
+            'amount': extractedAmount,
+            'note': '$storeName - $formattedAmount (AI Scan)',
+          });
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Could not find amount. Please try again.'),
+              backgroundColor: Colors.orange,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
       }
     } catch (e) {
-      _showError('Error taking photo: $e');
+      if (mounted) setState(() => _isProcessing = false);
+      _showError('Error processing image: $e');
     }
+  }
+
+  double? _parseAmount(RecognizedText recognizedText) {
+    double? bestCandidate;
+    double highestScore = -1;
+
+    final List<String> keywords = ["total", "grand", "jumlah", "bayar", "nett", "pembayaran", "amount", "total belanja", "tunggakan"];
+    
+    // 1. Collect all detected numbers with their coordinates
+    List<_NumericCandidate> candidates = [];
+    
+    for (TextBlock block in recognizedText.blocks) {
+      for (TextLine line in block.lines) {
+        String lineText = line.text.toLowerCase();
+        
+        // Filter out dates (e.g. 20/12/2024 or 2024-12-20)
+        if (lineText.contains(RegExp(r'\d{1,4}[-/]\d{1,2}[-/]\d{1,4}'))) continue;
+        // Filter out times (e.g. 12:30 or 12.30)
+        if (lineText.contains(RegExp(r'\d{1,2}[:.]\d{2}\s?(am|pm)?'))) {
+           if (!lineText.contains('rp')) continue; // Skip if no currency prefix
+        }
+
+        final RegExp regExp = RegExp(r'(?:Rp|IDR)?\s?(\d{1,3}(?:\.\d{3})*(?:,\d{2})?|\d+)');
+        final matches = regExp.allMatches(line.text);
+
+        for (var match in matches) {
+          String valueStr = match.group(1) ?? '';
+          String cleanValue = valueStr.replaceAll('.', '').replaceAll(',', '.');
+          double? value = double.tryParse(cleanValue);
+
+          if (value != null && value > 100) {
+            candidates.add(_NumericCandidate(
+              value: value,
+              text: line.text,
+              y: line.boundingBox.top,
+              height: line.boundingBox.height,
+              isCurrencyFormatted: line.text.contains('Rp') || line.text.contains('.') || line.text.contains(','),
+            ));
+          }
+        }
+      }
+    }
+
+    if (candidates.isEmpty) return null;
+
+    // 2. Score each candidate
+    for (int i = 0; i < candidates.length; i++) {
+      var candidate = candidates[i];
+      double score = 0;
+
+      // FACTOR A: Vertical Position (Higher score for items at the bottom)
+      // Receipts usually have the total at the end.
+      score += (i / candidates.length) * 40;
+
+      // FACTOR B: Keywords on the SAME horizontal level (Y-coordinate alignment)
+      // This is the most accurate way to find a Total value
+      for (TextBlock block in recognizedText.blocks) {
+        for (TextLine line in block.lines) {
+          String lineText = line.text.toLowerCase();
+          
+          // Check if this line contains a keyword
+          bool hasKeyword = keywords.any((k) => lineText.contains(k));
+          if (hasKeyword) {
+            // Check vertical proximity (Are they on the same line?)
+            double yDiff = (line.boundingBox.top - candidate.y).abs();
+            if (yDiff < candidate.height * 1.5) {
+              score += 120; // Massive bonus for same-line keywords
+            } else if (line.boundingBox.top < candidate.y && yDiff < candidate.height * 5) {
+              score += 60; // Bonus for keyword appearing slightly above the value
+            }
+          }
+        }
+      }
+
+      // FACTOR C: Currency format indicators
+      if (candidate.isCurrencyFormatted) score += 30;
+
+      if (score > highestScore) {
+        highestScore = score;
+        bestCandidate = candidate.value;
+      }
+    }
+
+    return bestCandidate;
+  }
+
+  Future<Map<String, dynamic>?> _processImageWithGemini(Uint8List imageBytes) async {
+    try {
+      final apiKey = dotenv.env['GEMINI_API_KEY'];
+      if (apiKey == null || apiKey.isEmpty) return null;
+
+      final model = GenerativeModel(model: 'gemini-1.5-flash', apiKey: apiKey);
+      
+      final content = [
+        Content.multi([
+          TextPart('''
+            You are a professional financial assistant expert in reading Indonesian shopping receipts.
+            Analyze this image carefully:
+            1. Find the final TOTAL transaction amount (after taxes and discounts).
+            2. Find the Name of the Store/Merchant.
+            
+            Return the result ONLY in the following JSON format:
+            {"amount": 150000, "store": "Indomaret"}
+            
+            Notes:
+            - "amount" must be a pure number without dots/commas (just digits).
+            - IMPORTANT: Indonesian receipts often have very small "000" or omit them. If you see a 3-digit number like "323" that looks like a total, it is almost certainly "323000". Use your common sense for Indonesian price levels.
+            - If you cannot find the total, return {"amount": 0, "store": "Unknown"}
+            - Prioritize the value next to words like "TOTAL", "GRAND TOTAL", "JUMLAH", or "BAYAR".
+            - Ignore order numbers or dates.
+          '''),
+          DataPart('image/jpeg', imageBytes),
+        ])
+      ];
+
+      final response = await model.generateContent(content);
+      
+      String? result = response.text?.trim();
+      if (result != null) {
+        // Find JSON block in case Gemini adds markdown
+        final jsonMatch = RegExp(r'\{.*\}', dotAll: true).firstMatch(result);
+        if (jsonMatch != null) {
+          final data = jsonDecode(jsonMatch.group(0)!);
+          return {
+            'amount': double.tryParse(data['amount'].toString()) ?? 0.0,
+            'store': data['store']?.toString() ?? 'Receipt Scan',
+          };
+        }
+      }
+    } catch (e) {
+      debugPrint('Gemini Image analysis error: $e');
+    }
+    return null;
   }
 
   Future<void> _toggleFlash() async {
@@ -113,6 +305,7 @@ class _ScanScreenState extends State<ScanScreen> with TickerProviderStateMixin {
   @override
   void dispose() {
     _controller?.dispose();
+    _textRecognizer.close();
     _scanAnimationController.dispose();
     super.dispose();
   }
@@ -145,6 +338,30 @@ class _ScanScreenState extends State<ScanScreen> with TickerProviderStateMixin {
 
           // 4. Instructions & Controls
           _buildBottomControls(context),
+
+          // 5. Loading Overlay
+          if (_isProcessing)
+            Container(
+              color: Colors.black.withOpacity(0.6),
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const CircularProgressIndicator(color: Colors.white),
+                    const SizedBox(height: 20),
+                    const Text(
+                      'Analyzing Receipt...',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -386,4 +603,20 @@ class _ScanScreenState extends State<ScanScreen> with TickerProviderStateMixin {
       ),
     );
   }
+}
+
+class _NumericCandidate {
+  final double value;
+  final String text;
+  final double y;
+  final double height;
+  final bool isCurrencyFormatted;
+
+  _NumericCandidate({
+    required this.value,
+    required this.text,
+    required this.y,
+    required this.height,
+    required this.isCurrencyFormatted,
+  });
 }

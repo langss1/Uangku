@@ -307,8 +307,23 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Single
               scale: _scaleAnimation!,
               child: FloatingActionButton(
                 heroTag: 'scan_fab',
-                onPressed: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const ScanScreen()));
+                onPressed: () async {
+                  final result = await Navigator.push(
+                    context, 
+                    MaterialPageRoute(builder: (_) => const ScanScreen()),
+                  );
+
+                  if (result != null && result is Map<String, dynamic>) {
+                    setState(() {
+                      if (result.containsKey('amount')) {
+                        _amount = result['amount'];
+                        _amountController.text = _amount.toInt().toString();
+                      }
+                      if (result.containsKey('note')) {
+                        _notesController.text = result['note'];
+                      }
+                    });
+                  }
                 },
                 backgroundColor: const Color(0xFFDBEAFE),
                 elevation: 4,
