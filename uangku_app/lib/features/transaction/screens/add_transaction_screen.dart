@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:uangku_app/core/theme/app_colors.dart';
 import 'package:uangku_app/core/models/transaction_model.dart';
 import 'package:uangku_app/core/data/transaction_data.dart';
+import 'package:uangku_app/core/models/category_model.dart';
 import 'package:uangku_app/features/transaction/screens/transaction_success_screen.dart';
+import 'package:uangku_app/features/transaction/screens/category_selection_screen.dart';
 import 'package:uangku_app/core/services/currency_service.dart';
 import 'package:uangku_app/features/scan/screens/scan_screen.dart';
 import 'package:intl/intl.dart';
@@ -21,11 +23,11 @@ class AddTransactionScreen extends StatefulWidget {
 class _AddTransactionScreenState extends State<AddTransactionScreen> with SingleTickerProviderStateMixin {
   bool _isIncome = false;
   double _amount = 0;
-  String _selectedCategory = 'Food';
+  CategoryModel? _selectedCategory;
   DateTime _selectedDate = DateTime.now();
   final TextEditingController _amountController = TextEditingController();
   final TextEditingController _notesController = TextEditingController();
-  
+
   AnimationController? _animationController;
   Animation<double>? _scaleAnimation;
   Timer? _timer;
@@ -36,15 +38,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Single
   Map<String, double> _rates = {'IDR': 1.0};
   bool _isLoadingRates = false;
   final List<String> _popularCurrencies = ['IDR', 'USD', 'SGD', 'EUR', 'JPY', 'MYR'];
-
-  final List<Map<String, dynamic>> _categories = [
-    {'name': 'Groceries', 'icon': Icons.shopping_cart, 'color': Color(0xFFFDE68A), 'iconColor': Color(0xFFD97706)},
-    {'name': 'Food', 'icon': Icons.restaurant, 'color': Color(0xFFFECACA), 'iconColor': Color(0xFFDC2626)},
-    {'name': 'Transport', 'icon': Icons.directions_car, 'color': Color(0xFFBFDBFE), 'iconColor': Color(0xFF2563EB)},
-    {'name': 'Rent', 'icon': Icons.home, 'color': Color(0xFFBBF7D0), 'iconColor': Color(0xFF16A34A)},
-    {'name': 'Shopping', 'icon': Icons.shopping_bag, 'color': Color(0xFFE9D5FF), 'iconColor': Color(0xFF9333EA)},
-    {'name': 'Entertainment', 'icon': Icons.sports_esports, 'color': Color(0xFFFBCFE8), 'iconColor': Color(0xFFDB2777)},
-  ];
 
   @override
   void initState() {
@@ -62,16 +55,25 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Single
     });
 
     _loadRates();
+
     if (widget.transactionToEdit != null) {
       _isIncome = widget.transactionToEdit!.isIncome;
-      _amount = widget.transactionToEdit!.amount;
-      _selectedCurrency = widget.transactionToEdit!.currencyCode;
-      _amountController.text = (widget.transactionToEdit!.currencyCode == 'IDR') 
-          ? _amount.toInt().toString() 
-          : widget.transactionToEdit!.originalAmount.toInt().toString();
-      _selectedCategory = widget.transactionToEdit!.category;
+      _amount = widget.transactionToEdit!.originalAmount > 0 
+          ? widget.transactionToEdit!.originalAmount 
+          : widget.transactionToEdit!.amount;
+      _amountController.text = _amount.toInt().toString();
       _selectedDate = widget.transactionToEdit!.date;
       _notesController.text = widget.transactionToEdit!.note;
+      _selectedCurrency = widget.transactionToEdit!.currencyCode;
+      
+      _selectedCategory = CategoryModel(
+        id: "edit_cat",
+        name: widget.transactionToEdit!.category,
+        icon: widget.transactionToEdit!.icon,
+        color: widget.transactionToEdit!.bgColor,
+        iconColor: widget.transactionToEdit!.iconColor,
+        isIncome: _isIncome,
+      );
     }
   }
 
@@ -113,40 +115,41 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Single
   }
 
   void _saveTransaction() {
-    if (_amount == 0) return; // Prevent zero amount
+    if (_amount == 0 || _selectedCategory == null) return;
     
-    final categoryMap = _categories.firstWhere((cat) => cat['name'] == _selectedCategory, orElse: () => _categories[1]);
+    final double rate = _rates[_selectedCurrency] ?? 1.0;
+    final double amountInIDR = _selectedCurrency == 'IDR' ? _amount : _amount * rate;
 
     if (widget.transactionToEdit != null) {
       // Edit
       final updatedTx = widget.transactionToEdit!.copyWith(
-        amount: _selectedCurrency == 'IDR' ? _amount : CurrencyService().convertToIdr(_amount, _selectedCurrency, _rates),
+        amount: amountInIDR,
         originalAmount: _amount,
         currencyCode: _selectedCurrency,
-        exchangeRate: _rates[_selectedCurrency] ?? 1.0,
+        exchangeRate: rate,
         isIncome: _isIncome,
-        category: _selectedCategory,
+        category: _selectedCategory!.name,
         date: _selectedDate,
         note: _notesController.text,
-        icon: categoryMap['icon'],
-        bgColor: categoryMap['color'],
-        iconColor: categoryMap['iconColor'],
+        icon: _selectedCategory!.icon,
+        bgColor: _selectedCategory!.color,
+        iconColor: _selectedCategory!.iconColor,
       );
       TransactionData().updateTransaction(updatedTx);
     } else {
       // Add
       final newTx = TransactionModel(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
-        title: _selectedCategory,
-        category: _selectedCategory,
-        amount: _selectedCurrency == 'IDR' ? _amount : CurrencyService().convertToIdr(_amount, _selectedCurrency, _rates),
+        title: _selectedCategory!.name,
+        category: _selectedCategory!.name,
+        amount: amountInIDR,
         originalAmount: _amount,
         currencyCode: _selectedCurrency,
-        exchangeRate: _rates[_selectedCurrency] ?? 1.0,
+        exchangeRate: rate,
         date: _selectedDate,
-        icon: categoryMap['icon'],
-        bgColor: categoryMap['color'],
-        iconColor: categoryMap['iconColor'],
+        icon: _selectedCategory!.icon,
+        bgColor: _selectedCategory!.color,
+        iconColor: _selectedCategory!.iconColor,
         isIncome: _isIncome,
         note: _notesController.text,
       );
@@ -159,9 +162,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Single
         builder: (_) => TransactionSuccessScreen(
           onViewHistory: () {
             Navigator.pop(context); // pop success
-            widget.onBack(); // back to home? 
-            // In a better flow we would set selectedIndex to 0. 
-            // We can pass a callback that sets index to 0 or handles the back.
+            widget.onBack(); 
           },
           onAddAnother: () {
             Navigator.pop(context); // pop success
@@ -169,6 +170,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Single
               _amount = 0;
               _amountController.clear();
               _notesController.clear();
+              _selectedCategory = null;
             });
           },
         ),
@@ -185,13 +187,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Single
     );
     if (picked != null) {
       setState(() {
-        // preserve the current time
         final currentTime = DateTime.now();
-        // If the user picked today, keep the exact current real-time
         if (picked.year == currentTime.year && picked.month == currentTime.month && picked.day == currentTime.day) {
           _selectedDate = currentTime;
         } else {
-          // Otherwise, just use the picked date with the time when screen opened (or 12:00)
           _selectedDate = DateTime(
             picked.year,
             picked.month,
@@ -204,20 +203,39 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Single
     }
   }
 
+  Future<void> _openCategorySelection() async {
+    final CategoryModel? result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CategorySelectionScreen(initialIsIncome: _isIncome),
+      ),
+    );
+
+    if (result != null) {
+      setState(() {
+        _selectedCategory = result;
+        _isIncome = result.isIncome;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final amountColor = _isIncome ? const Color(0xFF059669) : const Color(0xFFDC2626);
+    final canSave = _amount > 0 && _selectedCategory != null;
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textDark),
+          icon: const Icon(Icons.close, color: AppColors.textDark),
           onPressed: widget.onBack,
         ),
-        title: Text(
-          widget.transactionToEdit == null ? 'Add Transaction' : 'Edit Transaction',
-          style: const TextStyle(color: AppColors.textDark, fontWeight: FontWeight.bold, fontSize: 18),
+        title: const Text(
+          'Tambah transaksi',
+          style: TextStyle(color: AppColors.textDark, fontWeight: FontWeight.bold, fontSize: 18),
         ),
         centerTitle: true,
       ),
@@ -273,293 +291,250 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Single
             ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Amount section
-              Center(
-                child: Column(
-                  children: [
-                    const Text('Rp', style: TextStyle(fontSize: 24, color: AppColors.textLight)),
-                    const SizedBox(height: 8),
-                    Text(
-                      NumberFormat.currency(locale: 'id_ID', symbol: '', decimalDigits: 0).format(_amount).trim(),
-                      style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                ),
+      body: Column(
+        children: [
+          // TABS: Pengeluaran | Pemasukan
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            child: Container(
+              height: 44,
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(22),
               ),
-              const SizedBox(height: 24),
-
-              // Income/Expense Toggle
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () => setState(() => _isIncome = true),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          decoration: BoxDecoration(
-                            color: _isIncome ? AppColors.primaryBlue : Colors.transparent,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Center(
-                            child: Text(
-                              'Income',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: _isIncome ? Colors.white : AppColors.textDark,
-                              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => setState(() {
+                         _isIncome = false;
+                         if (_selectedCategory?.isIncome == true) _selectedCategory = null; 
+                      }),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: !_isIncome ? AppColors.primaryBlue : Colors.transparent,
+                          borderRadius: BorderRadius.circular(22),
+                        ),
+                        child: Center(
+                          child: Text(
+                            'Pengeluaran',
+                            style: TextStyle(
+                              color: !_isIncome ? Colors.white : AppColors.textDark,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
                             ),
                           ),
                         ),
                       ),
                     ),
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () => setState(() => _isIncome = false),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          decoration: BoxDecoration(
-                            color: !_isIncome ? AppColors.primaryBlue : Colors.transparent,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Center(
-                            child: Text(
-                              'Expense',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: !_isIncome ? Colors.white : AppColors.textDark,
-                              ),
+                  ),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => setState(() {
+                         _isIncome = true;
+                         if (_selectedCategory?.isIncome == false) _selectedCategory = null; 
+                      }),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: _isIncome ? AppColors.primaryBlue : Colors.transparent,
+                          borderRadius: BorderRadius.circular(22),
+                        ),
+                        child: Center(
+                          child: Text(
+                            'Pemasukan',
+                            style: TextStyle(
+                              color: _isIncome ? Colors.white : AppColors.textDark,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
                             ),
                           ),
                         ),
                       ),
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 32),
-
-              // Category
-              const Text('Category', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 16),
-              GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: _categories.length,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  childAspectRatio: 1,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
-                ),
-                itemBuilder: (context, index) {
-                  final cat = _categories[index];
-                  final isSelected = _selectedCategory == cat['name'];
-                  return GestureDetector(
-                    onTap: () => setState(() => _selectedCategory = cat['name']),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: isSelected ? AppColors.primaryBlue : Colors.transparent,
-                          width: 2,
-                        ),
-                        borderRadius: BorderRadius.circular(16),
-                        color: Colors.white,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          )
-                        ],
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: cat['color'],
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(cat['icon'], color: cat['iconColor'], size: 24),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(cat['name'], style: const TextStyle(fontSize: 12)),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: 32),
-
-              // Date
-              const Text('Date', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 16),
-              GestureDetector(
-                onTap: () => _selectDate(context),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      )
-                    ],
                   ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.calendar_month, color: AppColors.textLight),
-                      const SizedBox(width: 16),
-                      Text(
-                        "${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}",
-                        style: const TextStyle(fontSize: 16),
-                      ),
-                    ],
-                  ),
-                ),
+                ],
               ),
-              const SizedBox(height: 32),
-
-              // Amount Input
-              const Text('Amount', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    )
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    // Currency Dropdown
-                    DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value: _selectedCurrency,
-                        items: _popularCurrencies.map((String value) {
-                          return DropdownMenuItem<String>(
-                            value: value,
-                            child: Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
-                          );
-                        }).toList(),
-                        onChanged: (newValue) {
-                          setState(() {
-                            _selectedCurrency = newValue!;
-                          });
-                        },
-                      ),
-                    ),
-                    const VerticalDivider(width: 20, thickness: 1, indent: 10, endIndent: 10),
-                    Expanded(
-                      child: TextField(
-                        controller: _amountController,
-                        keyboardType: TextInputType.number,
-                        onChanged: (val) {
-                          setState(() {
-                            _amount = double.tryParse(val) ?? 0;
-                          });
-                        },
-                        decoration: const InputDecoration(
-                          border: InputBorder.none,
-                          hintText: 'Input amount',
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (_selectedCurrency != 'IDR') ...[
-                const SizedBox(height: 8),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.sync, size: 14, color: AppColors.primaryBlue),
-                      const SizedBox(width: 4),
-                      Text(
-                        "Estimated: Rp ${NumberFormat.currency(locale: 'id_ID', symbol: '', decimalDigits: 0).format(CurrencyService().convertToIdr(_amount, _selectedCurrency, _rates))}",
-                        style: const TextStyle(
-                          color: AppColors.primaryBlue,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-              const SizedBox(height: 32),
-
-              // Notes
-              const Text('Notes', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    )
-                  ],
-                ),
-                child: TextField(
-                  controller: _notesController,
-                  decoration: const InputDecoration(
-                    border: InputBorder.none,
-                    hintText: 'Write a note about this transaction',
-                  ),
-                ),
-              ),
-              const SizedBox(height: 48),
-
-              // Save Button
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: _saveTransaction,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryBlue,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: Text(
-                    widget.transactionToEdit == null ? 'Save Transaction' : 'Update Transaction',
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
+          
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Currency and Amount
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[100],
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: _selectedCurrency,
+                            icon: const Icon(Icons.arrow_drop_down, color: AppColors.textDark),
+                            style: const TextStyle(color: AppColors.textDark, fontWeight: FontWeight.bold, fontSize: 14),
+                            onChanged: (String? newValue) {
+                              if (newValue != null) {
+                                setState(() {
+                                  _selectedCurrency = newValue;
+                                });
+                              }
+                            },
+                            items: _popularCurrencies.map<DropdownMenuItem<String>>((String value) {
+                              return DropdownMenuItem<String>(
+                                value: value,
+                                child: Text(value),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: TextField(
+                          controller: _amountController,
+                          keyboardType: TextInputType.number,
+                          style: TextStyle(
+                            fontSize: 40,
+                            fontWeight: FontWeight.bold,
+                            color: amountColor,
+                          ),
+                          onChanged: (val) {
+                            setState(() {
+                              _amount = double.tryParse(val) ?? 0;
+                            });
+                          },
+                          decoration: InputDecoration(
+                            border: InputBorder.none,
+                            hintText: '0',
+                            hintStyle: TextStyle(
+                              fontSize: 40,
+                              fontWeight: FontWeight.bold,
+                              color: amountColor.withOpacity(0.5),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                            isDense: true,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Divider(color: amountColor, thickness: 1.5),
+                  const SizedBox(height: 24),
+
+                  // Category Selector
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: _selectedCategory?.color ?? Colors.grey[200],
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        _selectedCategory?.icon ?? Icons.category, 
+                        color: _selectedCategory?.iconColor ?? Colors.grey[500], 
+                        size: 24
+                      ),
+                    ),
+                    title: Text(
+                      _selectedCategory?.name ?? 'Pilih Kategori',
+                      style: TextStyle(
+                        color: _selectedCategory != null ? AppColors.textDark : Colors.grey[600], 
+                        fontSize: 16,
+                      ),
+                    ),
+                    onTap: _openCategorySelection,
+                  ),
+                  const Divider(color: Color(0xFFF1F5F9), height: 16),
+
+                  // Notes
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.notes, color: Color(0xFF64748B), size: 24),
+                    title: TextField(
+                      controller: _notesController,
+                      style: const TextStyle(color: AppColors.textDark, fontSize: 16),
+                      decoration: const InputDecoration(
+                        border: InputBorder.none,
+                        hintText: 'Tulis catatan',
+                        hintStyle: TextStyle(color: Color(0xFF94A3B8), fontSize: 16),
+                        isDense: true,
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                    ),
+                  ),
+                  const Divider(color: Color(0xFFF1F5F9), height: 16),
+
+                  // Date Picker
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.calendar_today, color: Color(0xFF64748B), size: 24),
+                    title: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[100],
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.chevron_left, color: Color(0xFF64748B), size: 18),
+                              const SizedBox(width: 8),
+                              Text(
+                                DateFormat('EEEE, dd/MM/yyyy').format(_selectedDate),
+                                style: const TextStyle(color: AppColors.textDark, fontSize: 14),
+                              ),
+                              const SizedBox(width: 8),
+                              const Icon(Icons.chevron_right, color: Color(0xFF64748B), size: 18),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    onTap: () => _selectDate(context),
+                  ),
+                  
+                  const SizedBox(height: 36),
+
+                  // Save Button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: canSave ? _saveTransaction : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: canSave ? AppColors.primaryBlue : Colors.grey[300],
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        elevation: 0,
+                        disabledBackgroundColor: Colors.grey[300],
+                      ),
+                      child: Text(
+                        'Simpan',
+                        style: TextStyle(
+                          fontSize: 16, 
+                          fontWeight: FontWeight.bold, 
+                          color: canSave ? Colors.white : Colors.grey[500],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 80), // Padding for FAB
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

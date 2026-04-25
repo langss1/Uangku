@@ -3,6 +3,7 @@ import 'package:uangku_app/core/theme/app_colors.dart';
 import 'package:uangku_app/core/models/transaction_model.dart';
 import 'package:uangku_app/core/data/transaction_data.dart';
 import 'package:uangku_app/features/transaction/screens/transaction_detail_screen.dart';
+import 'package:uangku_app/features/transaction/screens/add_transaction_screen.dart';
 import 'package:intl/intl.dart';
 
 class TransactionHistoryScreen extends StatefulWidget {
@@ -12,309 +13,315 @@ class TransactionHistoryScreen extends StatefulWidget {
   State<TransactionHistoryScreen> createState() => _TransactionHistoryScreenState();
 }
 
-class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
-  DateTime? _selectedDate;
+class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this, initialIndex: 1);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  List<TransactionModel> _filterTransactions(List<TransactionModel> transactions, int tabIndex) {
+    final now = DateTime.now();
+    return transactions.where((tx) {
+      if (tabIndex == 0) {
+        // Bulan Lalu
+        final lastMonth = DateTime(now.year, now.month - 1);
+        return tx.date.year == lastMonth.year && tx.date.month == lastMonth.month;
+      } else if (tabIndex == 1) {
+        // Bulan Ini
+        return tx.date.year == now.year && tx.date.month == now.month;
+      } else {
+        // Masa Depan
+        final nextMonth = DateTime(now.year, now.month + 1);
+        return tx.date.year == nextMonth.year && tx.date.month == nextMonth.month;
+      }
+    }).toList();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.primaryBlue,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textDark),
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Transactions',
-          style: TextStyle(color: AppColors.textDark, fontWeight: FontWeight.bold, fontSize: 18),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            Icon(Icons.language, color: Colors.white, size: 20),
+            SizedBox(width: 8),
+            Text(
+              'Total',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+            ),
+          ],
         ),
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.calendar_month, color: AppColors.primaryBlue),
-            onPressed: () async {
-              final DateTime? picked = await showDatePicker(
-                context: context,
-                initialDate: _selectedDate ?? DateTime.now(),
-                firstDate: DateTime(2020),
-                lastDate: DateTime(2030),
-                builder: (context, child) {
-                  return Theme(
-                    data: Theme.of(context).copyWith(
-                      colorScheme: const ColorScheme.light(
-                        primary: AppColors.primaryBlue, // header background color
-                        onPrimary: Colors.white, // header text color
-                        onSurface: AppColors.textDark, // body text color
-                      ),
-                      textButtonTheme: TextButtonThemeData(
-                        style: TextButton.styleFrom(
-                          foregroundColor: AppColors.primaryBlue, // button text color
-                        ),
-                      ),
-                    ),
-                    child: child!,
-                  );
-                },
-              );
-              if (picked != null) {
-                setState(() {
-                  _selectedDate = picked;
-                });
-              }
-            },
+            icon: const Icon(Icons.search, color: Colors.white),
+            onPressed: () {},
           ),
-          if (_selectedDate != null)
-            IconButton(
-              icon: const Icon(Icons.clear, color: Colors.redAccent),
-              onPressed: () {
-                setState(() {
-                  _selectedDate = null;
-                });
-              },
-            ),
-          const SizedBox(width: 8),
         ],
       ),
       body: ValueListenableBuilder<List<TransactionModel>>(
         valueListenable: TransactionData().transactionsNotifier,
         builder: (context, transactions, child) {
-          
-          // Apply calendar filter
-          var filteredTransactions = transactions;
-          if (_selectedDate != null) {
-            filteredTransactions = transactions.where((tx) {
-              return tx.date.year == _selectedDate!.year &&
-                     tx.date.month == _selectedDate!.month &&
-                     tx.date.day == _selectedDate!.day;
-            }).toList();
-          }
-
-          double totalIncome = 0;
-          double totalExpense = 0;
-          for (var tx in filteredTransactions) {
-            if (tx.isIncome) {
-              totalIncome += tx.amount;
-            } else {
-              totalExpense += tx.amount;
-            }
-          }
-
-          // Group by date
-          final groupedTransactions = <String, List<TransactionModel>>{};
-          for (var tx in filteredTransactions) {
-            String dateKey;
-            final now = DateTime.now();
-            final today = DateTime(now.year, now.month, now.day);
-            final yesterday = today.subtract(const Duration(days: 1));
-            final txDate = DateTime(tx.date.year, tx.date.month, tx.date.day);
-
-            if (txDate == today) {
-              dateKey = 'Today';
-            } else if (txDate == yesterday) {
-              dateKey = 'Yesterday';
-            } else {
-              dateKey = DateFormat('MMM dd, yyyy').format(tx.date);
-            }
-
-            if (!groupedTransactions.containsKey(dateKey)) {
-              groupedTransactions[dateKey] = [];
-            }
-            groupedTransactions[dateKey]!.add(tx);
-          }
-          
-          final sortedKeys = groupedTransactions.keys.toList();
-
-          return SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Filter Active Indicator
-                  if (_selectedDate != null)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 16.0),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryBlue.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.event_available, size: 16, color: AppColors.primaryBlue),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Showing transactions for: ${DateFormat('MMM dd, yyyy').format(_selectedDate!)}',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.primaryBlue,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                  // Summary Cards
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildSummaryCard(
-                          title: 'INCOME',
-                          amount: _formatCurrency(totalIncome),
-                          isIncome: true,
-                          dateFilterActive: _selectedDate != null,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: _buildSummaryCard(
-                          title: 'EXPENSE',
-                          amount: _formatCurrency(totalExpense),
-                          isIncome: false,
-                          dateFilterActive: _selectedDate != null,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 32),
-                  
-                  if (filteredTransactions.isEmpty)
-                     Center(
-                       child: Padding(
-                         padding: const EdgeInsets.only(top: 40.0),
-                         child: Column(
-                           children: [
-                             Icon(Icons.receipt_long, size: 64, color: Colors.grey[300]),
-                             const SizedBox(height: 16),
-                             Text(
-                               'No transactions found',
-                               style: TextStyle(color: Colors.grey[500], fontSize: 16),
-                             ),
-                           ],
-                         ),
-                       ),
-                     ),
-
-                  // List
-                  ...sortedKeys.map((dateKey) {
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          dateKey,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textDark,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        ...groupedTransactions[dateKey]!.map((tx) {
-                          return _buildTransactionItem(context, tx);
-                        }).toList(),
-                        const SizedBox(height: 24),
-                      ],
-                    );
-                  }).toList(),
-                ],
+          return Column(
+            children: [
+              _buildTopSection(transactions),
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _buildTransactionList(_filterTransactions(transactions, 0)),
+                    _buildTransactionList(_filterTransactions(transactions, 1)),
+                    _buildTransactionList(_filterTransactions(transactions, 2)),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => AddTransactionScreen(
+                onBack: () => Navigator.pop(context),
               ),
             ),
+          );
+        },
+        backgroundColor: AppColors.primaryBlue, // Primary matching the design
+        child: const Icon(Icons.add, color: Colors.white, size: 28),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+    );
+  }
+
+  Widget _buildTopSection(List<TransactionModel> transactions) {
+    return AnimatedBuilder(
+      animation: _tabController,
+      builder: (context, child) {
+        final filteredTx = _filterTransactions(transactions, _tabController.index);
+        
+        double totalIncome = 0;
+        double totalExpense = 0;
+        for (var tx in filteredTx) {
+          if (tx.isIncome) {
+            totalIncome += tx.amount;
+          } else {
+            totalExpense += tx.amount;
+          }
+        }
+        double totalBalance = totalIncome - totalExpense;
+        final format = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+
+        return Container(
+          padding: const EdgeInsets.only(top: 16, bottom: 0),
+          decoration: const BoxDecoration(
+            color: AppColors.primaryBlue,
+          ),
+          child: Column(
+            children: [
+              const Text(
+                'Saldo',
+                style: TextStyle(color: Colors.white70, fontSize: 16),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                format.format(totalBalance),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 24),
+              
+              // Tabs
+              TabBar(
+                controller: _tabController,
+                indicatorColor: Colors.white,
+                indicatorWeight: 3,
+                labelColor: Colors.white,
+                unselectedLabelColor: Colors.white54,
+                tabs: const [
+                  Tab(text: 'BULAN LALU'),
+                  Tab(text: 'BULAN INI'),
+                  Tab(text: 'MASA DEPAN'),
+                ],
+              ),
+              
+              // Summary breakdown
+              Container(
+                color: Colors.white.withOpacity(0.12), // Slightly lighter background
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Pemasukan', style: TextStyle(color: Colors.white, fontSize: 16)),
+                        Text(
+                          NumberFormat.currency(locale: 'id_ID', symbol: '', decimalDigits: 0).format(totalIncome),
+                          style: const TextStyle(color: Color(0xFFD1FAE5), fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Pengeluaran', style: TextStyle(color: Colors.white, fontSize: 16)),
+                        Text(
+                          NumberFormat.currency(locale: 'id_ID', symbol: '', decimalDigits: 0).format(totalExpense),
+                          style: const TextStyle(color: Color(0xFFFECACA), fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    const Divider(color: Colors.white24, height: 1),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Text(
+                          NumberFormat.currency(locale: 'id_ID', symbol: '', decimalDigits: 0).format(totalBalance),
+                          style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildTransactionList(List<TransactionModel> transactions) {
+    if (transactions.isEmpty) {
+      return Container(
+        color: Colors.white,
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.receipt_long, size: 64, color: Colors.grey[300]),
+              const SizedBox(height: 16),
+              Text(
+                'Tidak ada transaksi',
+                style: TextStyle(color: Colors.grey[500], fontSize: 16),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Group by date
+    final groupedTransactions = <String, List<TransactionModel>>{};
+    for (var tx in transactions) {
+      String dateKey;
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final yesterday = today.subtract(const Duration(days: 1));
+      final txDate = DateTime(tx.date.year, tx.date.month, tx.date.day);
+
+      if (txDate == today) {
+        dateKey = 'Hari ini\n${DateFormat('MMMM yyyy').format(tx.date)}';
+      } else if (txDate == yesterday) {
+        dateKey = 'Kemarin\n${DateFormat('MMMM yyyy').format(tx.date)}';
+      } else {
+        dateKey = '${DateFormat('EEEE').format(tx.date)}\n${DateFormat('MMMM yyyy').format(tx.date)}';
+      }
+
+      final fullDateKey = '${tx.date.day.toString().padLeft(2, '0')}|$dateKey';
+      
+      if (!groupedTransactions.containsKey(fullDateKey)) {
+        groupedTransactions[fullDateKey] = [];
+      }
+      groupedTransactions[fullDateKey]!.add(tx);
+    }
+
+    final sortedKeys = groupedTransactions.keys.toList()
+      ..sort((a, b) => b.compareTo(a)); // sort descending roughly
+
+    return Container(
+      color: Colors.white,
+      child: ListView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 16),
+        itemCount: sortedKeys.length,
+        itemBuilder: (context, index) {
+          final key = sortedKeys[index];
+          final parts = key.split('|');
+          final dayStr = parts[0];
+          final descStr = parts[1];
+          final dayTxs = groupedTransactions[key]!;
+
+          double dayTotal = 0;
+          for (var tx in dayTxs) {
+            if (tx.isIncome) dayTotal += tx.amount;
+            else dayTotal -= tx.amount;
+          }
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Date Header
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                child: Row(
+                  children: [
+                    Text(
+                      dayStr,
+                      style: const TextStyle(color: AppColors.textDark, fontSize: 32, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        descStr,
+                        style: const TextStyle(color: Color(0xFF64748B), fontSize: 12),
+                      ),
+                    ),
+                    Text(
+                      NumberFormat.currency(locale: 'id_ID', symbol: '', decimalDigits: 0).format(dayTotal),
+                      style: const TextStyle(color: AppColors.textDark, fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(color: Color(0xFFF1F5F9), height: 1),
+              // Items
+              ...dayTxs.map((tx) => _buildTransactionItem(context, tx)).toList(),
+              const Divider(color: Color(0xFFF1F5F9), height: 1),
+            ],
           );
         },
       ),
     );
   }
 
-  String _formatCurrency(double amount) {
-    if (amount >= 1000000) {
-      return 'Rp ${(amount / 1000000).toStringAsFixed(1)}M';
-    } else if (amount >= 1000) {
-      return 'Rp ${(amount / 1000).toStringAsFixed(1)}K';
-    }
-    return 'Rp ${amount.toStringAsFixed(0)}';
-  }
-  
-  String _formatLongCurrency(double amount) {
-    final format = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
-    return format.format(amount);
-  }
-
-  Widget _buildSummaryCard({required String title, required String amount, required bool isIncome, required bool dateFilterActive}) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.withOpacity(0.1)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          )
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: isIncome ? const Color(0xFFD1FAE5) : const Color(0xFFFEE2E2),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  isIncome ? Icons.arrow_upward : Icons.arrow_downward,
-                  color: isIncome ? const Color(0xFF059669) : const Color(0xFFDC2626),
-                  size: 16,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textLight,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            amount,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textDark,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            dateFilterActive ? 'On this date' : 'This month',
-            style: const TextStyle(
-              fontSize: 12,
-              color: AppColors.textLight,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildTransactionItem(BuildContext context, TransactionModel tx) {
-    final timeFormat = DateFormat('hh:mm a');
-    final timeString = timeFormat.format(tx.date);
-
-    return GestureDetector(
+    return InkWell(
       onTap: () {
         Navigator.push(
           context,
@@ -323,26 +330,13 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
           ),
         );
       },
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 14),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFFF1F5F9), width: 1.5),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.01),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
         child: Row(
           children: [
             Container(
-              width: 50,
-              height: 50,
+              width: 48,
+              height: 48,
               decoration: BoxDecoration(
                 color: tx.bgColor,
                 shape: BoxShape.circle,
@@ -358,27 +352,28 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
                     tx.title,
                     style: const TextStyle(
                       fontSize: 16,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w600,
                       color: AppColors.textDark,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${tx.category} • $timeString',
+                    tx.note.isNotEmpty ? tx.note : tx.category,
                     style: const TextStyle(
                       fontSize: 13,
-                      fontWeight: FontWeight.w500,
                       color: Color(0xFF64748B),
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
             ),
             Text(
-              '${tx.isIncome ? '+' : '-'}${_formatLongCurrency(tx.amount)}',
+              NumberFormat.currency(locale: 'id_ID', symbol: '', decimalDigits: 0).format(tx.amount),
               style: TextStyle(
                 fontSize: 16,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w600,
                 color: tx.isIncome ? const Color(0xFF059669) : const Color(0xFFDC2626),
               ),
             ),
