@@ -28,6 +28,7 @@ class _SettingsEditorScreenState extends State<SettingsEditorScreen> {
   final TextEditingController _field1Controller = TextEditingController();
   final TextEditingController _field2Controller = TextEditingController();
   bool _isLoading = false;
+  bool _is2FAEnabled = true;
 
   @override
   void initState() {
@@ -149,6 +150,23 @@ class _SettingsEditorScreenState extends State<SettingsEditorScreen> {
                 controller: _field2Controller,
                 isPassword: false,
               ),
+            if (widget.isSecurity) ...[
+              const SizedBox(height: 16),
+              const Divider(color: Color(0xFFE2E8F0), thickness: 1),
+              const SizedBox(height: 16),
+              SwitchListTile(
+                title: const Text('Two-Factor Authentication', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textDark)),
+                subtitle: const Text('Add an extra layer of security to your account.', style: TextStyle(fontSize: 12, color: AppColors.textLight)),
+                value: _is2FAEnabled,
+                activeColor: const Color(0xFF2962FF),
+                contentPadding: EdgeInsets.zero,
+                onChanged: (val) {
+                  setState(() {
+                    _is2FAEnabled = val;
+                  });
+                },
+              ),
+            ],
             const SizedBox(height: 48),
             SizedBox(
               width: double.infinity,

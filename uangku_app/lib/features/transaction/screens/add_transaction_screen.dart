@@ -4,7 +4,9 @@ import 'package:uangku_app/core/models/transaction_model.dart';
 import 'package:uangku_app/core/data/transaction_data.dart';
 import 'package:uangku_app/features/transaction/screens/transaction_success_screen.dart';
 import 'package:uangku_app/core/services/currency_service.dart';
+import 'package:uangku_app/features/scan/screens/scan_screen.dart';
 import 'package:intl/intl.dart';
+import 'dart:async';
 
 class AddTransactionScreen extends StatefulWidget {
   final VoidCallback onBack;
@@ -16,13 +18,18 @@ class AddTransactionScreen extends StatefulWidget {
   State<AddTransactionScreen> createState() => _AddTransactionScreenState();
 }
 
-class _AddTransactionScreenState extends State<AddTransactionScreen> {
+class _AddTransactionScreenState extends State<AddTransactionScreen> with SingleTickerProviderStateMixin {
   bool _isIncome = false;
   double _amount = 0;
   String _selectedCategory = 'Food';
   DateTime _selectedDate = DateTime.now();
   final TextEditingController _amountController = TextEditingController();
   final TextEditingController _notesController = TextEditingController();
+  
+  AnimationController? _animationController;
+  Animation<double>? _scaleAnimation;
+  Timer? _timer;
+  bool _showMessage = false;
   
   // Currency state
   String _selectedCurrency = 'IDR';
@@ -42,6 +49,18 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   @override
   void initState() {
     super.initState();
+    
+    _animationController = AnimationController(vsync: this, duration: const Duration(milliseconds: 500));
+    _scaleAnimation = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.2), weight: 1),
+      TweenSequenceItem(tween: Tween(begin: 1.2, end: 1.0), weight: 1),
+    ]).animate(CurvedAnimation(parent: _animationController!, curve: Curves.easeInOut));
+
+    _triggerAnimationAndMessage();
+    _timer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      _triggerAnimationAndMessage();
+    });
+
     _loadRates();
     if (widget.transactionToEdit != null) {
       _isIncome = widget.transactionToEdit!.isIncome;
@@ -54,6 +73,30 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       _selectedDate = widget.transactionToEdit!.date;
       _notesController.text = widget.transactionToEdit!.note;
     }
+  }
+
+  void _triggerAnimationAndMessage() {
+    if (!mounted) return;
+    _animationController?.forward(from: 0.0);
+    setState(() {
+      _showMessage = true;
+    });
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) {
+        setState(() {
+          _showMessage = false;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _animationController?.dispose();
+    _amountController.dispose();
+    _notesController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadRates() async {
@@ -177,6 +220,58 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
           style: const TextStyle(color: AppColors.textDark, fontWeight: FontWeight.bold, fontSize: 18),
         ),
         centerTitle: true,
+      ),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          AnimatedOpacity(
+            opacity: _showMessage ? 1.0 : 0.0,
+            duration: const Duration(milliseconds: 300),
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2962FF).withOpacity(0.9),
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 6, offset: const Offset(0, 3))
+                ]
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: const [
+                  Icon(Icons.auto_awesome, color: Colors.amberAccent, size: 16),
+                  SizedBox(width: 6),
+                  Text('AI untuk scan otomatis', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold, letterSpacing: 0.3)),
+                ],
+              ),
+            ),
+          ),
+          if (_scaleAnimation != null)
+            ScaleTransition(
+              scale: _scaleAnimation!,
+              child: FloatingActionButton(
+                heroTag: 'scan_fab',
+                onPressed: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const ScanScreen()));
+                },
+                backgroundColor: const Color(0xFFDBEAFE),
+                elevation: 4,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: const [
+                    Icon(Icons.camera_alt, color: Color(0xFF2563EB), size: 26),
+                    Positioned(
+                      top: -2,
+                      right: -2,
+                      child: Icon(Icons.auto_awesome, color: Colors.amber, size: 14),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
       ),
       body: SingleChildScrollView(
         child: Padding(

@@ -70,6 +70,9 @@ class _HomeScreenState extends State<HomeScreen> {
         });
       });
     }
+    if (_selectedIndex == 3) {
+      return const ChatScreen();
+    }
     if (_selectedIndex == 4) {
       return const ProfileScreen();
     }
@@ -79,8 +82,6 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         children: [
           _buildHeader(),
-          const SizedBox(height: 24),
-          _buildQuickActions(),
           const SizedBox(height: 32),
           _buildRecentTransactions(),
           const SizedBox(height: 24),
@@ -90,17 +91,46 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildHeader() {
-    return Container(
-      padding: const EdgeInsets.only(top: 60, left: 24, right: 24, bottom: 32),
-      decoration: const BoxDecoration(
-        color: Color(0xFF2962FF), // Primary Blue from UI
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(0),
-          bottomRight: Radius.circular(0),
-        ),
-      ),
-      child: Column(
-        children: [
+    return Stack(
+      children: [
+        Container(
+          padding: const EdgeInsets.only(top: 60, left: 24, right: 24, bottom: 32),
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF1E3A8A), Color(0xFF3B82F6)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: Stack(
+            children: [
+              // Background patterns
+              Positioned(
+                top: -50,
+                right: -50,
+                child: Container(
+                  width: 200,
+                  height: 200,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withOpacity(0.05),
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 100,
+                left: -40,
+                child: Container(
+                  width: 140,
+                  height: 140,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withOpacity(0.05),
+                  ),
+                ),
+              ),
+              Column(
+                children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -180,7 +210,14 @@ class _HomeScreenState extends State<HomeScreen> {
               double totalBalance = totalIncome - totalExpense;
               final format = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
 
-              return Container(
+              return GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const TransactionHistoryScreen()),
+                  );
+                },
+                child: Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.12),
@@ -261,11 +298,16 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ],
                 ),
+              ),
               );
             },
           ),
-        ],
-      ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -564,7 +606,7 @@ class _HomeScreenState extends State<HomeScreen> {
               _buildNavItem(icon: Icons.home_rounded, label: 'Home', index: 0),
               _buildNavItem(icon: Icons.analytics_outlined, label: 'Analytics', index: 1),
               _buildNavItem(icon: Icons.add, label: 'Add', index: 2),
-              _buildNavItem(icon: Icons.account_balance_wallet_outlined, label: 'Wallet', index: 3),
+              _buildNavItem(icon: Icons.smart_toy_outlined, label: 'AI Chat', index: 3),
               _buildNavItem(icon: Icons.person_outline, label: 'Profile', index: 4),
             ],
           ),
@@ -609,7 +651,44 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       );
     }
-    
+
+    if (index == 3) {
+      return GestureDetector(
+        onTap: () {
+          setState(() {
+            _selectedIndex = index;
+          });
+        },
+        behavior: HitTestBehavior.opaque,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: isSelected ? const Color(0xFFF3E8FF) : Colors.transparent,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                icon,
+                color: isSelected ? const Color(0xFF7C3AED) : const Color(0xFF94A3B8),
+                size: 26,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? const Color(0xFF7C3AED) : const Color(0xFF94A3B8),
+                fontSize: 11,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return GestureDetector(
       onTap: () {
         setState(() {

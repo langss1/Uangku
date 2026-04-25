@@ -6,6 +6,7 @@ import 'package:uangku_app/core/theme/app_colors.dart';
 import 'package:uangku_app/features/home/home_screen.dart';
 import 'package:uangku_app/features/auth/register_screen.dart';
 import 'package:uangku_app/features/auth/forgot_password_screen.dart';
+import 'package:video_player/video_player.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -23,6 +24,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   final TextEditingController _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _isLoading = false;
+  VideoPlayerController? _videoController;
 
   @override
   void initState() {
@@ -41,6 +43,16 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     );
 
     _entranceController.forward();
+    
+    _videoController = VideoPlayerController.asset('assets/Animasi_Login_Aplikasi_Uangku_Abstrak.mp4')
+      ..initialize().then((_) {
+        _videoController!.setLooping(true);
+        _videoController!.setVolume(0.0);
+        _videoController!.play();
+        setState(() {});
+      }).catchError((e) {
+        debugPrint("Video error: $e");
+      });
   }
 
   @override
@@ -48,6 +60,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     _entranceController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _videoController?.dispose();
     super.dispose();
   }
 
@@ -142,31 +155,43 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             const SizedBox(height: 30),
-                            // Hero Logo
+                            // Video Header
                             Center(
-                              child: Hero(
-                                tag: 'app_logo',
-                                child: Container(
-                                  width: 100,
-                                  height: 100,
-                                  decoration: BoxDecoration(
-                                    color: AppColors.primaryBlue,
-                                    borderRadius: BorderRadius.circular(24),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: AppColors.primaryBlue.withOpacity(0.3),
-                                        blurRadius: 20,
-                                        offset: const Offset(0, 10),
-                                      ),
-                                    ],
-                                  ),
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(24),
-                                    child: Image.asset(
-                                      'assets/images/logo.png',
-                                      fit: BoxFit.cover,
+                              child: Container(
+                                width: double.infinity,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(20),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppColors.primaryBlue.withOpacity(0.15),
+                                      blurRadius: 25,
+                                      offset: const Offset(0, 12),
                                     ),
-                                  ),
+                                  ],
+                                ),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(20),
+                                  child: _videoController != null && _videoController!.value.isInitialized
+                                      ? AspectRatio(
+                                          aspectRatio: 1920 / 990,
+                                          child: FittedBox(
+                                            fit: BoxFit.cover,
+                                            child: SizedBox(
+                                              width: _videoController!.value.size.width,
+                                              height: _videoController!.value.size.height,
+                                              child: VideoPlayer(_videoController!),
+                                            ),
+                                          ),
+                                        )
+                                      : AspectRatio(
+                                          aspectRatio: 1920 / 990,
+                                          child: Container(
+                                            color: const Color(0xFFF1F5F9),
+                                            child: const Center(
+                                              child: CircularProgressIndicator(strokeWidth: 2),
+                                            ),
+                                          ),
+                                        ),
                                 ),
                               ),
                             ),
@@ -176,14 +201,14 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                               textAlign: TextAlign.center,
                               text: TextSpan(
                                 style: const TextStyle(
-                                  fontSize: 28,
+                                  fontSize: 26,
                                   fontWeight: FontWeight.w800,
                                   color: AppColors.textDark,
-                                  height: 1.25,
+                                  height: 1.3,
                                   fontFamily: 'Inter',
                                 ),
                                 children: [
-                                  const TextSpan(text: 'Selamat Datang di\nAplikasi UANGKU '),
+                                  const TextSpan(text: 'Kelola Keuangan,\nLebih Cerdas '),
                                   WidgetSpan(
                                     alignment: PlaceholderAlignment.middle,
                                     child: const WavingHandEmoji(),
@@ -191,15 +216,15 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                                 ],
                               ),
                             ),
-                            const SizedBox(height: 14),
+                            const SizedBox(height: 12),
                             const Text(
-                              'Mudahkan pencatatan keuanganmu\nberbasis teknologi AI terbaru.',
+                              'Ubah cara Anda mencatat pengeluaran menggunakan kecerdasan buatan terdepan.',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 14,
                                 color: Color(0xFF64748B),
                                 height: 1.5,
-                                fontWeight: FontWeight.w500, // Made slightly bolder
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
                             const SizedBox(height: 40),

@@ -5,8 +5,8 @@ import 'package:uangku_app/features/splash/splash_screen.dart';
 import 'package:intl/intl.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:uangku_app/features/profile/screens/export_preview_screen.dart';
 import 'package:uangku_app/features/profile/screens/settings_screen.dart';
+import 'package:uangku_app/features/profile/screens/dummy_screens.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -16,18 +16,12 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  DateTimeRange? _selectedDateRange;
   String _userName = 'Loading...';
   String _userEmail = 'Loading...';
 
   @override
   void initState() {
     super.initState();
-    // Default to last 30 days
-    _selectedDateRange = DateTimeRange(
-      start: DateTime.now().subtract(const Duration(days: 30)),
-      end: DateTime.now(),
-    );
     _loadUserProfile();
   }
 
@@ -81,168 +75,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  Future<void> _selectCustomDateRange() async {
-    DateTime? tempStart = _selectedDateRange?.start ?? DateTime.now().subtract(const Duration(days: 30));
-    DateTime? tempEnd = _selectedDateRange?.end ?? DateTime.now();
 
-    final picked = await showDialog<DateTimeRange>(
-      context: context,
-      builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              title: const Text(
-                'Custom Date Range',
-                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text('Select your start and end date below:', style: TextStyle(color: Colors.black54, fontSize: 13)),
-                  const SizedBox(height: 20),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () async {
-                            final date = await showDatePicker(
-                              context: context,
-                              initialDate: tempStart!,
-                              firstDate: DateTime(2000),
-                              lastDate: DateTime(2101),
-                            );
-                            if (date != null) {
-                              setDialogState(() => tempStart = date);
-                            }
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF1F5F9),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Column(
-                              children: [
-                                const Text('Start Date', style: TextStyle(fontSize: 11, color: Colors.black54)),
-                                const SizedBox(height: 4),
-                                Text(
-                                  DateFormat('dd MMM yyyy').format(tempStart!),
-                                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () async {
-                            final date = await showDatePicker(
-                              context: context,
-                              initialDate: tempEnd ?? tempStart!,
-                              firstDate: tempStart!,
-                              lastDate: DateTime(2101),
-                            );
-                            if (date != null) {
-                              setDialogState(() => tempEnd = date);
-                            }
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF1F5F9),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Column(
-                              children: [
-                                const Text('End Date', style: TextStyle(fontSize: 11, color: Colors.black54)),
-                                const SizedBox(height: 4),
-                                Text(
-                                  tempEnd != null ? DateFormat('dd MMM yyyy').format(tempEnd!) : 'Select',
-                                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel', style: TextStyle(color: Colors.black54)),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    if (tempStart != null && tempEnd != null) {
-                      Navigator.pop(context, DateTimeRange(start: tempStart!, end: tempEnd!));
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2962FF),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    elevation: 0,
-                  ),
-                  child: const Text('Apply', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-
-    if (picked != null) {
-      setState(() {
-        _selectedDateRange = picked;
-      });
-    }
-  }
-
-  void _navigateToPreview(String format) {
-    if (_selectedDateRange == null) return;
-    
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => ExportPreviewScreen(
-          dateRange: _selectedDateRange!,
-          exportFormat: format,
-          userName: 'Sarah Johnson', // Hardcoded as per existing UI
-        ),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF8FAFC), // Premium light background
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.textDark),
           onPressed: () {},
         ),
         title: const Text(
-          'Export & Profile',
+          'Profile',
           style: TextStyle(
             color: AppColors.textDark,
             fontWeight: FontWeight.w800,
-            fontSize: 18,
+            fontSize: 20,
           ),
         ),
         centerTitle: true,
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1.0),
-          child: Container(color: Colors.grey.shade100, height: 1.0),
-        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
@@ -260,71 +114,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             const SizedBox(height: 20),
             
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.grey.shade200),
-                boxShadow: [
-                  BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4)),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Stack(
-                    children: [
-                      CircleAvatar(
-                        radius: 30,
-                        backgroundColor: Colors.grey.shade200,
-                        child: const Icon(Icons.person, size: 36, color: Colors.grey),
-                      ),
-                      Positioned(
-                        bottom: 0,
-                        right: 0,
-                        child: Container(
-                          padding: const EdgeInsets.all(2),
-                          decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-                          child: const Icon(Icons.camera_alt, size: 16, color: Color(0xFF2962FF)),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _userName,
-                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.textDark),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          _userEmail,
-                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Color(0xFF64748B)),
-                        ),
-                        const SizedBox(height: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(color: const Color(0xFFD1FAE5), borderRadius: BorderRadius.circular(20)),
-                          child: const Text('Verified', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF059669))),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            
-            const SizedBox(height: 20),
-            
-            _buildSettingTile(
-              icon: Icons.person_outline,
-              iconBgColor: const Color(0xFFDBEAFE),
-              iconColor: const Color(0xFF2563EB),
-              title: 'Personal Information',
-              subtitle: 'Update name, email, phone',
+            GestureDetector(
               onTap: () async {
                 final result = await Navigator.push(
                   context,
@@ -342,148 +132,166 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   _loadUserProfile(); // Reload to reflect changes
                 }
               },
-            ),
-            _buildSettingTile(
-              icon: Icons.security_outlined,
-              iconBgColor: const Color(0xFFD1FAE5),
-              iconColor: const Color(0xFF059669),
-              title: 'Security Settings',
-              subtitle: 'Password, 2FA, sessions',
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const SettingsEditorScreen(
-                      title: 'Security Settings',
-                      subtitle: 'Update your password and security',
-                      isSecurity: true,
-                    ),
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF1E3A8A), Color(0xFF3B82F6)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                );
-              },
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(color: const Color(0xFF3B82F6).withOpacity(0.3), blurRadius: 15, offset: const Offset(0, 8)),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Stack(
+                      children: [
+                        Container(
+                          width: 64,
+                          height: 64,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white.withOpacity(0.5), width: 2),
+                          ),
+                          child: const Icon(Icons.person, size: 36, color: Colors.white),
+                        ),
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                            child: const Icon(Icons.camera_alt, size: 14, color: Color(0xFF2962FF)),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(width: 20),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _userName,
+                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            _userEmail,
+                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.white.withOpacity(0.8)),
+                          ),
+                          const SizedBox(height: 10),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(20)),
+                            child: const Text('Verified Account', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white)),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(Icons.edit_outlined, color: Colors.white.withOpacity(0.8), size: 24),
+                  ],
+                ),
+              ),
             ),
-            _buildSettingTile(
-              icon: Icons.smartphone,
-              iconBgColor: const Color(0xFFF3E8FF),
-              iconColor: const Color(0xFF7C3AED),
-              title: 'Manage 2FA',
-              subtitle: 'Two-factor authentication',
-              trailingText: 'Enabled',
-              trailingColor: const Color(0xFFD1FAE5),
-              trailingTextColor: const Color(0xFF059669),
-              onTap: () {},
+            
+            const SizedBox(height: 32),
+            const Text(
+              'Settings',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textDark),
             ),
-            _buildSettingTile(
-              icon: Icons.notifications_none_outlined,
-              iconBgColor: const Color(0xFFFEF3C7),
-              iconColor: const Color(0xFFD97706),
-              title: 'Notifications',
-              subtitle: 'Email, push preferences',
-              onTap: () {},
-            ),
-            _buildSettingTile(
-              icon: Icons.settings_outlined,
-              iconBgColor: const Color(0xFFF1F5F9),
-              iconColor: const Color(0xFF475569),
-              title: 'App Preferences',
-              subtitle: 'Theme, language, currency',
-              onTap: () {},
-            ),
-            _buildSettingTile(
-              icon: Icons.help_outline,
-              iconBgColor: const Color(0xFFFFEDD5),
-              iconColor: const Color(0xFFEA580C),
-              title: 'Help & Support',
-              subtitle: 'FAQ, contact support',
-              onTap: () {},
+            const SizedBox(height: 16),
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 15, offset: const Offset(0, 5)),
+                ],
+              ),
+              child: Column(
+                children: [
+                  _buildSettingTile(
+                    icon: Icons.security_outlined,
+                    iconBgColor: const Color(0xFFD1FAE5),
+                    iconColor: const Color(0xFF059669),
+                    title: 'Security Settings',
+                    subtitle: 'Password, 2FA, sessions',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const SettingsEditorScreen(
+                            title: 'Security Settings',
+                            subtitle: 'Update your password and security',
+                            isSecurity: true,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  Divider(color: Colors.grey.shade100, height: 1, indent: 76),
+                  _buildSettingTile(
+                    icon: Icons.notifications_none_outlined,
+                    iconBgColor: const Color(0xFFFEF3C7),
+                    iconColor: const Color(0xFFD97706),
+                    title: 'Notifications',
+                    subtitle: 'Email, push preferences',
+                    onTap: () {
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsScreen()));
+                    },
+                  ),
+                  Divider(color: Colors.grey.shade100, height: 1, indent: 76),
+                  _buildSettingTile(
+                    icon: Icons.settings_outlined,
+                    iconBgColor: const Color(0xFFF1F5F9),
+                    iconColor: const Color(0xFF475569),
+                    title: 'App Preferences',
+                    subtitle: 'Theme, language, currency',
+                    onTap: () {
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const AppPreferencesScreen()));
+                    },
+                  ),
+                  Divider(color: Colors.grey.shade100, height: 1, indent: 76),
+                  _buildSettingTile(
+                    icon: Icons.help_outline,
+                    iconBgColor: const Color(0xFFFFEDD5),
+                    iconColor: const Color(0xFFEA580C),
+                    title: 'Help & Support',
+                    subtitle: 'FAQ, contact support',
+                    onTap: () {
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const HelpSupportScreen()));
+                    },
+                  ),
+                ],
+              ),
             ),
             
             const SizedBox(height: 32),
             
-            const Text(
-              'Export Reports',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.textDark),
-            ),
-            const SizedBox(height: 4),
-            const Text(
-              'Download your financial reports in preferred format',
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Color(0xFF64748B)),
-            ),
-            const SizedBox(height: 20),
-            
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildInputLabel('Select Date Range'),
-                GestureDetector(
-                  onTap: _selectCustomDateRange,
-                  child: const Text(
-                    'Change',
-                    style: TextStyle(
-                      color: Color(0xFF2962FF),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            GestureDetector(
-              onTap: _selectCustomDateRange,
-              child: _buildDatePicker(
-                label: 'Start Date', 
-                value: DateFormat('dd MMM yyyy').format(_selectedDateRange!.start)
-              ),
-            ),
-            const SizedBox(height: 12),
-            GestureDetector(
-              onTap: _selectCustomDateRange,
-              child: _buildDatePicker(
-                label: 'End Date', 
-                value: DateFormat('dd MMM yyyy').format(_selectedDateRange!.end)
-              ),
-            ),
-            
-            const SizedBox(height: 24),
-            
-            _buildInputLabel('Choose Export Format'),
-            const SizedBox(height: 12),
-            
-            GestureDetector(
-              onTap: () => _navigateToPreview('PDF'),
-              child: _buildFormatTile(
-                icon: Icons.picture_as_pdf,
-                iconBgColor: const Color(0xFFFEE2E2),
-                iconColor: const Color(0xFFDC2626),
-                title: 'PDF Report',
-                subtitle: 'Formatted financial report',
-              ),
-            ),
-            const SizedBox(height: 12),
-            GestureDetector(
-              onTap: () => _navigateToPreview('CSV'),
-              child: _buildFormatTile(
-                icon: Icons.insert_drive_file_outlined,
-                iconBgColor: const Color(0xFFD1FAE5),
-                iconColor: const Color(0xFF059669),
-                title: 'CSV File',
-                subtitle: 'Raw data for analysis',
-              ),
-            ),
-            
-            const SizedBox(height: 40),
-            
-            ElevatedButton.icon(
+            ElevatedButton(
               onPressed: () => _logout(context),
-              icon: const Icon(Icons.logout, size: 20, color: Colors.white),
-              label: const Text('Logout', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFE11D48),
-                foregroundColor: Colors.white,
+                backgroundColor: Colors.white,
+                foregroundColor: const Color(0xFFE11D48),
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  side: const BorderSide(color: Color(0xFFE11D48), width: 1.5),
+                ),
                 elevation: 0,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: const [
+                  Icon(Icons.logout, size: 22),
+                  SizedBox(width: 8),
+                  Text('Logout Account', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                ],
               ),
             ),
             
@@ -501,33 +309,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildInputLabel(String text) {
-    return Text(text, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF475569)));
-  }
-
-  Widget _buildDatePicker({required String label, required String value}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: Color(0xFF94A3B8))),
-        const SizedBox(height: 4),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade300),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(value, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.textDark)),
-              const Icon(Icons.calendar_today_outlined, size: 20, color: Color(0xFF94A3B8)),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
 
   Widget _buildSettingTile({
     required IconData icon,
@@ -542,14 +323,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         child: Row(
           children: [
             Container(
               width: 44,
               height: 44,
-              decoration: BoxDecoration(color: iconBgColor, borderRadius: BorderRadius.circular(12)),
+              decoration: BoxDecoration(color: iconBgColor, borderRadius: BorderRadius.circular(14)),
               child: Icon(icon, color: iconColor, size: 22),
             ),
             const SizedBox(width: 16),
@@ -559,7 +341,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 children: [
                   Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textDark)),
                   const SizedBox(height: 2),
-                  Text(subtitle, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Color(0xFF64748B))),
+                  Text(subtitle, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Color(0xFF94A3B8))),
                 ],
               ),
             ),
@@ -570,49 +352,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 decoration: BoxDecoration(color: trailingColor, borderRadius: BorderRadius.circular(20)),
                 child: Text(trailingText, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: trailingTextColor)),
               ),
-            const Icon(Icons.chevron_right, color: Color(0xFFCBD5E1), size: 24),
+            const Icon(Icons.chevron_right, color: Color(0xFFCBD5E1), size: 20),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildFormatTile({
-    required IconData icon,
-    required Color iconBgColor,
-    required Color iconColor,
-    required String title,
-    required String subtitle,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: Colors.grey.shade200),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(color: iconBgColor, borderRadius: BorderRadius.circular(12)),
-            child: Icon(icon, color: iconColor, size: 28),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppColors.textDark)),
-                const SizedBox(height: 2),
-                Text(subtitle, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Color(0xFF64748B))),
-              ],
-            ),
-          ),
-          const Icon(Icons.chevron_right, color: Color(0xFFCBD5E1), size: 24),
-        ],
-      ),
-    );
-  }
+
 }
