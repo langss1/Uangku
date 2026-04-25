@@ -7,7 +7,11 @@ import 'package:uangku_app/features/transaction/screens/transaction_success_scre
 import 'package:uangku_app/features/transaction/screens/category_selection_screen.dart';
 import 'package:uangku_app/core/services/currency_service.dart';
 import 'package:uangku_app/features/scan/screens/scan_screen.dart';
+import 'package:uangku_app/features/transaction/screens/note_input_screen.dart';
 import 'package:intl/intl.dart';
+import 'package:uangku_app/features/transaction/screens/transaction_history_screen.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 import 'dart:async';
 
 class AddTransactionScreen extends StatefulWidget {
@@ -33,11 +37,17 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Single
   Timer? _timer;
   bool _showMessage = false;
   
+  // Image Picker state
+  File? _selectedImage;
+  final ImagePicker _picker = ImagePicker();
+  
   // Currency state
   String _selectedCurrency = 'IDR';
   Map<String, double> _rates = {'IDR': 1.0};
   bool _isLoadingRates = false;
   final List<String> _popularCurrencies = ['IDR', 'USD', 'SGD', 'EUR', 'JPY', 'MYR'];
+
+  bool _showMoreDetails = false;
 
   @override
   void initState() {
@@ -74,6 +84,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Single
         iconColor: widget.transactionToEdit!.iconColor,
         isIncome: _isIncome,
       );
+      if (widget.transactionToEdit!.imagePath != null) {
+        _selectedImage = File(widget.transactionToEdit!.imagePath!);
+        _showMoreDetails = true;
+      }
     }
   }
 
@@ -114,6 +128,21 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Single
     }
   }
 
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final XFile? pickedFile = await _picker.pickImage(source: source, imageQuality: 80);
+      if (pickedFile != null) {
+        setState(() {
+          _selectedImage = File(pickedFile.path);
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to pick image: $e')),
+      );
+    }
+  }
+
   void _saveTransaction() {
     if (_amount == 0 || _selectedCategory == null) return;
     
@@ -134,6 +163,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Single
         icon: _selectedCategory!.icon,
         bgColor: _selectedCategory!.color,
         iconColor: _selectedCategory!.iconColor,
+        imagePath: _selectedImage?.path,
       );
       TransactionData().updateTransaction(updatedTx);
     } else {
@@ -152,6 +182,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Single
         iconColor: _selectedCategory!.iconColor,
         isIncome: _isIncome,
         note: _notesController.text,
+        imagePath: _selectedImage?.path,
       );
       TransactionData().addTransaction(newTx);
     }
@@ -162,7 +193,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Single
         builder: (_) => TransactionSuccessScreen(
           onViewHistory: () {
             Navigator.pop(context); // pop success
-            widget.onBack(); 
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => const TransactionHistoryScreen()),
+            );
           },
           onAddAnother: () {
             Navigator.pop(context); // pop success
@@ -171,6 +205,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Single
               _amountController.clear();
               _notesController.clear();
               _selectedCategory = null;
+              _selectedImage = null;
+              _showMoreDetails = false;
             });
           },
         ),
@@ -234,7 +270,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Single
           onPressed: widget.onBack,
         ),
         title: const Text(
-          'Tambah transaksi',
+          'Add Transaction',
           style: TextStyle(color: AppColors.textDark, fontWeight: FontWeight.bold, fontSize: 18),
         ),
         centerTitle: true,
@@ -261,7 +297,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Single
                 children: const [
                   Icon(Icons.auto_awesome, color: Colors.amberAccent, size: 16),
                   SizedBox(width: 6),
-                  Text('AI untuk scan otomatis', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold, letterSpacing: 0.3)),
+                  Text('AI for auto-scan', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold, letterSpacing: 0.3)),
                 ],
               ),
             ),
@@ -291,6 +327,34 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Single
             ),
         ],
       ),
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20, top: 10),
+          child: SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: ElevatedButton(
+              onPressed: canSave ? _saveTransaction : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: canSave ? AppColors.primaryBlue : Colors.grey[300],
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                elevation: 0,
+                disabledBackgroundColor: Colors.grey[300],
+              ),
+              child: Text(
+                'Save',
+                style: TextStyle(
+                  fontSize: 16, 
+                  fontWeight: FontWeight.bold, 
+                  color: canSave ? Colors.white : Colors.grey[500],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
       body: Column(
         children: [
           // TABS: Pengeluaran | Pemasukan
@@ -317,7 +381,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Single
                         ),
                         child: Center(
                           child: Text(
-                            'Pengeluaran',
+                            'Expense',
                             style: TextStyle(
                               color: !_isIncome ? Colors.white : AppColors.textDark,
                               fontWeight: FontWeight.bold,
@@ -341,7 +405,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Single
                         ),
                         child: Center(
                           child: Text(
-                            'Pemasukan',
+                            'Income',
                             style: TextStyle(
                               color: _isIncome ? Colors.white : AppColors.textDark,
                               fontWeight: FontWeight.bold,
@@ -398,6 +462,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Single
                       Expanded(
                         child: TextField(
                           controller: _amountController,
+                          autofocus: true,
                           keyboardType: TextInputType.number,
                           style: TextStyle(
                             fontSize: 40,
@@ -444,7 +509,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Single
                       ),
                     ),
                     title: Text(
-                      _selectedCategory?.name ?? 'Pilih Kategori',
+                      _selectedCategory?.name ?? 'Select Category',
                       style: TextStyle(
                         color: _selectedCategory != null ? AppColors.textDark : Colors.grey[600], 
                         fontSize: 16,
@@ -458,17 +523,26 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Single
                   ListTile(
                     contentPadding: EdgeInsets.zero,
                     leading: const Icon(Icons.notes, color: Color(0xFF64748B), size: 24),
-                    title: TextField(
-                      controller: _notesController,
-                      style: const TextStyle(color: AppColors.textDark, fontSize: 16),
-                      decoration: const InputDecoration(
-                        border: InputBorder.none,
-                        hintText: 'Tulis catatan',
-                        hintStyle: TextStyle(color: Color(0xFF94A3B8), fontSize: 16),
-                        isDense: true,
-                        contentPadding: EdgeInsets.zero,
+                    title: Text(
+                      _notesController.text.isEmpty ? 'Write a note' : _notesController.text,
+                      style: TextStyle(
+                        color: _notesController.text.isEmpty ? const Color(0xFF94A3B8) : AppColors.textDark,
+                        fontSize: 16,
                       ),
                     ),
+                    onTap: () async {
+                      final result = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => NoteInputScreen(initialNote: _notesController.text),
+                        ),
+                      );
+                      if (result != null) {
+                        setState(() {
+                          _notesController.text = result;
+                        });
+                      }
+                    },
                   ),
                   const Divider(color: Color(0xFFF1F5F9), height: 16),
 
@@ -487,49 +561,155 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Single
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.chevron_left, color: Color(0xFF64748B), size: 18),
-                              const SizedBox(width: 8),
-                              Text(
-                                DateFormat('EEEE, dd/MM/yyyy').format(_selectedDate),
-                                style: const TextStyle(color: AppColors.textDark, fontSize: 14),
+                              GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    _selectedDate = _selectedDate.subtract(const Duration(days: 1));
+                                  });
+                                },
+                                child: const Padding(
+                                  padding: EdgeInsets.all(4.0),
+                                  child: Icon(Icons.chevron_left, color: Color(0xFF64748B), size: 18),
+                                ),
                               ),
                               const SizedBox(width: 8),
-                              const Icon(Icons.chevron_right, color: Color(0xFF64748B), size: 18),
+                              GestureDetector(
+                                onTap: () => _selectDate(context),
+                                child: Text(
+                                  DateFormat('EEEE, dd/MM/yyyy').format(_selectedDate),
+                                  style: const TextStyle(color: AppColors.textDark, fontSize: 14),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    _selectedDate = _selectedDate.add(const Duration(days: 1));
+                                  });
+                                },
+                                child: const Padding(
+                                  padding: EdgeInsets.all(4.0),
+                                  child: Icon(Icons.chevron_right, color: Color(0xFF64748B), size: 18),
+                                ),
+                              ),
                             ],
                           ),
                         ),
                       ],
                     ),
-                    onTap: () => _selectDate(context),
                   ),
-                  
-                  const SizedBox(height: 36),
 
-                  // Save Button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton(
-                      onPressed: canSave ? _saveTransaction : null,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: canSave ? AppColors.primaryBlue : Colors.grey[300],
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        elevation: 0,
-                        disabledBackgroundColor: Colors.grey[300],
-                      ),
-                      child: Text(
-                        'Simpan',
-                        style: TextStyle(
-                          fontSize: 16, 
-                          fontWeight: FontWeight.bold, 
-                          color: canSave ? Colors.white : Colors.grey[500],
+                  const SizedBox(height: 24),
+
+                  // Add More Details Section
+                  if (!_showMoreDetails)
+                    Center(
+                      child: TextButton(
+                        onPressed: () {
+                          setState(() {
+                            _showMoreDetails = true;
+                          });
+                        },
+                        child: const Text(
+                          'ADD MORE DETAILS',
+                          style: TextStyle(
+                            color: Color(0xFF059669),
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                          ),
                         ),
                       ),
+                    )
+                  else
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Divider(color: Color(0xFFF1F5F9), height: 32),
+                        const Text(
+                          'Attachments',
+                          style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: InkWell(
+                                onTap: () => _pickImage(ImageSource.gallery),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(vertical: 24),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[100],
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: Colors.grey[300]!),
+                                  ),
+                                  child: Column(
+                                    children: const [
+                                      Icon(Icons.photo_library, size: 32, color: Color(0xFF64748B)),
+                                      SizedBox(height: 8),
+                                      Text('Gallery', style: TextStyle(color: Color(0xFF64748B))),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: InkWell(
+                                onTap: () => _pickImage(ImageSource.camera),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(vertical: 24),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[100],
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: Colors.grey[300]!),
+                                  ),
+                                  child: Column(
+                                    children: const [
+                                      Icon(Icons.camera_alt, size: 32, color: Color(0xFF64748B)),
+                                      SizedBox(height: 8),
+                                      Text('Camera', style: TextStyle(color: Color(0xFF64748B))),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (_selectedImage != null) ...[
+                          const SizedBox(height: 16),
+                          Stack(
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: Image.file(
+                                  _selectedImage!,
+                                  height: 150,
+                                  width: double.infinity,
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                              Positioned(
+                                top: 8,
+                                right: 8,
+                                child: GestureDetector(
+                                  onTap: () => setState(() => _selectedImage = null),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: const BoxDecoration(
+                                      color: Colors.black54,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(Icons.close, color: Colors.white, size: 20),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 80), // Padding for FAB
+
+                  const SizedBox(height: 80), // Padding to ensure content is above the keyboard
                 ],
               ),
             ),

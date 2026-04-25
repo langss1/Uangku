@@ -13,37 +13,46 @@ class TransactionHistoryScreen extends StatefulWidget {
   State<TransactionHistoryScreen> createState() => _TransactionHistoryScreenState();
 }
 
-class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
+  DateTime? _selectedFilterDate;
 
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 3, vsync: this, initialIndex: 1);
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
-
-  List<TransactionModel> _filterTransactions(List<TransactionModel> transactions, int tabIndex) {
-    final now = DateTime.now();
-    return transactions.where((tx) {
-      if (tabIndex == 0) {
-        // Bulan Lalu
-        final lastMonth = DateTime(now.year, now.month - 1);
-        return tx.date.year == lastMonth.year && tx.date.month == lastMonth.month;
-      } else if (tabIndex == 1) {
-        // Bulan Ini
+  List<TransactionModel> _filterTransactions(List<TransactionModel> transactions) {
+    if (_selectedFilterDate == null) {
+      final now = DateTime.now();
+      return transactions.where((tx) {
         return tx.date.year == now.year && tx.date.month == now.month;
-      } else {
-        // Masa Depan
-        final nextMonth = DateTime(now.year, now.month + 1);
-        return tx.date.year == nextMonth.year && tx.date.month == nextMonth.month;
-      }
+      }).toList();
+    }
+    
+    return transactions.where((tx) {
+      return tx.date.year == _selectedFilterDate!.year &&
+             tx.date.month == _selectedFilterDate!.month &&
+             tx.date.day == _selectedFilterDate!.day;
     }).toList();
+  }
+
+  Future<void> _pickDate() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedFilterDate ?? DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2030),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: AppColors.primaryBlue,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      setState(() {
+        _selectedFilterDate = picked;
+      });
+    }
   }
 
   @override
@@ -57,40 +66,33 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> wit
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: const [
-            Icon(Icons.language, color: Colors.white, size: 20),
-            SizedBox(width: 8),
-            Text(
-              'Total',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
-            ),
-          ],
-        ),
+        title: const Text(''),
         centerTitle: true,
         actions: [
+          if (_selectedFilterDate != null)
+            IconButton(
+              icon: const Icon(Icons.filter_alt_off, color: Colors.white),
+              onPressed: () {
+                setState(() {
+                  _selectedFilterDate = null;
+                });
+              },
+            ),
           IconButton(
-            icon: const Icon(Icons.search, color: Colors.white),
-            onPressed: () {},
+            icon: const Icon(Icons.calendar_month, color: Colors.white),
+            onPressed: _pickDate,
           ),
         ],
       ),
       body: ValueListenableBuilder<List<TransactionModel>>(
         valueListenable: TransactionData().transactionsNotifier,
         builder: (context, transactions, child) {
+          final filteredTx = _filterTransactions(transactions);
           return Column(
             children: [
-              _buildTopSection(transactions),
+              _buildTopSection(filteredTx),
               Expanded(
-                child: TabBarView(
-                  controller: _tabController,
-                  children: [
-                    _buildTransactionList(_filterTransactions(transactions, 0)),
-                    _buildTransactionList(_filterTransactions(transactions, 1)),
-                    _buildTransactionList(_filterTransactions(transactions, 2)),
-                  ],
-                ),
+                child: _buildTransactionList(filteredTx),
               ),
             ],
           );
@@ -107,7 +109,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> wit
             ),
           );
         },
-        backgroundColor: AppColors.primaryBlue, // Primary matching the design
+        backgroundColor: AppColors.primaryBlue,
         child: const Icon(Icons.add, color: Colors.white, size: 28),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
@@ -115,105 +117,103 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> wit
   }
 
   Widget _buildTopSection(List<TransactionModel> transactions) {
-    return AnimatedBuilder(
-      animation: _tabController,
-      builder: (context, child) {
-        final filteredTx = _filterTransactions(transactions, _tabController.index);
-        
-        double totalIncome = 0;
-        double totalExpense = 0;
-        for (var tx in filteredTx) {
-          if (tx.isIncome) {
-            totalIncome += tx.amount;
-          } else {
-            totalExpense += tx.amount;
-          }
-        }
-        double totalBalance = totalIncome - totalExpense;
-        final format = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+    double totalIncome = 0;
+    double totalExpense = 0;
+    for (var tx in transactions) {
+      if (tx.isIncome) {
+        totalIncome += tx.amount;
+      } else {
+        totalExpense += tx.amount;
+      }
+    }
+    double totalBalance = totalIncome - totalExpense;
+    final format = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
 
-        return Container(
-          padding: const EdgeInsets.only(top: 16, bottom: 0),
-          decoration: const BoxDecoration(
-            color: AppColors.primaryBlue,
+    return Container(
+      padding: const EdgeInsets.only(top: 12, bottom: 16, left: 24, right: 24),
+      decoration: const BoxDecoration(
+        color: AppColors.primaryBlue,
+      ),
+      child: Column(
+        children: [
+          const Text(
+            'Total Balance',
+            style: TextStyle(color: Colors.white70, fontSize: 16),
           ),
-          child: Column(
-            children: [
-              const Text(
-                'Saldo',
-                style: TextStyle(color: Colors.white70, fontSize: 16),
+          const SizedBox(height: 8),
+          Text(
+            format.format(totalBalance),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 36,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          if (_selectedFilterDate != null) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(12),
               ),
-              const SizedBox(height: 8),
-              Text(
-                format.format(totalBalance),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
+              child: Text(
+                DateFormat('dd MMM yyyy').format(_selectedFilterDate!),
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ] else ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                DateFormat('MMMM yyyy').format(DateTime.now()),
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Income', style: TextStyle(color: Colors.white70, fontSize: 14)),
+                    const SizedBox(height: 4),
+                    Text(
+                      format.format(totalIncome),
+                      style: const TextStyle(color: Color(0xFFD1FAE5), fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 24),
-              
-              // Tabs
-              TabBar(
-                controller: _tabController,
-                indicatorColor: Colors.white,
-                indicatorWeight: 3,
-                labelColor: Colors.white,
-                unselectedLabelColor: Colors.white54,
-                tabs: const [
-                  Tab(text: 'BULAN LALU'),
-                  Tab(text: 'BULAN INI'),
-                  Tab(text: 'MASA DEPAN'),
-                ],
-              ),
-              
-              // Summary breakdown
               Container(
-                color: Colors.white.withOpacity(0.12), // Slightly lighter background
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                width: 1,
+                height: 32,
+                color: Colors.white24,
+              ),
+              Expanded(
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text('Pemasukan', style: TextStyle(color: Colors.white, fontSize: 16)),
-                        Text(
-                          NumberFormat.currency(locale: 'id_ID', symbol: '', decimalDigits: 0).format(totalIncome),
-                          style: const TextStyle(color: Color(0xFFD1FAE5), fontSize: 16, fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text('Pengeluaran', style: TextStyle(color: Colors.white, fontSize: 16)),
-                        Text(
-                          NumberFormat.currency(locale: 'id_ID', symbol: '', decimalDigits: 0).format(totalExpense),
-                          style: const TextStyle(color: Color(0xFFFECACA), fontSize: 16, fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    const Divider(color: Colors.white24, height: 1),
-                    const SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Text(
-                          NumberFormat.currency(locale: 'id_ID', symbol: '', decimalDigits: 0).format(totalBalance),
-                          style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-                        ),
-                      ],
+                    const Text('Expense', style: TextStyle(color: Colors.white70, fontSize: 14)),
+                    const SizedBox(height: 4),
+                    Text(
+                      format.format(totalExpense),
+                      style: const TextStyle(color: Color(0xFFFECACA), fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
               ),
             ],
           ),
-        );
-      },
+        ],
+      ),
     );
   }
 
@@ -228,7 +228,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> wit
               Icon(Icons.receipt_long, size: 64, color: Colors.grey[300]),
               const SizedBox(height: 16),
               Text(
-                'Tidak ada transaksi',
+                'No transactions',
                 style: TextStyle(color: Colors.grey[500], fontSize: 16),
               ),
             ],
@@ -247,14 +247,14 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> wit
       final txDate = DateTime(tx.date.year, tx.date.month, tx.date.day);
 
       if (txDate == today) {
-        dateKey = 'Hari ini\n${DateFormat('MMMM yyyy').format(tx.date)}';
+        dateKey = 'Today\n${DateFormat('MMMM yyyy').format(tx.date)}';
       } else if (txDate == yesterday) {
-        dateKey = 'Kemarin\n${DateFormat('MMMM yyyy').format(tx.date)}';
+        dateKey = 'Yesterday\n${DateFormat('MMMM yyyy').format(tx.date)}';
       } else {
         dateKey = '${DateFormat('EEEE').format(tx.date)}\n${DateFormat('MMMM yyyy').format(tx.date)}';
       }
 
-      final fullDateKey = '${tx.date.day.toString().padLeft(2, '0')}|$dateKey';
+      final fullDateKey = '${tx.date.year}${tx.date.month.toString().padLeft(2, '0')}${tx.date.day.toString().padLeft(2, '0')}|${tx.date.day.toString().padLeft(2, '0')}|$dateKey';
       
       if (!groupedTransactions.containsKey(fullDateKey)) {
         groupedTransactions[fullDateKey] = [];
@@ -268,13 +268,13 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> wit
     return Container(
       color: Colors.white,
       child: ListView.builder(
-        padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 16),
+        padding: const EdgeInsets.only(top: 16, bottom: 100),
         itemCount: sortedKeys.length,
         itemBuilder: (context, index) {
           final key = sortedKeys[index];
           final parts = key.split('|');
-          final dayStr = parts[0];
-          final descStr = parts[1];
+          final dayStr = parts[1];
+          final descStr = parts[2];
           final dayTxs = groupedTransactions[key]!;
 
           double dayTotal = 0;
@@ -357,14 +357,24 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> wit
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    tx.note.isNotEmpty ? tx.note : tx.category,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: Color(0xFF64748B),
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  Row(
+                    children: [
+                      if (tx.imagePath != null) ...[
+                        const Icon(Icons.image, size: 14, color: Color(0xFF64748B)),
+                        const SizedBox(width: 4),
+                      ],
+                      Expanded(
+                        child: Text(
+                          tx.note.isNotEmpty ? tx.note : tx.category,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Color(0xFF64748B),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),

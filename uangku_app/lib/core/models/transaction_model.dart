@@ -14,6 +14,7 @@ class TransactionModel {
   final Color iconColor;
   final bool isIncome;
   final String note;
+  final String? imagePath;
 
   TransactionModel({
     required this.id,
@@ -29,6 +30,7 @@ class TransactionModel {
     required this.iconColor,
     required this.isIncome,
     this.note = '',
+    this.imagePath,
   });
 
   TransactionModel copyWith({
@@ -45,6 +47,7 @@ class TransactionModel {
     Color? iconColor,
     bool? isIncome,
     String? note,
+    String? imagePath,
   }) {
     return TransactionModel(
       id: id ?? this.id,
@@ -60,6 +63,7 @@ class TransactionModel {
       iconColor: iconColor ?? this.iconColor,
       isIncome: isIncome ?? this.isIncome,
       note: note ?? this.note,
+      imagePath: imagePath ?? this.imagePath,
     );
   }
 }

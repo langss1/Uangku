@@ -4,6 +4,7 @@ import 'package:uangku_app/core/models/transaction_model.dart';
 import 'package:uangku_app/core/data/transaction_data.dart';
 import 'package:uangku_app/features/transaction/screens/add_transaction_screen.dart';
 import 'package:intl/intl.dart';
+import 'dart:io';
 
 class TransactionDetailScreen extends StatelessWidget {
   final String transactionId;
@@ -148,6 +149,25 @@ class TransactionDetailScreen extends StatelessWidget {
                           label: 'Note',
                           value: tx.note.isNotEmpty ? tx.note : '-',
                         ),
+                        if (tx.imagePath != null) ...[
+                          const Divider(height: 32, color: Color(0xFFF1F5F9)),
+                          const Text(
+                            'Attachment',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: AppColors.textLight,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.file(
+                              File(tx.imagePath!),
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
