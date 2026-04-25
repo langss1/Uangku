@@ -12,6 +12,7 @@ import 'package:uangku_app/features/analytics/screens/analytics_screen.dart';
 import 'package:uangku_app/features/chat/screens/chat_screen.dart';
 import 'package:uangku_app/features/scan/screens/scan_screen.dart';
 import 'package:uangku_app/features/notification/screens/notification_screen.dart';
+import 'package:uangku_app/features/budget/screens/budget_screen.dart';
 import 'package:intl/intl.dart';
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -56,6 +57,18 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: Colors.white,
       body: _buildBody(),
       bottomNavigationBar: _buildBottomNav(),
+      floatingActionButton: _selectedIndex != 2 
+          ? FloatingActionButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ChatScreen()),
+                );
+              },
+              backgroundColor: Colors.white,
+              child: const Icon(Icons.smart_toy_outlined, color: Color(0xFF7C3AED)),
+            )
+          : null,
     );
   }
 
@@ -71,7 +84,7 @@ class _HomeScreenState extends State<HomeScreen> {
       });
     }
     if (_selectedIndex == 3) {
-      return const ChatScreen();
+      return const BudgetScreen();
     }
     if (_selectedIndex == 4) {
       return const ProfileScreen();
@@ -606,7 +619,7 @@ class _HomeScreenState extends State<HomeScreen> {
               _buildNavItem(icon: Icons.home_rounded, label: 'Home', index: 0),
               _buildNavItem(icon: Icons.analytics_outlined, label: 'Analytics', index: 1),
               _buildNavItem(icon: Icons.add, label: 'Add', index: 2),
-              _buildNavItem(icon: Icons.smart_toy_outlined, label: 'AI Chat', index: 3),
+              _buildNavItem(icon: Icons.account_balance_wallet_outlined, label: 'Budget', index: 3),
               _buildNavItem(icon: Icons.person_outline, label: 'Profile', index: 4),
             ],
           ),
