@@ -176,12 +176,43 @@ class _ScanScreenState extends State<ScanScreen> with TickerProviderStateMixin {
            if (!lineText.contains('rp')) continue; // Skip if no currency prefix
         }
 
-        final RegExp regExp = RegExp(r'(?:Rp|IDR)?\s?(\d{1,3}(?:\.\d{3})*(?:,\d{2})?|\d+)');
+        // Improved Regex: Matches numbers with dots, commas, or spaces as separators
+        // Example: Rp 323.000, 323,000, 323 . 000, 19.600
+        final RegExp regExp = RegExp(r'(?:Rp|IDR)?\s?(\d{1,3}(?:[\s.,]\d{3})*(?:[\s.,]\d{2,3})?|\d+)');
         final matches = regExp.allMatches(line.text);
 
         for (var match in matches) {
           String valueStr = match.group(1) ?? '';
-          String cleanValue = valueStr.replaceAll('.', '').replaceAll(',', '.');
+          
+          // Intelligent Indonesian Currency Parsing
+          // 1. Remove all spaces
+          String cleanValue = valueStr.replaceAll(' ', '');
+          
+          // 2. Identify if the last separator is a decimal or thousands separator
+          // In IDR, if there are exactly 3 digits after a separator, it's almost always thousands.
+          // If there are exactly 2 digits, it's likely decimal (cents).
+          
+          if (cleanValue.contains('.') || cleanValue.contains(',')) {
+            // Find the last separator type and its position
+            int lastDot = cleanValue.lastIndexOf('.');
+            int lastComma = cleanValue.lastIndexOf(',');
+            int lastIdx = lastDot > lastComma ? lastDot : lastComma;
+            String suffix = cleanValue.substring(lastIdx + 1);
+            
+            if (suffix.length == 3) {
+              // Case: 323.000 or 323,000 -> Both are thousands
+              cleanValue = cleanValue.replaceAll('.', '').replaceAll(',', '');
+            } else if (suffix.length == 2) {
+              // Case: 323.00 or 323,00 -> Both are decimals
+              // Convert to a standard double string (dot as decimal)
+              String prefix = cleanValue.substring(0, lastIdx).replaceAll('.', '').replaceAll(',', '');
+              cleanValue = '$prefix.$suffix';
+            } else {
+              // Fallback: just strip all separators
+              cleanValue = cleanValue.replaceAll('.', '').replaceAll(',', '');
+            }
+          }
+
           double? value = double.tryParse(cleanValue);
 
           if (value != null && value > 100) {
@@ -259,11 +290,13 @@ class _ScanScreenState extends State<ScanScreen> with TickerProviderStateMixin {
             {"amount": 150000, "store": "Indomaret"}
             
             Notes:
-            - "amount" must be a pure number without dots/commas (just digits).
-            - IMPORTANT: Indonesian receipts often have very small "000" or omit them. If you see a 3-digit number like "323" that looks like a total, it is almost certainly "323000". Use your common sense for Indonesian price levels.
+            - "amount" must be a pure INTEGER without any dots, commas, or currency symbols (e.g., 323000).
+            - IMPORTANT: In Indonesia, "323.000" or "323,000" means three hundred twenty-three thousand. NEVER return it as 323.
+            - If you see a number like "323" that is clearly the total (e.g., net amount or grand total), it is likely "323000". Use context to decide.
+            - Return ONLY the digits for "amount".
             - If you cannot find the total, return {"amount": 0, "store": "Unknown"}
-            - Prioritize the value next to words like "TOTAL", "GRAND TOTAL", "JUMLAH", or "BAYAR".
-            - Ignore order numbers or dates.
+            - Prioritize values next to "TOTAL", "GRAND TOTAL", "JUMLAH", "BAYAR", or "NETT".
+            - Ignore dates, times, and phone numbers.
           '''),
           DataPart('image/jpeg', imageBytes),
         ])
