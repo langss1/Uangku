@@ -10,4 +10,10 @@ router.get('/transactions', apiController.getTransactions);
 router.post('/transactions', apiController.addTransaction);
 router.get('/notifications', apiController.getNotifications);
 
+// Budgets
+router.get('/budgets', apiController.getBudgets);
+router.post('/budgets', apiController.addBudget);
+router.put('/budgets/:id', apiController.updateBudget);
+router.delete('/budgets/:id', apiController.deleteBudget);
+
 module.exports = router;

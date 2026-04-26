@@ -63,3 +63,60 @@ exports.getNotifications = async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch notifications' });
   }
 };
+
+exports.getBudgets = async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM budgets WHERE user_id = $1 ORDER BY created_at DESC', [req.user.id]);
+    res.json(result.rows);
+  } catch(error) {
+    res.status(500).json({ error: 'Failed to fetch budgets' });
+  }
+};
+
+exports.addBudget = async (req, res) => {
+  const { id, category, amount, startDate, endDate, iconCodePoint, bgColor, iconColor } = req.body;
+  try {
+    const result = await pool.query(
+      `INSERT INTO budgets (id, user_id, category, amount, start_date, end_date, icon_code_point, bg_color, icon_color) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+      [id, req.user.id, category, amount, startDate, endDate, iconCodePoint, bgColor, iconColor]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch(error) {
+    console.error('Add budget error:', error);
+    res.status(500).json({ error: 'Failed to add budget' });
+  }
+};
+
+exports.updateBudget = async (req, res) => {
+  const { id } = req.params;
+  const { category, amount, startDate, endDate, iconCodePoint, bgColor, iconColor } = req.body;
+  try {
+    const result = await pool.query(
+      `UPDATE budgets SET category = $1, amount = $2, start_date = $3, end_date = $4, icon_code_point = $5, bg_color = $6, icon_color = $7, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $8 AND user_id = $9 RETURNING *`,
+      [category, amount, startDate, endDate, iconCodePoint, bgColor, iconColor, id, req.user.id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Budget not found' });
+    }
+    res.json(result.rows[0]);
+  } catch(error) {
+    console.error('Update budget error:', error);
+    res.status(500).json({ error: 'Failed to update budget' });
+  }
+};
+
+exports.deleteBudget = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query('DELETE FROM budgets WHERE id = $1 AND user_id = $2 RETURNING *', [id, req.user.id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Budget not found' });
+    }
+    res.json({ message: 'Budget deleted successfully' });
+  } catch(error) {
+    console.error('Delete budget error:', error);
+    res.status(500).json({ error: 'Failed to delete budget' });
+  }
+};
