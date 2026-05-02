@@ -70,7 +70,8 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
         print("Error: API_BASE_URL not found in .env");
       }
       final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('auth_token') ?? '';
+      final token = prefs.getString('token') ?? '';
+      print("DEBUG: Mengirim request dengan token: '\$token'");
 
       final response = await http.post(
         Uri.parse('$baseUrl/api/data/chat'),

@@ -13,14 +13,16 @@ const port = process.env.PORT || 8000;
 app.use(cors());
 app.use(express.json());
 
+// Tambahkan ini untuk melacak request yang masuk
+app.use((req, res, next) => {
+    console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+    console.log("Headers:", req.headers.authorization ? "Ada Token" : "Tanpa Token");
+    next();
+});
+
 // Routes Mount
 app.use('/api/auth', authRoutes);
 app.use('/api/data', apiRoutes);
-app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
-  console.log("Headers:", req.headers.authorization ? "Ada Token" : "Tanpa Token");
-  next();
-});
 // Test endpoint
 app.get('/', (req, res) => {
   res.send('UANGKU API is running.');
