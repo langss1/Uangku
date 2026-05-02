@@ -39,7 +39,7 @@ exports.getTransactions = async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM transactions WHERE user_id = $1 ORDER BY date DESC', [req.user.id]);
     res.json(result.rows);
-  } catch(error) {
+  } catch (error) {
     res.status(500).json({ error: 'Failed to fetch transactions' });
   }
 };
@@ -53,7 +53,7 @@ exports.addTransaction = async (req, res) => {
       [req.user.id, title, amount, date, type, category]
     );
     res.status(201).json(result.rows[0]);
-  } catch(error) {
+  } catch (error) {
     res.status(500).json({ error: 'Failed to add transaction' });
   }
 };
@@ -62,7 +62,7 @@ exports.getNotifications = async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM notifications WHERE user_id = $1 ORDER BY created_at DESC', [req.user.id]);
     res.json(result.rows);
-  } catch(error) {
+  } catch (error) {
     res.status(500).json({ error: 'Failed to fetch notifications' });
   }
 };
@@ -71,7 +71,7 @@ exports.getBudgets = async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM budgets WHERE user_id = $1 ORDER BY created_at DESC', [req.user.id]);
     res.json(result.rows);
-  } catch(error) {
+  } catch (error) {
     res.status(500).json({ error: 'Failed to fetch budgets' });
   }
 };
@@ -85,7 +85,7 @@ exports.addBudget = async (req, res) => {
       [id, req.user.id, category, amount, startDate, endDate, iconCodePoint, bgColor, iconColor]
     );
     res.status(201).json(result.rows[0]);
-  } catch(error) {
+  } catch (error) {
     console.error('Add budget error:', error);
     res.status(500).json({ error: 'Failed to add budget' });
   }
@@ -104,7 +104,7 @@ exports.updateBudget = async (req, res) => {
       return res.status(404).json({ error: 'Budget not found' });
     }
     res.json(result.rows[0]);
-  } catch(error) {
+  } catch (error) {
     console.error('Update budget error:', error);
     res.status(500).json({ error: 'Failed to update budget' });
   }
@@ -118,7 +118,7 @@ exports.deleteBudget = async (req, res) => {
       return res.status(404).json({ error: 'Budget not found' });
     }
     res.json({ message: 'Budget deleted successfully' });
-  } catch(error) {
+  } catch (error) {
     console.error('Delete budget error:', error);
     res.status(500).json({ error: 'Failed to delete budget' });
   }
@@ -137,10 +137,10 @@ exports.postChat = async (req, res) => {
       'SELECT title, amount, category, date FROM transactions WHERE user_id = $1 ORDER BY date DESC LIMIT 10',
       [userId]
     );
-    
+
     const transactions = result.rows;
-    
-    const transactionHistory = transactions.length > 0 
+
+    const transactionHistory = transactions.length > 0
       ? transactions.map(t => `- ${t.date}: ${t.title} (Rp${t.amount}) [${t.category}]`).join('\n')
       : "Belum ada riwayat transaksi.";
 
@@ -158,9 +158,9 @@ User's Recent Transactions:
 ${transactionHistory}
 `;
 
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
     const prompt = `${systemPrompt}\n\nPertanyaan User: ${userMessage}`;
-    
+
     const response = await model.generateContent(prompt);
     const aiText = response.response.text();
 
