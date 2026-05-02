@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uangku_app/core/data/transaction_data.dart';
 import 'package:uangku_app/core/models/transaction_model.dart';
 import 'package:uangku_app/features/profile/screens/export_preview_screen.dart';
@@ -273,16 +274,28 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     }
   }
 
-  void _navigateToPreview(String format) {
+  Future<void> _navigateToPreview(String format) async {
     if (_exportDateRange == null) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    final String userName = prefs.getString('user_name') ?? 'Guest User';
+
+    final allTransactions = TransactionData().transactionsNotifier.value;
+    final filteredTransactions = allTransactions.where((tx) => 
+        tx.date.isAfter(_exportDateRange!.start.subtract(const Duration(days: 1))) && 
+        tx.date.isBefore(_exportDateRange!.end.add(const Duration(days: 1)))
+    ).toList();
     
+    if (!mounted) return;
+
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => ExportPreviewScreen(
           dateRange: _exportDateRange!,
           exportFormat: format,
-          userName: 'Sarah Johnson', // Hardcoded as per existing UI
+          userName: userName,
+          transactions: filteredTransactions,
         ),
       ),
     );

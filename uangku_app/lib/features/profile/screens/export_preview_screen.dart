@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:uangku_app/core/models/transaction_model.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:path_provider/path_provider.dart';
@@ -10,12 +11,14 @@ class ExportPreviewScreen extends StatefulWidget {
   final DateTimeRange dateRange;
   final String exportFormat;
   final String userName;
+  final List<TransactionModel> transactions;
 
   const ExportPreviewScreen({
     Key? key,
     required this.dateRange,
     required this.exportFormat,
     required this.userName,
+    required this.transactions,
   }) : super(key: key);
 
   @override
@@ -24,15 +27,6 @@ class ExportPreviewScreen extends StatefulWidget {
 
 class _ExportPreviewScreenState extends State<ExportPreviewScreen> {
   bool _isExporting = false;
-
-  // Dummy transactions data for preview and export
-  final List<Map<String, dynamic>> _dummyTransactions = [
-    {'date': '2024-03-12', 'desc': 'Grocery Store', 'cat': 'Food', 'type': 'Expense', 'amount': 150000},
-    {'date': '2024-03-14', 'desc': 'Salary', 'cat': 'Income', 'type': 'Income', 'amount': 5000000},
-    {'date': '2024-03-15', 'desc': 'Electric Bill', 'cat': 'Utilities', 'type': 'Expense', 'amount': 300000},
-    {'date': '2024-03-18', 'desc': 'Movie Ticket', 'cat': 'Entertainment', 'type': 'Expense', 'amount': 85000},
-    {'date': '2024-03-20', 'desc': 'Freelance', 'cat': 'Income', 'type': 'Income', 'amount': 1200000},
-  ];
 
   Future<void> _handleExport() async {
     setState(() => _isExporting = true);
@@ -88,12 +82,12 @@ class _ExportPreviewScreenState extends State<ExportPreviewScreen> {
               // Table
               pw.TableHelper.fromTextArray(
                 headers: ['Date', 'Description', 'Category', 'Type', 'Amount'],
-                data: _dummyTransactions.map((tx) => [
-                  tx['date'],
-                  tx['desc'],
-                  tx['cat'],
-                  tx['type'],
-                  currencyFormat.format(tx['amount']),
+                data: widget.transactions.map((tx) => [
+                  DateFormat('yyyy-MM-dd').format(tx.date),
+                  tx.title,
+                  tx.category,
+                  tx.isIncome ? 'Income' : 'Expense',
+                  currencyFormat.format(tx.amount),
                 ]).toList(),
                 headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.white),
                 headerDecoration: const pw.BoxDecoration(color: PdfColors.blue600),
@@ -132,13 +126,13 @@ class _ExportPreviewScreenState extends State<ExportPreviewScreen> {
     rows.add(['Date', 'Description', 'Category', 'Type', 'Amount']);
 
     // Table Data
-    for (var tx in _dummyTransactions) {
+    for (var tx in widget.transactions) {
       rows.add([
-        tx['date'],
-        tx['desc'],
-        tx['cat'],
-        tx['type'],
-        currencyFormat.format(tx['amount']),
+        DateFormat('yyyy-MM-dd').format(tx.date),
+        tx.title,
+        tx.category,
+        tx.isIncome ? 'Income' : 'Expense',
+        currencyFormat.format(tx.amount),
       ]);
     }
 
@@ -253,8 +247,10 @@ class _ExportPreviewScreenState extends State<ExportPreviewScreen> {
               border: Border.all(color: Colors.grey.shade300),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: DataTable(
-              headingRowColor: MaterialStateProperty.all(const Color(0xFFF8FAFC)),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: DataTable(
+                headingRowColor: MaterialStateProperty.all(const Color(0xFFF8FAFC)),
               columnSpacing: 16,
               horizontalMargin: 12,
               columns: const [
@@ -263,32 +259,34 @@ class _ExportPreviewScreenState extends State<ExportPreviewScreen> {
                 DataColumn(label: Text('Type', style: TextStyle(fontWeight: FontWeight.bold))),
                 DataColumn(label: Text('Amount', style: TextStyle(fontWeight: FontWeight.bold))),
               ],
-              rows: _dummyTransactions.map((tx) {
+              rows: widget.transactions.map((tx) {
+                String typeStr = tx.isIncome ? 'Income' : 'Expense';
                 return DataRow(
                   cells: [
-                    DataCell(Text(tx['date'], style: const TextStyle(fontSize: 12))),
-                    DataCell(Text(tx['desc'], style: const TextStyle(fontSize: 12))),
+                    DataCell(Text(DateFormat('yyyy-MM-dd').format(tx.date), style: const TextStyle(fontSize: 12))),
+                    DataCell(Text(tx.title, style: const TextStyle(fontSize: 12))),
                     DataCell(
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                         decoration: BoxDecoration(
-                          color: tx['type'] == 'Income' ? const Color(0xFFD1FAE5) : const Color(0xFFFEE2E2),
+                          color: tx.isIncome ? const Color(0xFFD1FAE5) : const Color(0xFFFEE2E2),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
-                          tx['type'], 
+                          typeStr, 
                           style: TextStyle(
                             fontSize: 10, 
-                            color: tx['type'] == 'Income' ? const Color(0xFF059669) : const Color(0xFFDC2626)
+                            color: tx.isIncome ? const Color(0xFF059669) : const Color(0xFFDC2626)
                           ),
                         ),
                       ),
                     ),
-                    DataCell(Text(currencyFormat.format(tx['amount']), style: const TextStyle(fontSize: 12))),
+                    DataCell(Text(currencyFormat.format(tx.amount), style: const TextStyle(fontSize: 12))),
                   ],
                 );
               }).toList(),
             ),
+          ),
           ),
           
           const SizedBox(height: 40),
