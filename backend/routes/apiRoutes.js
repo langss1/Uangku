@@ -16,4 +16,7 @@ router.post('/budgets', apiController.addBudget);
 router.put('/budgets/:id', apiController.updateBudget);
 router.delete('/budgets/:id', apiController.deleteBudget);
 
+// Chatbot AI
+router.post('/chat', apiController.postChat);
+
 module.exports = router;

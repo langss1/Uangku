@@ -1,4 +1,7 @@
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 const pool = require('../config/db');
+
+const genAI = process.env.GEMINI_API_KEY ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY) : null;
 
 exports.getDashboard = async (req, res) => {
   const userId = req.user.id;
@@ -118,5 +121,53 @@ exports.deleteBudget = async (req, res) => {
   } catch(error) {
     console.error('Delete budget error:', error);
     res.status(500).json({ error: 'Failed to delete budget' });
+  }
+};
+
+exports.postChat = async (req, res) => {
+  const userId = req.user.id;
+  const { userMessage } = req.body;
+
+  if (!genAI) {
+    return res.status(500).json({ error: "Gemini API Key is missing in backend environment." });
+  }
+
+  try {
+    const result = await pool.query(
+      'SELECT title, amount, category, date FROM transactions WHERE user_id = $1 ORDER BY date DESC LIMIT 10',
+      [userId]
+    );
+    
+    const transactions = result.rows;
+    
+    const transactionHistory = transactions.length > 0 
+      ? transactions.map(t => `- ${t.date}: ${t.title} (Rp${t.amount}) [${t.category}]`).join('\n')
+      : "Belum ada riwayat transaksi.";
+
+    const systemPrompt = `
+Persona: You are UANGKU AI, a professional and friendly expert personal finance advisor for Indonesian students and young professionals.
+Role: Your task is to analyze user spending patterns, offer budgeting advice (like the 50/30/20 rule), and help users save money.
+Context: Below is the user's recent transaction history. Use this as your primary data source for analysis.
+Constraints:
+- Respond in Indonesian (Bahasa Indonesia) unless asked otherwise.
+- Be concise, friendly, and trustworthy.
+- Base your analysis ONLY on the provided transaction data.
+- If a user asks about something unrelated to finance, politely redirect them back.
+
+User's Recent Transactions:
+${transactionHistory}
+`;
+
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const prompt = `${systemPrompt}\n\nPertanyaan User: ${userMessage}`;
+    
+    const response = await model.generateContent(prompt);
+    const aiText = response.response.text();
+
+    res.json({ reply: aiText });
+
+  } catch (error) {
+    console.error("Chat Error:", error);
+    res.status(500).json({ error: "Gagal memproses pesan AI." });
   }
 };

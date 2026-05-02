@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({Key? key}) : super(key: key);
@@ -14,7 +16,6 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
   
   bool _isTyping = false;
-  late final ChatSession _chatSession;
 
   // Data Pesan
   final List<Map<String, dynamic>> _messages = [
@@ -35,16 +36,6 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
       vsync: this,
       duration: const Duration(milliseconds: 1200),
     )..repeat();
-    
-    final apiKey = dotenv.env['GEMINI_API_KEY'] ?? '';
-    final model = GenerativeModel(
-      model: 'gemini-flash-latest',
-      apiKey: apiKey,
-    );
-    
-    // History harus dimulai dari user, jadi kita kosongkan saja history awalnya.
-    // Pesan sapaan pertama cukup tampil di UI saja.
-    _chatSession = model.startChat();
   }
 
   @override
@@ -74,33 +65,55 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     _scrollToBottom();
 
     try {
-      // Inject persona ke pesan pertama secara manual untuk menghindari bug systemInstruction di SDK lama
-      String prompt = newMsg;
-      if (_messages.length <= 2) { 
-        prompt = "System Prompt: Kamu adalah UANGKU AI, penasihat dan asisten ahli keuangan pribadi pengguna. Berikan saran alokasi budgeting, investasi, dan analisis pengeluaran dalam bahasa Indonesia yang ringkas, profesional, dan bersahabat. Hindari pengatur paragraf ganda. Jangan mengaku sebagai AI biasa.\n\nPertanyaan User: $newMsg";
-      }
+      final baseUrl = dotenv.env['API_BASE_URL'] ?? 'http://10.0.2.2:8000';
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token') ?? '';
 
-      final response = await _chatSession.sendMessage(Content.text(prompt));
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/data/chat'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'userMessage': newMsg,
+        }),
+      );
+
       if (!mounted) return;
-      setState(() {
-        _isTyping = false;
-        _messages.add({
-          'isTop': false,
-          'isUser': false,
-          'text': response.text?.trim() ?? 'Maaf, saya tidak dapat merespons saat ini.',
-          'time': _getCurrentTime(),
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          _isTyping = false;
+          _messages.add({
+            'isTop': false,
+            'isUser': false,
+            'text': data['reply'] ?? 'Maaf, respons tidak terbaca.',
+            'time': _getCurrentTime(),
+          });
         });
-      });
+      } else {
+        setState(() {
+          _isTyping = false;
+          _messages.add({
+            'isTop': false,
+            'isUser': false,
+            'text': 'Gagal menghubungi server (Status: ${response.statusCode})',
+            'time': _getCurrentTime(),
+          });
+        });
+      }
       _scrollToBottom();
     } catch (e) {
-      print('Chatbot Error: $e'); // Print error ke console
+      print('Chatbot Error: $e');
       if (!mounted) return;
       setState(() {
         _isTyping = false;
         _messages.add({
           'isTop': false,
           'isUser': false,
-          'text': 'Error detail:\n$e',
+          'text': 'Error koneksi:\n$e',
           'time': _getCurrentTime(),
         });
       });
