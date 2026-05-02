@@ -153,7 +153,7 @@ class BudgetDetailScreen extends StatelessWidget {
                             ),
                           ),
                           Positioned(
-                            left: constraints.maxWidth * timeProgress - 1,
+                            left: (constraints.maxWidth * timeProgress - 1).clamp(0.0, constraints.maxWidth - 2.0),
                             top: -4,
                             child: Container(
                               width: 2,
@@ -162,7 +162,7 @@ class BudgetDetailScreen extends StatelessWidget {
                             ),
                           ),
                           Positioned(
-                            left: constraints.maxWidth * timeProgress - 20,
+                            left: (constraints.maxWidth * timeProgress - 20).clamp(0.0, constraints.maxWidth - 40.0),
                             top: 14,
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),

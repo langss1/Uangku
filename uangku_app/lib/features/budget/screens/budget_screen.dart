@@ -34,7 +34,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
           'Budgets',
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
         ),
-        centerTitle: false,
+        centerTitle: true,
         actions: [
           IconButton(
             icon: const Icon(Icons.help_outline, color: Colors.white),
@@ -208,49 +208,67 @@ class _BudgetScreenState extends State<BudgetScreen> {
               style: TextStyle(color: Colors.white70, fontSize: 13),
             ),
             const SizedBox(height: 8),
-            Text(
-              format.format(remaining),
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 36,
-                fontWeight: FontWeight.w800,
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                format.format(remaining),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 36,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
             ),
             const SizedBox(height: 32),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                Column(
-                  children: [
-                    Text(
-                      _formatCompact(totalBudget),
-                      style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 4),
-                    const Text('Total budget', style: TextStyle(color: Colors.white70, fontSize: 12)),
-                  ],
+                Expanded(
+                  child: Column(
+                    children: [
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          _formatCompact(totalBudget),
+                          style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      const Text('Total budget', style: TextStyle(color: Colors.white70, fontSize: 11), textAlign: TextAlign.center),
+                    ],
+                  ),
                 ),
                 Container(width: 1, height: 30, color: Colors.white.withOpacity(0.2)),
-                Column(
-                  children: [
-                    Text(
-                      _formatCompact(totalSpent),
-                      style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 4),
-                    const Text('Total spent', style: TextStyle(color: Colors.white70, fontSize: 12)),
-                  ],
+                Expanded(
+                  child: Column(
+                    children: [
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          _formatCompact(totalSpent),
+                          style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      const Text('Total spent', style: TextStyle(color: Colors.white70, fontSize: 11), textAlign: TextAlign.center),
+                    ],
+                  ),
                 ),
                 Container(width: 1, height: 30, color: Colors.white.withOpacity(0.2)),
-                Column(
-                  children: [
-                    Text(
-                      '$daysLeft days',
-                      style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 4),
-                    const Text('End of period', style: TextStyle(color: Colors.white70, fontSize: 12)),
-                  ],
+                Expanded(
+                  child: Column(
+                    children: [
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          '$daysLeft days',
+                          style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      const Text('End of period', style: TextStyle(color: Colors.white70, fontSize: 11), textAlign: TextAlign.center),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -369,7 +387,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
                     ),
                     // 'Hari ini' Marker
                     Positioned(
-                      left: constraints.maxWidth * timeProgress - 1,
+                      left: (constraints.maxWidth * timeProgress - 1).clamp(0.0, constraints.maxWidth - 2.0),
                       top: -4,
                       child: Container(
                         width: 2,
@@ -378,7 +396,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
                       ),
                     ),
                     Positioned(
-                      left: constraints.maxWidth * timeProgress - 20,
+                      left: (constraints.maxWidth * timeProgress - 20).clamp(0.0, constraints.maxWidth - 40.0),
                       top: 14,
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
