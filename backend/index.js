@@ -16,7 +16,11 @@ app.use(express.json());
 // Routes Mount
 app.use('/api/auth', authRoutes);
 app.use('/api/data', apiRoutes);
-
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+  console.log("Headers:", req.headers.authorization ? "Ada Token" : "Tanpa Token");
+  next();
+});
 // Test endpoint
 app.get('/', (req, res) => {
   res.send('UANGKU API is running.');
