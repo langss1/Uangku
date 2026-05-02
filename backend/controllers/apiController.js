@@ -158,7 +158,7 @@ User's Recent Transactions:
 ${transactionHistory}
 `;
 
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     const prompt = `${systemPrompt}\n\nPertanyaan User: ${userMessage}`;
 
     const response = await model.generateContent(prompt);
