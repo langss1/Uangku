@@ -52,6 +52,7 @@ dependencies:
   connectivity_plus: any
   video_player: any
   image_picker: ^1.2.1
+  flutter_markdown_plus: any
 
 dev_dependencies:
   flutter_test:
