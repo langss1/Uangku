@@ -18,15 +18,8 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   
   bool _isTyping = false;
 
-  // Data Pesan
-  final List<Map<String, dynamic>> _messages = [
-    {
-      'isTop': true,
-      'isUser': false,
-      'text': 'Halo! Saya UANGKU AI, asisten keuangan pribadi Anda. Bagaimana saya bisa membantu mengelola keuangan Anda hari ini?',
-      'time': '09:30',
-    },
-  ];
+  // Data Pesan — diinisialisasi di initState agar bisa pakai jam aktual
+  final List<Map<String, dynamic>> _messages = [];
 
   late AnimationController _typingAnimCtrl;
 
@@ -37,6 +30,14 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
       vsync: this,
       duration: const Duration(milliseconds: 1200),
     )..repeat();
+
+    // Tambahkan pesan pembuka dengan jam aktual
+    _messages.add({
+      'isTop': true,
+      'isUser': false,
+      'text': 'Halo! Saya UANGKU AI, asisten keuangan pribadi Anda. Bagaimana saya bisa membantu mengelola keuangan Anda hari ini?',
+      'time': _getCurrentTime(),
+    });
   }
 
   @override
