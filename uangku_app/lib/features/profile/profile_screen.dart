@@ -5,6 +5,8 @@ import 'package:uangku_app/features/splash/splash_screen.dart';
 import 'package:intl/intl.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:uangku_app/features/profile/screens/notification_settings_screen.dart';
+import 'package:uangku_app/features/notification/screens/notification_screen.dart';
 import 'package:uangku_app/features/profile/screens/settings_screen.dart';
 import 'package:uangku_app/features/profile/screens/dummy_screens.dart';
 
@@ -80,7 +82,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC), // Premium light background
+      backgroundColor: const Color(0xFFFAFAFA), // Ultra light background
       appBar: AppBar(
         automaticallyImplyLeading: false,
         backgroundColor: Colors.transparent,
@@ -133,13 +135,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [Color(0xFF1E3A8A), Color(0xFF3B82F6)],
+                    colors: [Color(0xFF0F172A), Color(0xFF1E293B)], // Sleek dark navy
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(24),
                   boxShadow: [
-                    BoxShadow(color: const Color(0xFF3B82F6).withOpacity(0.3), blurRadius: 15, offset: const Offset(0, 8)),
+                    BoxShadow(color: const Color(0xFF0F172A).withOpacity(0.15), blurRadius: 20, offset: const Offset(0, 10)),
                   ],
                 ),
                 child: Row(
@@ -233,13 +235,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   Divider(color: Colors.grey.shade100, height: 1, indent: 76),
                   _buildSettingTile(
-                    icon: Icons.notifications_none_outlined,
-                    iconBgColor: const Color(0xFFFEF3C7),
-                    iconColor: const Color(0xFFD97706),
-                    title: 'Notifications',
-                    subtitle: 'Email, push preferences',
+                    icon: Icons.notifications_none_rounded,
+                    iconBgColor: const Color(0xFFFFF7ED),
+                    iconColor: const Color(0xFFF97316),
+                    title: 'Notification Settings',
+                    subtitle: 'Manage alerts, daily reports',
                     onTap: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsScreen()));
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationSettingsScreen()));
                     },
                   ),
                   Divider(color: Colors.grey.shade100, height: 1, indent: 76),

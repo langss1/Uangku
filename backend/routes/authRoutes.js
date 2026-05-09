@@ -14,5 +14,7 @@ router.put('/profile', authMiddleware, authController.updateProfile);
 router.put('/security', authMiddleware, authController.updateSecurity);
 router.post('/2fa/generate', authMiddleware, authController.generate2FA);
 router.post('/2fa/verify', authMiddleware, authController.verify2FA);
+router.get('/2fa/status', authMiddleware, authController.get2FAStatus);
+router.post('/2fa/toggle', authMiddleware, authController.toggle2FA);
 
 module.exports = router;

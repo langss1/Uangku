@@ -36,6 +36,28 @@ class _NotificationScreenState extends State<NotificationScreen> {
     }
   }
 
+  Future<void> _clearAll() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Clear All Notifications'),
+        content: const Text('Are you sure you want to delete all notifications? This action cannot be undone.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Clear', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await DatabaseHelper.instance.deleteAllNotifications();
+      _loadNotifications();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -51,6 +73,13 @@ class _NotificationScreenState extends State<NotificationScreen> {
           'Notifications',
           style: TextStyle(color: AppColors.textDark, fontWeight: FontWeight.bold),
         ),
+        actions: [
+          if (_notifications.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.delete_sweep_outlined, color: Colors.redAccent),
+              onPressed: _clearAll,
+            ),
+        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())

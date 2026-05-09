@@ -207,6 +207,43 @@ const authController = {
     }
   },
 
+  // Check if user has 2FA secret
+  get2FAStatus: async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const result = await pool.query('SELECT totp_secret, is_2fa_active FROM users WHERE id = $1', [userId]);
+      if (result.rows.length === 0) return res.status(404).json({ error: 'User not found' });
+      
+      const hasSecret = result.rows[0].totp_secret !== null;
+      res.status(200).json({
+        hasSecret: hasSecret,
+        isActive: result.rows[0].is_2fa_active
+      });
+    } catch (error) {
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  },
+
+  // Toggle 2FA if secret exists
+  toggle2FA: async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const { active } = req.body;
+
+      const result = await pool.query('SELECT totp_secret FROM users WHERE id = $1', [userId]);
+      if (result.rows.length === 0) return res.status(404).json({ error: 'User not found' });
+
+      if (active && !result.rows[0].totp_secret) {
+        return res.status(400).json({ error: 'No 2FA secret found. Please setup 2FA first.' });
+      }
+
+      await pool.query('UPDATE users SET is_2fa_active = $1 WHERE id = $2', [active, userId]);
+      res.status(200).json({ message: `2FA ${active ? 'enabled' : 'disabled'} successfully` });
+    } catch (error) {
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  },
+
   // Verify 2FA Token to enable it
   verify2FA: async (req, res) => {
     try {

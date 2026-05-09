@@ -29,6 +29,7 @@ class _SettingsEditorScreenState extends State<SettingsEditorScreen> {
   final TextEditingController _field2Controller = TextEditingController();
   bool _isLoading = false;
   bool _is2FAEnabled = false;
+  bool _has2FASecret = false;
 
   @override
   void initState() {
@@ -43,9 +44,32 @@ class _SettingsEditorScreenState extends State<SettingsEditorScreen> {
 
   Future<void> _load2FAStatus() async {
     final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+    
+    // Initial local load
     setState(() {
       _is2FAEnabled = prefs.getBool('is_2fa_active') ?? false;
     });
+
+    if (token == null) return;
+
+    try {
+      final response = await http.get(
+        Uri.parse('http://145.79.10.157:8000/api/auth/2fa/status'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          _is2FAEnabled = data['isActive'];
+          _has2FASecret = data['hasSecret'];
+        });
+        await prefs.setBool('is_2fa_active', _is2FAEnabled);
+      }
+    } catch (e) {
+      debugPrint("Error loading 2FA status: $e");
+    }
   }
 
 
@@ -172,9 +196,13 @@ class _SettingsEditorScreenState extends State<SettingsEditorScreen> {
                 contentPadding: EdgeInsets.zero,
                 onChanged: (val) {
                   if (val) {
-                    _enable2FA();
+                    if (_has2FASecret) {
+                      _toggle2FA(true);
+                    } else {
+                      _enable2FA();
+                    }
                   } else {
-                    _disable2FA();
+                    _toggle2FA(false);
                   }
                 },
               ),
@@ -329,28 +357,48 @@ class _SettingsEditorScreenState extends State<SettingsEditorScreen> {
     );
   }
 
-  Future<void> _disable2FA() async {
+  Future<void> _toggle2FA(bool active) async {
     setState(() => _isLoading = true);
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
 
     try {
-      final response = await http.put(
-        Uri.parse('http://145.79.10.157:8000/api/auth/security'),
+      final response = await http.post(
+        Uri.parse('http://145.79.10.157:8000/api/auth/2fa/toggle'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
-        body: jsonEncode({"is_2fa_active": false}),
+        body: jsonEncode({"active": active}),
       );
 
       if (response.statusCode == 200) {
-        await prefs.setBool('is_2fa_active', false);
-        setState(() => _is2FAEnabled = false);
+        await prefs.setBool('is_2fa_active', active);
+        setState(() => _is2FAEnabled = active);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('2FA ${active ? 'enabled' : 'disabled'} successfully')),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to toggle 2FA')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  Future<void> _disable2FA() async {
+    // Deprecated in favor of _toggle2FA
+    await _toggle2FA(false);
   }
 
   Widget _buildInputField({

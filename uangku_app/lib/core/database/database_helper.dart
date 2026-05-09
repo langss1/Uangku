@@ -121,4 +121,14 @@ class DatabaseHelper {
     final result = await db.rawQuery('SELECT COUNT(*) as count FROM notifications WHERE is_read = 0');
     return Sqflite.firstIntValue(result) ?? 0;
   }
+
+  Future<void> deleteAllNotifications() async {
+    final db = await instance.database;
+    await db.delete('notifications');
+  }
+
+  Future<void> deleteNotification(String id) async {
+    final db = await instance.database;
+    await db.delete('notifications', where: 'id = ?', whereArgs: [id]);
+  }
 }
