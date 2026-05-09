@@ -36,59 +36,99 @@ class TransactionDetailScreen extends StatelessWidget {
         final tx = transactions[txIndex];
 
         return Scaffold(
-          backgroundColor: Colors.white,
+          extendBodyBehindAppBar: true,
           appBar: AppBar(
-            backgroundColor: Colors.white,
+            backgroundColor: Colors.transparent,
             elevation: 0,
             leading: IconButton(
-              icon: const Icon(Icons.arrow_back, color: AppColors.textDark),
+              icon: const Icon(Icons.arrow_back, color: Colors.white),
               onPressed: () => Navigator.pop(context),
             ),
             title: const Text(
               'Transaction Detail',
-              style: TextStyle(color: AppColors.textDark, fontWeight: FontWeight.bold, fontSize: 18),
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
             ),
             centerTitle: true,
             actions: [
               IconButton(
-                icon: const Icon(Icons.more_vert, color: AppColors.textDark),
+                icon: const Icon(Icons.more_vert, color: Colors.white),
                 onPressed: () {},
               ),
             ],
           ),
-          body: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                children: [
-                  // Header
-                  Container(
-                    width: 72,
-                    height: 72,
-                    decoration: BoxDecoration(
-                      color: tx.bgColor,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(tx.icon, color: tx.iconColor, size: 36),
+          body: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              // Blue Gradient Background
+              Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Color(0xFF1E3A8A), Color(0xFF3B82F6)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                  const SizedBox(height: 16),
-                  Text(
-                    '${tx.isIncome ? '' : '-'}${_formatLongCurrency(tx.amount)}',
-                    style: const TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textDark,
-                    ),
+                ),
+              ),
+              // Polar Circles
+              Positioned(
+                top: -50,
+                right: -50,
+                child: Container(
+                  width: 200,
+                  height: 200,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withOpacity(0.05),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    tx.isIncome ? 'Income' : 'Expense',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      color: AppColors.textLight,
-                    ),
+                ),
+              ),
+              Positioned(
+                top: 150,
+                left: -40,
+                child: Container(
+                  width: 140,
+                  height: 140,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withOpacity(0.05),
                   ),
-                  const SizedBox(height: 48),
+                ),
+              ),
+              // Main Content
+              SafeArea(
+                child: SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Column(
+                      children: [
+                        // Header
+                        Container(
+                          width: 72,
+                          height: 72,
+                          decoration: BoxDecoration(
+                            color: tx.bgColor,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(tx.icon, color: tx.iconColor, size: 36),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          '${tx.isIncome ? '' : '-'}${_formatLongCurrency(tx.amount)}',
+                          style: const TextStyle(
+                            fontSize: 32,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          tx.isIncome ? 'Income' : 'Expense',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: Colors.white70,
+                          ),
+                        ),
+                        const SizedBox(height: 48),
 
                   // Details Box
                   Container(
@@ -229,8 +269,11 @@ class TransactionDetailScreen extends StatelessWidget {
                   ),
                 ],
               ),
+              ),
             ),
           ),
+          ],
+        ),
         );
       },
     );

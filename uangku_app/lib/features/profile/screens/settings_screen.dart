@@ -28,7 +28,7 @@ class _SettingsEditorScreenState extends State<SettingsEditorScreen> {
   final TextEditingController _field1Controller = TextEditingController();
   final TextEditingController _field2Controller = TextEditingController();
   bool _isLoading = false;
-  bool _is2FAEnabled = true;
+  bool _is2FAEnabled = false;
 
   @override
   void initState() {
@@ -36,8 +36,18 @@ class _SettingsEditorScreenState extends State<SettingsEditorScreen> {
     if (!widget.isSecurity) {
       _field1Controller.text = widget.initialName;
       _field2Controller.text = widget.initialEmail;
+    } else {
+      _load2FAStatus();
     }
   }
+
+  Future<void> _load2FAStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _is2FAEnabled = prefs.getBool('is_2fa_active') ?? false;
+    });
+  }
+
 
   @override
   void dispose() {
@@ -161,9 +171,11 @@ class _SettingsEditorScreenState extends State<SettingsEditorScreen> {
                 activeColor: const Color(0xFF2962FF),
                 contentPadding: EdgeInsets.zero,
                 onChanged: (val) {
-                  setState(() {
-                    _is2FAEnabled = val;
-                  });
+                  if (val) {
+                    _enable2FA();
+                  } else {
+                    _disable2FA();
+                  }
                 },
               ),
             ],
@@ -195,6 +207,150 @@ class _SettingsEditorScreenState extends State<SettingsEditorScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _enable2FA() async {
+    setState(() => _isLoading = true);
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+
+    try {
+      final response = await http.post(
+        Uri.parse('http://145.79.10.157:8000/api/auth/2fa/generate'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final qrCodeData = data['qrCode'] as String;
+        // The QR code is a base64 encoded image string like "data:image/png;base64,..."
+        final base64String = qrCodeData.split(',').last;
+
+        if (mounted) {
+          _show2FADialog(base64String);
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to generate 2FA QR Code')));
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _show2FADialog(String base64Image) {
+    final TextEditingController tokenController = TextEditingController();
+    bool isVerifying = false;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: const Text('Setup 2FA', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold)),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text('Scan this QR code with Google Authenticator or Microsoft Authenticator.', textAlign: TextAlign.center, style: TextStyle(fontSize: 14)),
+                    const SizedBox(height: 16),
+                    Image.memory(base64Decode(base64Image), width: 200, height: 200),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: tokenController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        hintText: 'Enter 6-digit code',
+                        filled: true,
+                        fillColor: const Color(0xFFF8FAFC),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isVerifying ? null : () => Navigator.pop(context),
+                  child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+                ),
+                ElevatedButton(
+                  onPressed: isVerifying
+                      ? null
+                      : () async {
+                          if (tokenController.text.length != 6) {
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Enter a valid 6-digit code')));
+                            return;
+                          }
+                          setStateDialog(() => isVerifying = true);
+                          final prefs = await SharedPreferences.getInstance();
+                          final token = prefs.getString('token');
+
+                          try {
+                            final response = await http.post(
+                              Uri.parse('http://145.79.10.157:8000/api/auth/2fa/verify'),
+                              headers: {
+                                'Authorization': 'Bearer $token',
+                                'Content-Type': 'application/json',
+                              },
+                              body: jsonEncode({"token": tokenController.text}),
+                            );
+
+                            if (response.statusCode == 200) {
+                              await prefs.setBool('is_2fa_active', true);
+                              setState(() => _is2FAEnabled = true);
+                              if (mounted) {
+                                Navigator.pop(context);
+                                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('2FA enabled successfully')));
+                              }
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Invalid code, try again')));
+                            }
+                          } catch (e) {
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+                          } finally {
+                            if (mounted) setStateDialog(() => isVerifying = false);
+                          }
+                        },
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2962FF)),
+                  child: isVerifying
+                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      : const Text('Verify', style: TextStyle(color: Colors.white)),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _disable2FA() async {
+    setState(() => _isLoading = true);
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+
+    try {
+      final response = await http.put(
+        Uri.parse('http://145.79.10.157:8000/api/auth/security'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({"is_2fa_active": false}),
+      );
+
+      if (response.statusCode == 200) {
+        await prefs.setBool('is_2fa_active', false);
+        setState(() => _is2FAEnabled = false);
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   Widget _buildInputField({

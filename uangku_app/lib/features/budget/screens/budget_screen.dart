@@ -26,9 +26,10 @@ class _BudgetScreenState extends State<BudgetScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF1F5F9), // Light background for contrast
+      backgroundColor: const Color(0xFFF1F5F9), // Light background
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        backgroundColor: AppColors.primaryBlue,
+        backgroundColor: Colors.transparent,
         elevation: 0,
         title: const Text(
           'Budgets',
@@ -87,20 +88,57 @@ class _BudgetScreenState extends State<BudgetScreen> {
                 daysLeft = diff < 0 ? 0 : diff;
               }
 
-              return SingleChildScrollView(
+              return Stack(
+                children: [
+                  // Blue Gradient Header Background with Polar Circles
+                  Container(
+                    height: 380,
+                    width: double.infinity,
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Color(0xFF1E3A8A), Color(0xFF3B82F6)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                    ),
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Positioned(
+                          top: -50,
+                          right: -50,
+                          child: Container(
+                            width: 200,
+                            height: 200,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white.withOpacity(0.05),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          top: 150,
+                          left: -40,
+                          child: Container(
+                            width: 140,
+                            height: 140,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white.withOpacity(0.05),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SafeArea(
+                    child: SingleChildScrollView(
                 child: Column(
                   children: [
                     // Top Section (Arc Chart & Summary)
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.only(top: 20, bottom: 32, left: 24, right: 24),
-                      decoration: const BoxDecoration(
-                        color: AppColors.primaryBlue,
-                        borderRadius: BorderRadius.only(
-                          bottomLeft: Radius.circular(32),
-                          bottomRight: Radius.circular(32),
-                        ),
-                      ),
                       child: Column(
                         children: [
                           _buildArcChart(globalTotalBudget, globalTotalSpent, globalRemaining, daysLeft),
@@ -136,15 +174,15 @@ class _BudgetScreenState extends State<BudgetScreen> {
                       ),
                     ),
 
-                    // List of Budgets
-                    if (budgets.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.all(32.0),
-                        child: Text(
-                          'No budgets created yet.',
-                          style: TextStyle(color: Color(0xFF64748B), fontSize: 16),
-                        ),
-                      )
+                      // List of Budgets
+                      if (budgets.isEmpty)
+                        const Padding(
+                          padding: EdgeInsets.all(32.0),
+                          child: Text(
+                            'No budgets created yet.',
+                            style: TextStyle(color: Color(0xFF64748B), fontSize: 16),
+                          ),
+                        )
                     else
                       Padding(
                         padding: const EdgeInsets.all(20.0),
@@ -169,7 +207,10 @@ class _BudgetScreenState extends State<BudgetScreen> {
                       ),
                   ],
                 ),
-              );
+              ),
+              ),
+              ],
+            );
             },
           );
         },
@@ -182,95 +223,87 @@ class _BudgetScreenState extends State<BudgetScreen> {
     double progress = totalBudget > 0 ? totalSpent / totalBudget : 0;
     if (progress > 1.0) progress = 1.0;
 
-    return Stack(
-      alignment: Alignment.center,
+    return Column(
       children: [
-        // The Custom Arc Painter
-        SizedBox(
-          width: 300,
-          height: 150,
-          child: CustomPaint(
-            painter: ArcProgressPainter(
-              progress: progress,
-              backgroundColor: Colors.white.withOpacity(0.2),
-              progressColor: Colors.white,
-            ),
-          ),
-        ),
-        
-        // The Text Content inside the Arc
-        Column(
-          mainAxisSize: MainAxisSize.min,
+        Stack(
+          alignment: Alignment.bottomCenter,
           children: [
-            const SizedBox(height: 20),
-            const Text(
-              'Amount you can spend',
-              style: TextStyle(color: Colors.white70, fontSize: 13),
-            ),
-            const SizedBox(height: 8),
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                format.format(remaining),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 36,
-                  fontWeight: FontWeight.w800,
+            // The Custom Arc Painter
+            SizedBox(
+              width: 300,
+              height: 150,
+              child: CustomPaint(
+                painter: ArcProgressPainter(
+                  progress: progress,
+                  backgroundColor: Colors.white.withOpacity(0.2),
+                  progressColor: Colors.white,
                 ),
               ),
             ),
-            const SizedBox(height: 32),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            
+            // The Text Content inside the Arc
+            Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Expanded(
-                  child: Column(
-                    children: [
-                      FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text(
-                          _formatCompact(totalBudget),
-                          style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      const Text('Total budget', style: TextStyle(color: Colors.white70, fontSize: 11), textAlign: TextAlign.center),
-                    ],
+                const Text(
+                  'Amount you can spend',
+                  style: TextStyle(color: Colors.white70, fontSize: 13),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  format.format(remaining),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 36,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
-                Container(width: 1, height: 30, color: Colors.white.withOpacity(0.2)),
-                Expanded(
-                  child: Column(
-                    children: [
-                      FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text(
-                          _formatCompact(totalSpent),
-                          style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      const Text('Total spent', style: TextStyle(color: Colors.white70, fontSize: 11), textAlign: TextAlign.center),
-                    ],
-                  ),
-                ),
-                Container(width: 1, height: 30, color: Colors.white.withOpacity(0.2)),
-                Expanded(
-                  child: Column(
-                    children: [
-                      FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text(
-                          '$daysLeft days',
-                          style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      const Text('End of period', style: TextStyle(color: Colors.white70, fontSize: 11), textAlign: TextAlign.center),
-                    ],
-                  ),
-                ),
+                const SizedBox(height: 10),
               ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 24),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            Expanded(
+              child: Column(
+                children: [
+                  Text(
+                    _formatCompact(totalBudget),
+                    style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text('Total budget', style: TextStyle(color: Colors.white70, fontSize: 12), textAlign: TextAlign.center),
+                ],
+              ),
+            ),
+            Container(width: 1, height: 30, color: Colors.white.withOpacity(0.2)),
+            Expanded(
+              child: Column(
+                children: [
+                  Text(
+                    _formatCompact(totalSpent),
+                    style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text('Total spent', style: TextStyle(color: Colors.white70, fontSize: 12), textAlign: TextAlign.center),
+                ],
+              ),
+            ),
+            Container(width: 1, height: 30, color: Colors.white.withOpacity(0.2)),
+            Expanded(
+              child: Column(
+                children: [
+                  Text(
+                    '$daysLeft days',
+                    style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text('End of period', style: TextStyle(color: Colors.white70, fontSize: 12), textAlign: TextAlign.center),
+                ],
+              ),
             ),
           ],
         ),

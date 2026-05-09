@@ -6,6 +6,7 @@ import 'package:uangku_app/core/theme/app_colors.dart';
 import 'package:uangku_app/features/home/home_screen.dart';
 import 'package:uangku_app/features/auth/register_screen.dart';
 import 'package:uangku_app/features/auth/forgot_password_screen.dart';
+import 'package:uangku_app/features/auth/verify_login_2fa_screen.dart';
 import 'package:video_player/video_player.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -91,6 +92,15 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
+
+        if (data['requires2FA'] == true) {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => VerifyLogin2FAScreen(userId: data['userId']),
+            ),
+          );
+          return;
+        }
         
         final prefs = await SharedPreferences.getInstance();
         await prefs.setBool('isLoggedIn', true);

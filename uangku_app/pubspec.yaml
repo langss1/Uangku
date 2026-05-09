@@ -53,6 +53,7 @@ dependencies:
   video_player: any
   image_picker: ^1.2.1
   flutter_markdown_plus: any
+  flutter_local_notifications: ^19.5.0
 
 dev_dependencies:
   flutter_test:

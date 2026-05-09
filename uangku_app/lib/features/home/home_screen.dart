@@ -13,6 +13,8 @@ import 'package:uangku_app/features/chat/screens/chat_screen.dart';
 import 'package:uangku_app/features/scan/screens/scan_screen.dart';
 import 'package:uangku_app/features/notification/screens/notification_screen.dart';
 import 'package:uangku_app/features/budget/screens/budget_screen.dart';
+import 'package:uangku_app/core/services/notification_service.dart';
+import 'package:uangku_app/core/database/database_helper.dart';
 import 'package:intl/intl.dart';
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -21,14 +23,40 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
   int _selectedIndex = 0;
   String _userName = 'Guest';
+  int _unreadNotifs = 0;
+
+  late AnimationController _animationController;
 
   @override
   void initState() {
     super.initState();
     _loadUser();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 4),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) {
+      return 'Good Morning 👋';
+    } else if (hour < 17) {
+      return 'Good Afternoon 👋';
+    } else if (hour < 20) {
+      return 'Good Evening 👋';
+    } else {
+      return 'Good Night 👋';
+    }
   }
 
   Future<void> _loadUser() async {
@@ -38,6 +66,19 @@ class _HomeScreenState extends State<HomeScreen> {
     });
     // Trigger sync
     TransactionData().fetchFromBackend();
+    
+    // Trigger morning report notification check
+    await NotificationService().triggerMorningReport();
+    _checkUnreadNotifs();
+  }
+
+  Future<void> _checkUnreadNotifs() async {
+    final count = await DatabaseHelper.instance.getUnreadNotificationCount();
+    if (mounted) {
+      setState(() {
+        _unreadNotifs = count;
+      });
+    }
   }
 
   // Placeholder function for Logout (Moved to ProfileScreen but kept here just in case)
@@ -66,7 +107,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 );
               },
               backgroundColor: Colors.white,
-              child: const Icon(Icons.smart_toy_outlined, color: Color(0xFF7C3AED)),
+              child: const Icon(Icons.chat_bubble_rounded, color: Color(0xFF7C3AED)),
             )
           : null,
     );
@@ -116,31 +157,42 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           child: Stack(
+            clipBehavior: Clip.none,
             children: [
-              // Background patterns
-              Positioned(
-                top: -50,
-                right: -50,
-                child: Container(
-                  width: 200,
-                  height: 200,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withOpacity(0.05),
-                  ),
-                ),
+              // Background patterns with animation
+              AnimatedBuilder(
+                animation: _animationController,
+                builder: (context, child) {
+                  return Positioned(
+                    top: -50 + (_animationController.value * 10),
+                    right: -50 - (_animationController.value * 5),
+                    child: Container(
+                      width: 200,
+                      height: 200,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white.withOpacity(0.05),
+                      ),
+                    ),
+                  );
+                },
               ),
-              Positioned(
-                top: 100,
-                left: -40,
-                child: Container(
-                  width: 140,
-                  height: 140,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withOpacity(0.05),
-                  ),
-                ),
+              AnimatedBuilder(
+                animation: _animationController,
+                builder: (context, child) {
+                  return Positioned(
+                    top: 100 - (_animationController.value * 15),
+                    left: -40 + (_animationController.value * 10),
+                    child: Container(
+                      width: 140,
+                      height: 140,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white.withOpacity(0.05),
+                      ),
+                    ),
+                  );
+                },
               ),
               Column(
                 children: [
@@ -173,9 +225,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Good Morning',
-                        style: TextStyle(
+                      Text(
+                        _getGreeting(),
+                        style: const TextStyle(
                           color: Colors.white70,
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
@@ -195,14 +247,39 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
               // Notification Icon
-              IconButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const NotificationScreen()),
-                  );
-                },
-                icon: const Icon(Icons.notifications_none_outlined, color: Colors.white, size: 28),
+              Stack(
+                children: [
+                  IconButton(
+                    onPressed: () async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const NotificationScreen()),
+                      );
+                      _checkUnreadNotifs(); // Refresh count after returning
+                    },
+                    icon: const Icon(Icons.notifications_none_outlined, color: Colors.white, size: 28),
+                  ),
+                  if (_unreadNotifs > 0)
+                    Positioned(
+                      right: 12,
+                      top: 12,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Text(
+                          _unreadNotifs > 9 ? '9+' : _unreadNotifs.toString(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ],
           ),
@@ -366,7 +443,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
               ),
               _buildActionItem(
-                icon: Icons.smart_toy_outlined,
+                icon: Icons.chat_bubble_rounded,
                 label: 'AI Chat',
                 color: const Color(0xFFF3E8FF),
                 iconColor: const Color(0xFF7C3AED),

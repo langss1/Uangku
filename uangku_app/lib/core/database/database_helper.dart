@@ -19,9 +19,25 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: _createDB,
+      onUpgrade: _upgradeDB,
     );
+  }
+
+  Future _upgradeDB(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await db.execute('''
+        CREATE TABLE notifications (
+          id TEXT PRIMARY KEY,
+          title TEXT NOT NULL,
+          message TEXT NOT NULL,
+          type TEXT NOT NULL,
+          is_read INTEGER DEFAULT 0,
+          created_at TEXT NOT NULL
+        )
+      ''');
+    }
   }
 
   Future _createDB(Database db, int version) async {
@@ -34,6 +50,17 @@ class DatabaseHelper {
         type TEXT NOT NULL,
         category TEXT,
         is_synced INTEGER DEFAULT 0
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE notifications (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        message TEXT NOT NULL,
+        type TEXT NOT NULL,
+        is_read INTEGER DEFAULT 0,
+        created_at TEXT NOT NULL
       )
     ''');
   }
@@ -66,5 +93,32 @@ class DatabaseHelper {
   Future<List<Map<String, dynamic>>> getAllTransactions() async {
     final db = await instance.database;
     return await db.query('transactions', orderBy: 'date DESC');
+  }
+
+  // --- Notifications ---
+  Future<void> insertNotification(Map<String, dynamic> notification) async {
+    final db = await instance.database;
+    await db.insert('notifications', notification, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<List<Map<String, dynamic>>> getNotifications() async {
+    final db = await instance.database;
+    return await db.query('notifications', orderBy: 'created_at DESC');
+  }
+
+  Future<void> markNotificationAsRead(String id) async {
+    final db = await instance.database;
+    await db.update(
+      'notifications',
+      {'is_read': 1},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  Future<int> getUnreadNotificationCount() async {
+    final db = await instance.database;
+    final result = await db.rawQuery('SELECT COUNT(*) as count FROM notifications WHERE is_read = 0');
+    return Sqflite.firstIntValue(result) ?? 0;
   }
 }

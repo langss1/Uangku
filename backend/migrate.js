@@ -68,6 +68,14 @@ const migrate = async () => {
     console.log('📦 Creating/Verifying users table...');
     await client.query(createUsersTable);
     
+    // Ensure 2FA columns exist in case the table was created before 2FA implementation
+    console.log('🔄 Verifying 2FA columns in users table...');
+    await client.query(`
+      ALTER TABLE users 
+      ADD COLUMN IF NOT EXISTS totp_secret VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS is_2fa_active BOOLEAN DEFAULT FALSE;
+    `);
+    
     console.log('📦 Creating/Verifying transactions table...');
     await client.query(createTransactionsTable);
 

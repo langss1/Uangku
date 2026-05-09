@@ -3,6 +3,8 @@ import 'package:uangku_app/core/models/transaction_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:uangku_app/core/services/notification_service.dart';
+
 class TransactionData {
   static final TransactionData _instance = TransactionData._internal();
 
@@ -72,6 +74,9 @@ class TransactionData {
           'category': transaction.category,
         }),
       );
+
+      // Trigger notification for the newly added transaction
+      await NotificationService().triggerTransactionAdded(transaction.title, transaction.amount);
     } catch (e) {
       debugPrint('Error saving transaction: $e');
     }

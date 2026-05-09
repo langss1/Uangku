@@ -1,0 +1,145 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uangku_app/core/theme/app_colors.dart';
+import 'package:uangku_app/features/home/home_screen.dart';
+
+class VerifyLogin2FAScreen extends StatefulWidget {
+  final int userId;
+
+  const VerifyLogin2FAScreen({Key? key, required this.userId}) : super(key: key);
+
+  @override
+  State<VerifyLogin2FAScreen> createState() => _VerifyLogin2FAScreenState();
+}
+
+class _VerifyLogin2FAScreenState extends State<VerifyLogin2FAScreen> {
+  final TextEditingController _tokenController = TextEditingController();
+  bool _isLoading = false;
+
+  Future<void> _verify2FA() async {
+    final token = _tokenController.text.trim();
+    if (token.length != 6) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter a valid 6-digit code')));
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final response = await http.post(
+        Uri.parse('http://145.79.10.157:8000/api/auth/login-2fa'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'userId': widget.userId,
+          'token': token,
+        }),
+      );
+
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('isLoggedIn', true);
+        await prefs.setString('token', data['token']);
+        if (data['user'] != null) {
+          await prefs.setString('user_name', data['user']['full_name'] ?? '');
+          await prefs.setString('user_email', data['user']['email'] ?? '');
+        }
+
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
+          (route) => false,
+        );
+      } else {
+        final errorMsg = jsonDecode(response.body)['error'] ?? 'Verification failed';
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMsg)));
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error connecting to server: $e')));
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFFF8FAFC),
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: AppColors.textDark),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 28.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: 48),
+              Center(
+                child: Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEFF6FF),
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                  child: const Icon(Icons.security, size: 40, color: Color(0xFF0066CC)),
+                ),
+              ),
+              const SizedBox(height: 32),
+              const Text(
+                'Two-Factor Authentication',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.textDark),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Enter the 6-digit code from your Authenticator app (Google/Microsoft)',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 14, color: Color(0xFF64748B), height: 1.5),
+              ),
+              const SizedBox(height: 48),
+              TextField(
+                controller: _tokenController,
+                keyboardType: TextInputType.number,
+                textAlign: TextAlign.center,
+                maxLength: 6,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                style: const TextStyle(fontSize: 32, letterSpacing: 16, fontWeight: FontWeight.w700),
+                decoration: InputDecoration(
+                  counterText: "",
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: Color(0xFF0066CC), width: 2)),
+                ),
+              ),
+              const SizedBox(height: 40),
+              ElevatedButton(
+                onPressed: _isLoading ? null : _verify2FA,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF0066CC),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 18),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+                child: _isLoading 
+                    ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
+                    : const Text('Verify & Login', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

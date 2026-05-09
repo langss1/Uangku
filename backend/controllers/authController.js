@@ -1,6 +1,8 @@
 const pool = require('../config/db');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const speakeasy = require('speakeasy');
+const qrcode = require('qrcode');
 
 // Secret for JWT (Usually kept in .env)
 const JWT_SECRET = process.env.JWT_SECRET || 'super_secret_key_123';
@@ -173,6 +175,107 @@ const authController = {
     } catch (error) {
       console.error('Update Security Error:', error);
       return res.status(500).json({ error: 'Failed to update security parameters.' });
+    }
+  },
+
+  // Generate 2FA Secret and QR Code
+  generate2FA: async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const userResult = await pool.query('SELECT email FROM users WHERE id = $1', [userId]);
+      if (userResult.rows.length === 0) return res.status(404).json({ error: 'User not found' });
+      
+      const email = userResult.rows[0].email;
+      const secret = speakeasy.generateSecret({
+        name: `UANGKU (${email})`
+      });
+
+      await pool.query('UPDATE users SET totp_secret = $1 WHERE id = $2', [secret.base32, userId]);
+
+      qrcode.toDataURL(secret.otpauth_url, (err, data_url) => {
+        if (err) {
+          return res.status(500).json({ error: 'Error generating QR Code' });
+        }
+        res.status(200).json({
+          secret: secret.base32,
+          qrCode: data_url
+        });
+      });
+    } catch (error) {
+      console.error('Generate 2FA Error:', error);
+      res.status(500).json({ error: 'Internal server error: ' + error.message });
+    }
+  },
+
+  // Verify 2FA Token to enable it
+  verify2FA: async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const { token } = req.body;
+
+      const userResult = await pool.query('SELECT totp_secret FROM users WHERE id = $1', [userId]);
+      if (userResult.rows.length === 0) return res.status(404).json({ error: 'User not found' });
+
+      const secret = userResult.rows[0].totp_secret;
+      
+      const verified = speakeasy.totp.verify({
+        secret: secret,
+        encoding: 'base32',
+        token: token,
+        window: 1 // allows 1 step before/after
+      });
+
+      if (verified) {
+        await pool.query('UPDATE users SET is_2fa_active = true WHERE id = $1', [userId]);
+        return res.status(200).json({ message: '2FA enabled successfully' });
+      } else {
+        return res.status(400).json({ error: 'Invalid 2FA token' });
+      }
+    } catch (error) {
+      console.error('Verify 2FA Error:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  },
+
+  // Login with 2FA Token
+  login2FA: async (req, res) => {
+    try {
+      const { userId, token } = req.body;
+
+      const userResult = await pool.query('SELECT * FROM users WHERE id = $1', [userId]);
+      if (userResult.rows.length === 0) return res.status(404).json({ error: 'User not found' });
+
+      const user = userResult.rows[0];
+      
+      const verified = speakeasy.totp.verify({
+        secret: user.totp_secret,
+        encoding: 'base32',
+        token: token,
+        window: 1
+      });
+
+      if (verified) {
+        const jwtToken = jwt.sign(
+          { id: user.id, email: user.email },
+          JWT_SECRET,
+          { expiresIn: '7d' }
+        );
+
+        return res.status(200).json({
+          message: 'Login successful',
+          token: jwtToken,
+          user: {
+            id: user.id,
+            full_name: user.full_name,
+            email: user.email
+          }
+        });
+      } else {
+        return res.status(401).json({ error: 'Invalid 2FA token' });
+      }
+    } catch (error) {
+      console.error('Login 2FA Error:', error);
+      res.status(500).json({ error: 'Internal server error' });
     }
   }
 };
