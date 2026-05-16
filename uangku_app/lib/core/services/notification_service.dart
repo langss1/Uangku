@@ -42,7 +42,7 @@ class NotificationService {
   Future<void> _showSystemNotification(String title, String body) async {
     if (!_isInitialized) await init();
 
-    const AndroidNotificationDetails androidPlatformChannelSpecifics =
+    final AndroidNotificationDetails androidPlatformChannelSpecifics =
         AndroidNotificationDetails(
       'uangku_channel',
       'Uangku Notifications',
@@ -53,7 +53,7 @@ class NotificationService {
       color: Color(0xFF2962FF),
     );
     
-    const NotificationDetails platformChannelSpecifics =
+    final NotificationDetails platformChannelSpecifics =
         NotificationDetails(android: androidPlatformChannelSpecifics);
 
     await _localNotifications.show(
