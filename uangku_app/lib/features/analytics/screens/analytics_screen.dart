@@ -722,10 +722,28 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           ),
           const SizedBox(height: 24),
           if (categoryData.isEmpty)
-            const SizedBox(
+            SizedBox(
               height: 220,
               child: Center(
-                child: Text('No expenses found', style: TextStyle(color: Colors.black54)),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.pie_chart_outline_rounded,
+                      size: 64,
+                      color: Colors.grey[300],
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Belum ada pengeluaran',
+                      style: TextStyle(
+                        color: Colors.grey[500],
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             )
           else

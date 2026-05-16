@@ -20,18 +20,44 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   String _userName = 'Loading...';
   String _userEmail = 'Loading...';
+  bool _morningReport = true;
+  bool _budgetAlerts = true;
+  bool _aiInsights = true;
+  bool _is2FAActive = false;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
     _loadUserProfile();
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _morningReport = prefs.getBool('pref_morning_report') ?? true;
+      _budgetAlerts = prefs.getBool('pref_budget_alerts') ?? true;
+      _aiInsights = prefs.getBool('pref_ai_insights') ?? true;
+      _is2FAActive = prefs.getBool('is_2fa_active') ?? false;
+      _isLoading = false;
+    });
+  }
+
+  Future<void> _updateNotificationSetting(String key, bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(key, value);
+    setState(() {
+      if (key == 'pref_morning_report') _morningReport = value;
+      if (key == 'pref_budget_alerts') _budgetAlerts = value;
+      if (key == 'pref_ai_insights') _aiInsights = value;
+    });
   }
 
   Future<void> _loadUserProfile() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
     
-    // Load cached first
     if (mounted) {
       setState(() {
         _userName = prefs.getString('user_name') ?? 'Guest User';
@@ -44,9 +70,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     try {
       final response = await http.get(
         Uri.parse('http://145.79.10.157:8000/api/auth/profile'),
-        headers: {
-          'Authorization': 'Bearer $token',
-        },
+        headers: {'Authorization': 'Bearer $token'},
       );
 
       if (response.statusCode == 200 && mounted) {
@@ -55,8 +79,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _userName = data['user']['full_name'];
           _userEmail = data['user']['email'];
         });
-        
-        // Update cache
         await prefs.setString('user_name', _userName);
         await prefs.setString('user_email', _userEmail);
       }
@@ -68,7 +90,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _logout(BuildContext context) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('isLoggedIn', false);
-
     if (context.mounted) {
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => const SplashScreen()),
@@ -77,286 +98,320 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA), // Ultra light background
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: const Text(
-          'Profile',
-          style: TextStyle(
-            color: AppColors.textDark,
-            fontWeight: FontWeight.w800,
-            fontSize: 20,
-          ),
-        ),
-        centerTitle: true,
-      ),
+      backgroundColor: const Color(0xFFF8FAFC),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text(
-              'Profile Management',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.textDark),
-            ),
-            const SizedBox(height: 4),
-            const Text(
-              'Manage your account settings and preferences',
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Color(0xFF64748B)),
-            ),
-            const SizedBox(height: 20),
-            
-            GestureDetector(
-              onTap: () async {
-                final result = await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => SettingsEditorScreen(
-                      title: 'Personal Information',
-                      subtitle: 'Update your profile information',
-                      isSecurity: false,
-                      initialName: _userName,
-                      initialEmail: _userEmail,
-                    ),
-                  ),
-                );
-                if (result == true) {
-                  _loadUserProfile(); // Reload to reflect changes
-                }
-              },
-              child: Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF0F172A), Color(0xFF1E293B)], // Sleek dark navy
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(color: const Color(0xFF0F172A).withOpacity(0.15), blurRadius: 20, offset: const Offset(0, 10)),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    Stack(
-                      children: [
-                        Container(
-                          width: 64,
-                          height: 64,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white.withOpacity(0.5), width: 2),
-                          ),
-                          child: const Icon(Icons.person, size: 36, color: Colors.white),
-                        ),
-                        Positioned(
-                          bottom: 0,
-                          right: 0,
-                          child: Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-                            child: const Icon(Icons.camera_alt, size: 14, color: Color(0xFF2962FF)),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(width: 20),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _userName,
-                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            _userEmail,
-                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.white.withOpacity(0.8)),
-                          ),
-                          const SizedBox(height: 10),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(20)),
-                            child: const Text('Verified Account', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white)),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Icon(Icons.edit_outlined, color: Colors.white.withOpacity(0.8), size: 24),
-                  ],
-                ),
-              ),
-            ),
-            
-            const SizedBox(height: 32),
-            const Text(
-              'Settings',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textDark),
-            ),
-            const SizedBox(height: 16),
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 15, offset: const Offset(0, 5)),
-                ],
-              ),
-              child: Column(
-                children: [
-                  _buildSettingTile(
-                    icon: Icons.security_outlined,
-                    iconBgColor: const Color(0xFFD1FAE5),
-                    iconColor: const Color(0xFF059669),
-                    title: 'Security Settings',
-                    subtitle: 'Password, 2FA, sessions',
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const SettingsEditorScreen(
-                            title: 'Security Settings',
-                            subtitle: 'Update your password and security',
-                            isSecurity: true,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                  Divider(color: Colors.grey.shade100, height: 1, indent: 76),
-                  _buildSettingTile(
-                    icon: Icons.notifications_none_rounded,
-                    iconBgColor: const Color(0xFFFFF7ED),
-                    iconColor: const Color(0xFFF97316),
-                    title: 'Notification Settings',
-                    subtitle: 'Manage alerts, daily reports',
-                    onTap: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationSettingsScreen()));
-                    },
-                  ),
-                  Divider(color: Colors.grey.shade100, height: 1, indent: 76),
-                  _buildSettingTile(
-                    icon: Icons.settings_outlined,
-                    iconBgColor: const Color(0xFFF1F5F9),
-                    iconColor: const Color(0xFF475569),
-                    title: 'App Preferences',
-                    subtitle: 'Theme, language, currency',
-                    onTap: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => const AppPreferencesScreen()));
-                    },
-                  ),
-                  Divider(color: Colors.grey.shade100, height: 1, indent: 76),
-                  _buildSettingTile(
-                    icon: Icons.help_outline,
-                    iconBgColor: const Color(0xFFFFEDD5),
-                    iconColor: const Color(0xFFEA580C),
-                    title: 'Help & Support',
-                    subtitle: 'FAQ, contact support',
-                    onTap: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => const HelpSupportScreen()));
-                    },
-                  ),
-                ],
-              ),
-            ),
-            
-            const SizedBox(height: 32),
-            
-            ElevatedButton(
-              onPressed: () => _logout(context),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: const Color(0xFFE11D48),
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  side: const BorderSide(color: Color(0xFFE11D48), width: 1.5),
-                ),
-                elevation: 0,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: const [
-                  Icon(Icons.logout, size: 22),
-                  SizedBox(width: 8),
-                  Text('Logout Account', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                ],
-              ),
-            ),
-            
-            const SizedBox(height: 16),
-            
-            const Center(
-              child: Text(
-                'Version 2.1.4 • Last sync: 2 minutes ago',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Color(0xFF94A3B8)),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-
-  Widget _buildSettingTile({
-    required IconData icon,
-    required Color iconBgColor,
-    required Color iconColor,
-    required String title,
-    required String subtitle,
-    String? trailingText,
-    Color? trailingColor,
-    Color? trailingTextColor,
-    VoidCallback? onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        child: Row(
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(color: iconBgColor, borderRadius: BorderRadius.circular(14)),
-              child: Icon(icon, color: iconColor, size: 22),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
+            _buildHeader(),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 100),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textDark)),
-                  const SizedBox(height: 2),
-                  Text(subtitle, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Color(0xFF94A3B8))),
+                  _buildSectionHeader('AKUN & KEAMANAN'),
+                  _buildGroupCard([
+                    _buildSettingTile(
+                      icon: Icons.person_outline_rounded,
+                      iconColor: Colors.blue,
+                      title: 'Informasi Profil',
+                      subtitle: 'Ubah nama dan email kamu',
+                      onTap: () => _navigateToEditor('Personal Information', false),
+                    ),
+                    _buildSettingTile(
+                      icon: Icons.lock_outline_rounded,
+                      iconColor: Colors.orange,
+                      title: 'Ganti Password',
+                      subtitle: 'Perbarui kata sandi akun',
+                      onTap: () => _navigateToEditor('Security Settings', true),
+                    ),
+                    _buildSwitchTile(
+                      icon: Icons.security_rounded,
+                      iconColor: Colors.green,
+                      title: 'Autentikasi 2-Faktor',
+                      subtitle: 'Keamanan ekstra untuk akun',
+                      value: _is2FAActive,
+                      onChanged: (val) => _navigateToEditor('Security Settings', true),
+                    ),
+                  ]),
+                  
+                  const SizedBox(height: 24),
+                  _buildSectionHeader('NOTIFIKASI'),
+                  _buildGroupCard([
+                    _buildSwitchTile(
+                      icon: Icons.wb_sunny_outlined,
+                      iconColor: Colors.amber,
+                      title: 'Laporan Harian',
+                      subtitle: 'Ringkasan keuangan setiap pagi',
+                      value: _morningReport,
+                      onChanged: (val) => _updateNotificationSetting('pref_morning_report', val),
+                    ),
+                    _buildSwitchTile(
+                      icon: Icons.notification_important_outlined,
+                      iconColor: Colors.redAccent,
+                      title: 'Peringatan Anggaran',
+                      subtitle: 'Notif saat pengeluaran melebihi limit',
+                      value: _budgetAlerts,
+                      onChanged: (val) => _updateNotificationSetting('pref_budget_alerts', val),
+                    ),
+                    _buildSwitchTile(
+                      icon: Icons.auto_awesome_outlined,
+                      iconColor: Colors.purple,
+                      title: 'Wawasan AI',
+                      subtitle: 'Tips cerdas dari Gemini AI',
+                      value: _aiInsights,
+                      onChanged: (val) => _updateNotificationSetting('pref_ai_insights', val),
+                    ),
+                  ]),
+                  
+                  const SizedBox(height: 24),
+                  _buildSectionHeader('PREFERENSI APLIKASI'),
+                  _buildGroupCard([
+                    _buildSettingTile(
+                      icon: Icons.palette_outlined,
+                      iconColor: Colors.indigo,
+                      title: 'Tema Aplikasi',
+                      subtitle: 'Terang, Gelap, atau Sistem',
+                      onTap: () {},
+                    ),
+                    _buildSettingTile(
+                      icon: Icons.language_rounded,
+                      iconColor: Colors.cyan,
+                      title: 'Bahasa',
+                      subtitle: 'Indonesia (ID)',
+                      onTap: () {},
+                    ),
+                  ]),
+                  
+                  const SizedBox(height: 24),
+                  _buildSectionHeader('SUPPORT'),
+                  _buildGroupCard([
+                    _buildSettingTile(
+                      icon: Icons.help_outline_rounded,
+                      iconColor: Colors.teal,
+                      title: 'Pusat Bantuan',
+                      subtitle: 'FAQ dan bantuan teknis',
+                      onTap: () {},
+                    ),
+                    _buildSettingTile(
+                      icon: Icons.info_outline_rounded,
+                      iconColor: Colors.blueGrey,
+                      title: 'Tentang Uangku',
+                      subtitle: 'Versi 2.1.4',
+                      onTap: () {},
+                    ),
+                  ]),
+                  
+                  const SizedBox(height: 40),
+                  _buildLogoutButton(),
                 ],
               ),
             ),
-            if (trailingText != null)
-              Container(
-                margin: const EdgeInsets.only(right: 12),
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(color: trailingColor, borderRadius: BorderRadius.circular(20)),
-                child: Text(trailingText, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: trailingTextColor)),
-              ),
-            const Icon(Icons.chevron_right, color: Color(0xFFCBD5E1), size: 20),
           ],
         ),
       ),
     );
   }
 
+  void _navigateToEditor(String title, bool isSecurity) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => SettingsEditorScreen(
+          title: title,
+          subtitle: isSecurity ? 'Perbarui keamanan akun kamu' : 'Update profil kamu',
+          isSecurity: isSecurity,
+          initialName: _userName,
+          initialEmail: _userEmail,
+        ),
+      ),
+    );
+    if (result == true) {
+      _loadUserProfile();
+      _loadSettings();
+    }
+  }
 
+  Widget _buildHeader() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(24, 60, 24, 40),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF448AFF), Color(0xFF0056B3)],
+        ),
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(40),
+          bottomRight: Radius.circular(40),
+        ),
+      ),
+      child: Column(
+        children: [
+          const Text(
+            'Profil Saya',
+            style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 30),
+          Stack(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: const BoxDecoration(color: Colors.white24, shape: BoxShape.circle),
+                child: const CircleAvatar(
+                  radius: 50,
+                  backgroundColor: Colors.white,
+                  child: Icon(Icons.person, size: 60, color: Color(0xFF0056B3)),
+                ),
+              ),
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                  child: const Icon(Icons.camera_alt, size: 18, color: Color(0xFF0056B3)),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            _userName,
+            style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            _userEmail,
+            style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14),
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(20)),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                Icon(Icons.verified_user_rounded, color: Colors.white, size: 14),
+                SizedBox(width: 6),
+                Text('Akun Terverifikasi', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4, bottom: 12),
+      child: Text(
+        title,
+        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Color(0xFF64748B), letterSpacing: 1.2),
+      ),
+    );
+  }
+
+  Widget _buildGroupCard(List<Widget> children) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 20, offset: const Offset(0, 10)),
+        ],
+      ),
+      child: Column(children: children),
+    );
+  }
+
+  Widget _buildSettingTile({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return ListTile(
+      onTap: onTap,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      leading: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(color: iconColor.withOpacity(0.1), borderRadius: BorderRadius.circular(14)),
+        child: Icon(icon, color: iconColor, size: 22),
+      ),
+      title: Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
+      subtitle: Text(subtitle, style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+      trailing: const Icon(Icons.chevron_right_rounded, color: Color(0xFFCBD5E1)),
+    );
+  }
+
+  Widget _buildSwitchTile({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String subtitle,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(color: iconColor.withOpacity(0.1), borderRadius: BorderRadius.circular(14)),
+            child: Icon(icon, color: iconColor, size: 22),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
+                const SizedBox(height: 2),
+                Text(subtitle, style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+              ],
+            ),
+          ),
+          Switch(
+            value: value,
+            onChanged: onChanged,
+            activeColor: const Color(0xFF0056B3),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLogoutButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: () => _logout(context),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.white,
+          foregroundColor: const Color(0xFFE11D48),
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(vertical: 18),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: const BorderSide(color: Color(0xFFE11D48), width: 1.5),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: const [
+            Icon(Icons.logout_rounded, size: 20),
+            SizedBox(width: 10),
+            Text('Keluar Akun', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+          ],
+        ),
+      ),
+    );
+  }
 }

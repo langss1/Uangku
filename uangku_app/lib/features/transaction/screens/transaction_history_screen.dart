@@ -225,11 +225,35 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.receipt_long, size: 64, color: Colors.grey[300]),
-              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F9),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.receipt_long_outlined,
+                  size: 64,
+                  color: Colors.grey[400],
+                ),
+              ),
+              const SizedBox(height: 24),
               Text(
-                'No transactions',
-                style: TextStyle(color: Colors.grey[500], fontSize: 16),
+                'Belum Ada Transaksi',
+                style: TextStyle(
+                  color: const Color(0xFF475569),
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Transaksi Anda akan muncul di sini.',
+                style: TextStyle(
+                  color: const Color(0xFF94A3B8),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ],
           ),

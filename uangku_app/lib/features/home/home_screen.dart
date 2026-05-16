@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:math' as math;
 import 'package:uangku_app/core/theme/app_colors.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uangku_app/features/splash/splash_screen.dart';
@@ -60,16 +61,22 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   Future<void> _loadUser() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _userName = prefs.getString('user_name') ?? 'Guest';
-    });
-    // Trigger sync
-    TransactionData().fetchFromBackend();
-    
-    // Trigger morning report notification check
-    await NotificationService().triggerMorningReport();
-    _checkUnreadNotifs();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (mounted) {
+        setState(() {
+          _userName = prefs.getString('user_name') ?? 'Guest';
+        });
+      }
+      // Trigger sync secara background tanpa await agar tidak menghalangi rendering
+      TransactionData().fetchFromBackend().catchError((e) => debugPrint("Fetch error: $e"));
+      
+      // Trigger morning report notification check secara background
+      NotificationService().triggerMorningReport().catchError((e) => debugPrint("Notification error: $e"));
+      _checkUnreadNotifs();
+    } catch (e) {
+      debugPrint("Error loading user: $e");
+    }
   }
 
   Future<void> _checkUnreadNotifs() async {
@@ -95,7 +102,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.background,
       body: _buildBody(),
       bottomNavigationBar: _buildBottomNav(),
       floatingActionButton: _selectedIndex != 2 
@@ -114,288 +121,230 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   Widget _buildBody() {
-    if (_selectedIndex == 1) {
-      return const AnalyticsScreen();
-    }
+    if (_selectedIndex == 1) return const AnalyticsScreen();
     if (_selectedIndex == 2) {
-      return AddTransactionScreen(onBack: () {
-        setState(() {
-          _selectedIndex = 0;
-        });
-      });
+      return AddTransactionScreen(onBack: () => setState(() => _selectedIndex = 0));
     }
-    if (_selectedIndex == 3) {
-      return const BudgetScreen();
-    }
-    if (_selectedIndex == 4) {
-      return const ProfileScreen();
-    }
+    if (_selectedIndex == 3) return const BudgetScreen();
+    if (_selectedIndex == 4) return const ProfileScreen();
     
-    // Default Home Screen (Index 0, or placeholders for others)
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          _buildHeader(),
-          const SizedBox(height: 32),
-          _buildRecentTransactions(),
-          const SizedBox(height: 24),
-        ],
+    return SafeArea(
+      child: SingleChildScrollView(
+        child: Column(
+          children: [
+            _buildHeader(),
+            const SizedBox(height: 24),
+            _buildQuickActions(),
+            const SizedBox(height: 32),
+            _buildRecentTransactions(),
+            const SizedBox(height: 24),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildHeader() {
-    return Stack(
-      children: [
-        Container(
-          padding: const EdgeInsets.only(top: 60, left: 24, right: 24, bottom: 32),
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFF1E3A8A), Color(0xFF3B82F6)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              // Background patterns with animation
-              AnimatedBuilder(
-                animation: _animationController,
-                builder: (context, child) {
-                  return Positioned(
-                    top: -50 + (_animationController.value * 10),
-                    right: -50 - (_animationController.value * 5),
-                    child: Container(
-                      width: 200,
-                      height: 200,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white.withOpacity(0.05),
-                      ),
-                    ),
-                  );
-                },
-              ),
-              AnimatedBuilder(
-                animation: _animationController,
-                builder: (context, child) {
-                  return Positioned(
-                    top: 100 - (_animationController.value * 15),
-                    left: -40 + (_animationController.value * 10),
-                    child: Container(
-                      width: 140,
-                      height: 140,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white.withOpacity(0.05),
-                      ),
-                    ),
-                  );
-                },
-              ),
-              Column(
-                children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  // Avatar
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.8),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Center(
-                      child: Text(
-                        _userName.isNotEmpty ? _userName[0].toUpperCase() : 'G',
-                        style: const TextStyle(
-                          color: Color(0xFF2962FF),
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  // Greeting
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _getGreeting(),
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _userName,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              // Notification Icon
-              Stack(
-                children: [
-                  IconButton(
-                    onPressed: () async {
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const NotificationScreen()),
-                      );
-                      _checkUnreadNotifs(); // Refresh count after returning
-                    },
-                    icon: const Icon(Icons.notifications_none_outlined, color: Colors.white, size: 28),
-                  ),
-                  if (_unreadNotifs > 0)
-                    Positioned(
-                      right: 12,
-                      top: 12,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(
-                          color: Colors.red,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Text(
-                          _unreadNotifs > 9 ? '9+' : _unreadNotifs.toString(),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 32),
-          // Balance Card
-          ValueListenableBuilder<List<TransactionModel>>(
-            valueListenable: TransactionData().transactionsNotifier,
-            builder: (context, transactions, child) {
-              double totalIncome = 0;
-              double totalExpense = 0;
-              for (var tx in transactions) {
-                if (tx.isIncome) {
-                  totalIncome += tx.amount;
-                } else {
-                  totalExpense += tx.amount;
-                }
-              }
-              double totalBalance = totalIncome - totalExpense;
-              final format = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+  Widget _buildAbstractBackground() {
+    return AnimatedBuilder(
+      animation: _animationController,
+      builder: (context, child) {
+        return Stack(
+          children: [
+            // Abstract Polar Orbs (Moving Orbs)
+            ...List.generate(3, (index) {
+              final speeds = [0.2, 0.3, 0.15];
+              final sizes = [220.0, 160.0, 80.0];
+              final colors = [
+                Colors.white.withOpacity(0.08),
+                Colors.white.withOpacity(0.05),
+                Colors.white.withOpacity(0.04),
+              ];
+              
+              final speed = speeds[index];
+              final size = sizes[index];
+              
+              final angle = _animationController.value * math.pi * 2;
+              final offsetX = math.cos(angle + index) * 15;
+              final offsetY = math.sin(angle + index) * 20;
 
-              return GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const TransactionHistoryScreen()),
-                  );
-                },
+              return Positioned(
+                top: index == 0 ? -60 + offsetY : (index == 1 ? 100 + offsetY : null),
+                bottom: index == 2 ? -20 + offsetY : null,
+                right: index == 0 ? -50 + offsetX : (index == 2 ? 60 + offsetX : null),
+                left: index == 1 ? -40 + offsetX : null,
                 child: Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                    color: Colors.white.withOpacity(0.2),
-                    width: 1,
+                  width: size,
+                  height: size,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: colors[index],
                   ),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              );
+            }),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildHeader() {
+    return Container(
+      width: double.infinity,
+      height: 260,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFF1E3A8A), Color(0xFF3B82F6)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Stack(
+        children: [
+          // Background animation disabled for stability
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Top Row (Avatar & Notif)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      'Total Balance',
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      format.format(totalBalance),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 32,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Row(
-                          children: [
-                            Container(
-                              width: 8,
-                              height: 8,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFF10B981), // Green dot
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'In: ${format.format(totalIncome)}',
+                        Container(
+                          width: 45,
+                          height: 45,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.9),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Center(
+                            child: Text(
+                              _userName.isNotEmpty ? _userName[0].toUpperCase() : 'G',
                               style: const TextStyle(
-                                color: Colors.white70,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
+                                color: Color(0xFF1E3A8A),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
                               ),
                             ),
-                          ],
+                          ),
                         ),
-                        Row(
+                        const SizedBox(width: 12),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Container(
-                              width: 8,
-                              height: 8,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFFEF4444), // Red dot
-                                shape: BoxShape.circle,
+                            Text(
+                              _getGreeting(),
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.8),
+                                fontSize: 12,
                               ),
                             ),
-                            const SizedBox(width: 8),
                             Text(
-                              'Out: ${format.format(totalExpense)}',
+                              _userName,
                               style: const TextStyle(
-                                color: Colors.white70,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
                           ],
                         ),
                       ],
                     ),
+                    IconButton(
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const NotificationScreen()),
+                      ).then((_) => _checkUnreadNotifs()),
+                      icon: Stack(
+                        children: [
+                          const Icon(Icons.notifications_none_rounded, color: Colors.white, size: 28),
+                          if (_unreadNotifs > 0)
+                            Positioned(
+                              right: 0,
+                              top: 0,
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                                constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                                child: Text(
+                                  '$_unreadNotifs',
+                                  style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
-              ),
-              );
-            },
+                const SizedBox(height: 24),
+                // Balance Card
+                ValueListenableBuilder<List<TransactionModel>>(
+                  valueListenable: TransactionData().transactionsNotifier,
+                  builder: (context, transactions, child) {
+                    double totalIncome = 0;
+                    double totalExpense = 0;
+                    for (var tx in transactions) {
+                      if (tx.isIncome) totalIncome += tx.amount;
+                      else totalExpense += tx.amount;
+                    }
+                    double totalBalance = totalIncome - totalExpense;
+                    final format = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+
+                    return Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.white.withOpacity(0.2)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text("Total Saldo Anda", style: TextStyle(color: Colors.white70, fontSize: 13)),
+                          const SizedBox(height: 4),
+                          Text(
+                            format.format(totalBalance),
+                            style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w900),
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              _buildBalanceInfo("Pemasukan", format.format(totalIncome), Icons.arrow_downward, Colors.greenAccent),
+                              _buildBalanceInfo("Pengeluaran", format.format(totalExpense), Icons.arrow_upward, Colors.redAccent),
+                            ],
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
           ),
-                ],
-              ),
-            ],
-          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBalanceInfo(String label, String amount, IconData icon, Color color) {
+    return Row(
+      children: [
+        Icon(icon, color: color, size: 16),
+        const SizedBox(width: 4),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: const TextStyle(color: Colors.white60, fontSize: 11)),
+            Text(amount, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+          ],
         ),
       ],
     );
@@ -542,34 +491,76 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             valueListenable: TransactionData().transactionsNotifier,
             builder: (context, transactions, child) {
               if (transactions.isEmpty) {
-                return const Center(child: Padding(
-                  padding: EdgeInsets.all(24.0),
-                  child: Text("No transactions yet."),
-                ));
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 40.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFF1F5F9),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.receipt_long_outlined,
+                            size: 64,
+                            color: Color(0xFF94A3B8),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        const Text(
+                          "Belum Ada Transaksi",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF475569),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          "Ayo mulai catat pengeluaran harianmu!",
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Color(0xFF94A3B8),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
               }
-              // Show max 5 items in home screen
-              final recentTxs = transactions.take(5).toList();
               
-              return Column(
-                children: recentTxs.map((tx) {
-                  final format = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
-                  final timeFormat = DateFormat('hh:mm a');
-                  return _buildTransactionItem(
-                    id: tx.id,
-                    title: tx.title,
-                    category: tx.currencyCode == 'IDR' 
-                        ? "${tx.category} • ${timeFormat.format(tx.date)}"
-                        : "${tx.category} • ${tx.currencyCode} ${tx.originalAmount.toInt()} • ${timeFormat.format(tx.date)}",
-                    amount: "${tx.isIncome ? '+' : '-'}${format.format(tx.amount)}",
-                    date: DateFormat('MMM dd').format(tx.date),
-                    icon: tx.icon,
-                    bgColor: tx.bgColor,
-                    iconColor: tx.iconColor,
-                    isIncome: tx.isIncome,
-                    context: context,
-                  );
-                }).toList(),
-              );
+              try {
+                // Show max 5 items in home screen
+                final recentTxs = transactions.take(5).toList();
+                
+                return Column(
+                  children: recentTxs.map((tx) {
+                    final format = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+                    final timeFormat = DateFormat('hh:mm a');
+                    return _buildTransactionItem(
+                      id: tx.id,
+                      title: tx.title,
+                      category: tx.currencyCode == 'IDR' 
+                          ? "${tx.category} • ${timeFormat.format(tx.date)}"
+                          : "${tx.category} • ${tx.currencyCode} ${tx.originalAmount.toInt()} • ${timeFormat.format(tx.date)}",
+                      amount: "${tx.isIncome ? '+' : '-'}${format.format(tx.amount)}",
+                      date: DateFormat('MMM dd').format(tx.date),
+                      icon: tx.icon,
+                      bgColor: tx.bgColor,
+                      iconColor: tx.iconColor,
+                      isIncome: tx.isIncome,
+                      context: context,
+                    );
+                  }).toList(),
+                );
+              } catch (e) {
+                debugPrint("Error rendering transaction list: $e");
+                return const SizedBox.shrink();
+              }
             },
           ),
         ],

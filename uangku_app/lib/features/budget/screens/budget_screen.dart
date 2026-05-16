@@ -16,11 +16,23 @@ class BudgetScreen extends StatefulWidget {
   State<BudgetScreen> createState() => _BudgetScreenState();
 }
 
-class _BudgetScreenState extends State<BudgetScreen> {
+class _BudgetScreenState extends State<BudgetScreen> with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+
   @override
   void initState() {
     super.initState();
     BudgetData().loadBudgets();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 5),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
   }
 
   @override
@@ -101,34 +113,51 @@ class _BudgetScreenState extends State<BudgetScreen> {
                         end: Alignment.bottomRight,
                       ),
                     ),
-                    child: Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        Positioned(
-                          top: -50,
-                          right: -50,
-                          child: Container(
-                            width: 200,
-                            height: 200,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.white.withOpacity(0.05),
+                    child: AnimatedBuilder(
+                      animation: _animationController,
+                      builder: (context, child) {
+                        return Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            Positioned(
+                              top: -60 + (math.sin(_animationController.value * math.pi * 2) * 20),
+                              right: -50 + (math.cos(_animationController.value * math.pi * 2) * 15),
+                              child: Container(
+                                width: 220,
+                                height: 220,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Colors.white.withOpacity(0.06),
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
-                        Positioned(
-                          top: 150,
-                          left: -40,
-                          child: Container(
-                            width: 140,
-                            height: 140,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.white.withOpacity(0.05),
+                            Positioned(
+                              top: 150 + (math.cos(_animationController.value * math.pi * 2) * 25),
+                              left: -40 + (math.sin(_animationController.value * math.pi * 2) * 10),
+                              child: Container(
+                                width: 140,
+                                height: 140,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Colors.white.withOpacity(0.05),
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
-                      ],
+                            Positioned(
+                              bottom: 20 + (math.sin(_animationController.value * math.pi * 2) * 15),
+                              right: 20 + (math.cos(_animationController.value * math.pi * 2) * 10),
+                              child: Container(
+                                width: 60,
+                                height: 60,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Colors.white.withOpacity(0.04),
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
                     ),
                   ),
                   SafeArea(
@@ -176,11 +205,55 @@ class _BudgetScreenState extends State<BudgetScreen> {
 
                       // List of Budgets
                       if (budgets.isEmpty)
-                        const Padding(
-                          padding: EdgeInsets.all(32.0),
-                          child: Text(
-                            'No budgets created yet.',
-                            style: TextStyle(color: Color(0xFF64748B), fontSize: 16),
+                        Center(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 60.0),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(24),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.05),
+                                        blurRadius: 20,
+                                        offset: const Offset(0, 10),
+                                      ),
+                                    ],
+                                  ),
+                                  child: const Icon(
+                                    Icons.account_balance_wallet_outlined,
+                                    size: 80,
+                                    color: Color(0xFF94A3B8),
+                                  ),
+                                ),
+                                const SizedBox(height: 24),
+                                const Text(
+                                  "Belum Ada Anggaran",
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w800,
+                                    color: Color(0xFF475569),
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                const Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 40),
+                                  child: Text(
+                                    "Buat rencana anggaranmu untuk mengontrol pengeluaran dengan lebih baik.",
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Color(0xFF94A3B8),
+                                      height: 1.5,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         )
                     else

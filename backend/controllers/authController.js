@@ -70,7 +70,10 @@ const authController = {
       }
 
       // Check for 2FA flag
-      if (user.two_factor_enabled === true || user.is_2fa_active === true) {
+      // Standardize on is_2fa_active for TOTP/General 2FA status
+      const is2FAActive = user.is_2fa_active === true || user.two_factor_enabled === true;
+      
+      if (is2FAActive) {
         const type = user.two_factor_type && user.two_factor_type !== 'NONE' ? user.two_factor_type : 'TOTP';
 
         if (type === 'EMAIL' || type === 'BOTH') {
@@ -88,7 +91,7 @@ const authController = {
           requires2FA: true,
           twoFactorType: type,
           tempToken: tempToken,
-          userId: user.id // For backward compatibility
+          userId: user.id
         });
       }
 
@@ -215,17 +218,26 @@ const authController = {
   verifyAndEnableTOTP: async (req, res) => {
     try {
       const { token } = req.body;
-      const user = await pool.query('SELECT totp_secret FROM users WHERE id = $1', [req.user.id]);
+      const userResult = await pool.query('SELECT totp_secret, two_factor_secret FROM users WHERE id = $1', [req.user.id]);
       
-      if (user.rows.length === 0 || !user.rows[0].totp_secret) {
-        return res.status(400).json({ success: false, message: "No TOTP secret found" });
+      if (userResult.rows.length === 0) {
+        return res.status(400).json({ success: false, message: "User not found" });
       }
 
-      const isValid = authenticator.check(token, user.rows[0].totp_secret);
+      const secret = userResult.rows[0].totp_secret || userResult.rows[0].two_factor_secret;
+      
+      if (!secret) {
+        return res.status(400).json({ success: false, message: "No TOTP secret found. Please generate QR code first." });
+      }
+
+      const isValid = authenticator.check(token, secret);
       
       if (isValid) {
-          // Update kolom is_2fa_active menjadi true saat token valid
-          await pool.query("UPDATE users SET is_2fa_active = true WHERE id = $1", [req.user.id]);
+          // Sync both columns to be safe, set active status
+          await pool.query(
+            "UPDATE users SET is_2fa_active = true, two_factor_enabled = true, two_factor_type = 'TOTP' WHERE id = $1", 
+            [req.user.id]
+          );
           return res.json({ success: true, message: "2FA Google Authenticator Aktif!" });
       }
       
@@ -275,7 +287,13 @@ const authController = {
         return res.status(400).json({ error: 'Invalid 2FA type' });
       }
 
-      await pool.query('UPDATE users SET two_factor_enabled = $1, two_factor_type = $2 WHERE id = $3', [enabled, type, req.user.id]);
+      // If type is NONE, we disable everything
+      const finalEnabled = type === 'NONE' ? false : enabled;
+      
+      await pool.query(
+        'UPDATE users SET two_factor_enabled = $1, is_2fa_active = $1, two_factor_type = $2 WHERE id = $3', 
+        [finalEnabled, type, req.user.id]
+      );
       res.json({ success: true, message: '2FA settings updated' });
     } catch (error) {
       console.error('update2FAType error:', error);
@@ -285,7 +303,7 @@ const authController = {
 
   verify2FALogin: async (req, res) => {
     try {
-      const { tempToken, token } = req.body; // token is the 6-digit pin
+      const { tempToken, token } = req.body;
       
       let decoded;
       try {
@@ -303,27 +321,25 @@ const authController = {
       if (userResult.rows.length === 0) return res.status(404).json({ error: 'User not found' });
 
       const user = userResult.rows[0];
-      const type = user.two_factor_type;
+      const type = user.two_factor_type || 'TOTP';
 
       let isValid = false;
 
       // Check TOTP
       if (type === 'TOTP' || type === 'BOTH' || user.is_2fa_active) {
-        if (user.two_factor_secret) {
-          isValid = authenticator.check(token, user.two_factor_secret);
-        } else if (user.totp_secret) { // Fallback for old schema
-          isValid = authenticator.check(token, user.totp_secret);
+        const secret = user.totp_secret || user.two_factor_secret;
+        if (secret) {
+          isValid = authenticator.check(token, secret);
         }
       }
 
-      // Check Email OTP
+      // Check Email OTP if TOTP failed or if it's the required method
       if (!isValid && (type === 'EMAIL' || type === 'BOTH')) {
-        if (user.email_otp_secret === token) {
+        if (user.email_otp_secret && user.email_otp_secret === token) {
           const now = new Date();
           const expires = new Date(user.email_otp_expires);
           if (now <= expires) {
             isValid = true;
-            // Clear the OTP to prevent reuse
             await pool.query('UPDATE users SET email_otp_secret = NULL WHERE id = $1', [userId]);
           }
         }
