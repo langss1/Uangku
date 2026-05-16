@@ -4,6 +4,9 @@ import 'package:uangku_app/core/models/notification_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:uangku_app/core/data/budget_data.dart';
+import 'package:uangku_app/core/data/transaction_data.dart';
+import 'package:uangku_app/core/models/transaction_model.dart';
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -132,5 +135,51 @@ class NotificationService {
       message: "Transaksi '$title' sebesar ${format.format(amount)} berhasil ditambahkan.",
       type: "success",
     );
+  }
+
+  Future<void> checkBudgetThreshold(TransactionModel newTx) async {
+    if (newTx.isIncome) return;
+
+    final budgets = BudgetData().budgetsNotifier.value;
+    final categoryBudgets = budgets.where((b) => b.category == newTx.category).toList();
+    if (categoryBudgets.isEmpty) return;
+
+    final transactions = TransactionData().transactionsNotifier.value;
+
+    for (var budget in categoryBudgets) {
+      if (newTx.date.isAfter(budget.startDate.subtract(const Duration(days: 1))) &&
+          newTx.date.isBefore(budget.endDate.add(const Duration(days: 1)))) {
+        
+        double totalSpent = 0;
+        for (var tx in transactions) {
+          if (!tx.isIncome && tx.category == budget.category &&
+              tx.date.isAfter(budget.startDate.subtract(const Duration(days: 1))) &&
+              tx.date.isBefore(budget.endDate.add(const Duration(days: 1)))) {
+            totalSpent += tx.amount;
+          }
+        }
+
+        double percentage = totalSpent / budget.amount;
+        
+        // Calculate previous spent (without the new transaction)
+        double prevSpent = totalSpent - newTx.amount;
+        double prevPercentage = prevSpent / budget.amount;
+
+        // Only notify when crossing the 80% or 100% threshold to avoid spam
+        if (percentage >= 0.8 && percentage < 1.0 && prevPercentage < 0.8) {
+           await createNotification(
+             title: "Peringatan Anggaran ⚠️",
+             message: "Pengeluaran untuk ${budget.category} sudah mencapai ${(percentage * 100).toInt()}% dari anggaran!",
+             type: "warning",
+           );
+        } else if (percentage >= 1.0 && prevPercentage < 1.0) {
+           await createNotification(
+             title: "Anggaran Terlampaui 🚨",
+             message: "Pengeluaran ${budget.category} telah melewati batas anggaran Anda!",
+             type: "danger",
+           );
+        }
+      }
+    }
   }
 }

@@ -5,7 +5,8 @@ import 'package:uangku_app/core/models/category_model.dart';
 import 'package:uangku_app/core/data/budget_data.dart';
 import 'package:uangku_app/features/transaction/screens/category_selection_screen.dart';
 import 'package:intl/intl.dart';
-
+import 'package:flutter/services.dart';
+import 'package:uangku_app/core/utils/currency_input_formatter.dart';
 class AddBudgetScreen extends StatefulWidget {
   final BudgetModel? existingBudget;
 
@@ -71,7 +72,9 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
   }
 
   void _showAmountInputDialog() {
-    final TextEditingController controller = TextEditingController(text: _amount > 0 ? _amount.toInt().toString() : '');
+    final f = NumberFormat("#,###", "en_US");
+    final initialText = _amount > 0 ? f.format(_amount.toInt()).replaceAll(',', '.') : '';
+    final TextEditingController controller = TextEditingController(text: initialText);
     showDialog(
       context: context,
       builder: (context) {
@@ -81,6 +84,10 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
             controller: controller,
             keyboardType: TextInputType.number,
             autofocus: true,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              CurrencyInputFormatter(),
+            ],
             decoration: const InputDecoration(
               hintText: '0',
               prefixText: 'Rp ',
@@ -94,7 +101,7 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
             ElevatedButton(
               onPressed: () {
                 setState(() {
-                  _amount = double.tryParse(controller.text) ?? 0;
+                  _amount = double.tryParse(controller.text.replaceAll('.', '')) ?? 0;
                 });
                 Navigator.pop(context);
               },

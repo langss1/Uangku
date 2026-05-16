@@ -13,7 +13,8 @@ import 'package:uangku_app/features/transaction/screens/transaction_history_scre
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'dart:async';
-
+import 'package:flutter/services.dart';
+import 'package:uangku_app/core/utils/currency_input_formatter.dart';
 class AddTransactionScreen extends StatefulWidget {
   final VoidCallback onBack;
   final TransactionModel? transactionToEdit;
@@ -479,6 +480,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Single
                           controller: _amountController,
                           autofocus: true,
                           keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                            CurrencyInputFormatter(),
+                          ],
                           style: TextStyle(
                             fontSize: 40,
                             fontWeight: FontWeight.bold,
@@ -486,7 +491,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Single
                           ),
                           onChanged: (val) {
                             setState(() {
-                              _amount = double.tryParse(val) ?? 0;
+                              _amount = double.tryParse(val.replaceAll('.', '')) ?? 0;
                             });
                           },
                           decoration: InputDecoration(

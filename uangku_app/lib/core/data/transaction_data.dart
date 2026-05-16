@@ -77,6 +77,9 @@ class TransactionData {
 
       // Trigger notification for the newly added transaction
       await NotificationService().triggerTransactionAdded(transaction.title, transaction.amount);
+
+      // Check budget threshold
+      await NotificationService().checkBudgetThreshold(transaction);
     } catch (e) {
       debugPrint('Error saving transaction: $e');
     }
