@@ -32,7 +32,7 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
       _selectedCategory = CategoryModel(
         id: 'dummy',
         name: widget.existingBudget!.category,
-        icon: widget.existingBudget!.icon,
+        icon: IconData(widget.existingBudget!.iconCodePoint, fontFamily: 'MaterialIcons'),
         color: widget.existingBudget!.bgColor,
         iconColor: widget.existingBudget!.iconColor,
         isIncome: false,
@@ -116,7 +116,7 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
       amount: _amount,
       startDate: _selectedDateRange!.start,
       endDate: _selectedDateRange!.end,
-      icon: _selectedCategory!.icon,
+      iconCodePoint: _selectedCategory!.icon.codePoint,
       bgColor: _selectedCategory!.color,
       iconColor: _selectedCategory!.iconColor,
     );

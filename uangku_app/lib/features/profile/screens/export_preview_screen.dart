@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:uangku_app/core/models/transaction_model.dart';
@@ -12,6 +13,8 @@ class ExportPreviewScreen extends StatefulWidget {
   final String exportFormat;
   final String userName;
   final List<TransactionModel> transactions;
+  final Uint8List? lineChartImage;
+  final Uint8List? pieChartImage;
 
   const ExportPreviewScreen({
     Key? key,
@@ -19,6 +22,8 @@ class ExportPreviewScreen extends StatefulWidget {
     required this.exportFormat,
     required this.userName,
     required this.transactions,
+    this.lineChartImage,
+    this.pieChartImage,
   }) : super(key: key);
 
   @override
@@ -96,6 +101,28 @@ class _ExportPreviewScreenState extends State<ExportPreviewScreen> {
                 ),
                 cellAlignment: pw.Alignment.centerLeft,
               ),
+              
+              if (widget.lineChartImage != null || widget.pieChartImage != null)
+                pw.SizedBox(height: 30),
+              
+              if (widget.lineChartImage != null) ...[
+                pw.Text('Income vs Expense Trend', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: PdfColors.black)),
+                pw.SizedBox(height: 10),
+                pw.Container(
+                  height: 200,
+                  child: pw.Image(pw.MemoryImage(widget.lineChartImage!)),
+                ),
+                pw.SizedBox(height: 20),
+              ],
+
+              if (widget.pieChartImage != null) ...[
+                pw.Text('Spending by Category', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: PdfColors.black)),
+                pw.SizedBox(height: 10),
+                pw.Container(
+                  height: 220,
+                  child: pw.Image(pw.MemoryImage(widget.pieChartImage!)),
+                ),
+              ],
             ],
           );
         },
@@ -135,6 +162,45 @@ class _ExportPreviewScreenState extends State<ExportPreviewScreen> {
         currencyFormat.format(tx.amount),
       ]);
     }
+
+    // Add Summary Section
+    rows.add([]);
+    rows.add(['--- SUMMARY ---']);
+    rows.add([]);
+
+    // Category Spending Summary
+    Map<String, double> categorySums = {};
+    for (var tx in widget.transactions) {
+      if (!tx.isIncome) {
+        categorySums[tx.category] = (categorySums[tx.category] ?? 0) + tx.amount;
+      }
+    }
+    
+    rows.add(['SPENDING BY CATEGORY']);
+    rows.add(['Category', 'Total Amount']);
+    categorySums.forEach((category, amount) {
+      rows.add([category, currencyFormat.format(amount)]);
+    });
+
+    rows.add([]);
+
+    // Income vs Expense Summary
+    double totalIncome = 0;
+    double totalExpense = 0;
+    for (var tx in widget.transactions) {
+      if (tx.isIncome) {
+        totalIncome += tx.amount;
+      } else {
+        totalExpense += tx.amount;
+      }
+    }
+    
+    rows.add(['TOTAL SUMMARY']);
+    rows.add(['Type', 'Total Amount']);
+    rows.add(['Total Income', currencyFormat.format(totalIncome)]);
+    rows.add(['Total Expense', currencyFormat.format(totalExpense)]);
+    rows.add(['Net Balance', currencyFormat.format(totalIncome - totalExpense)]);
+
 
     String csv = rows.map((row) {
       return row.map((item) {

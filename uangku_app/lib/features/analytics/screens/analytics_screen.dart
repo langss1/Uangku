@@ -5,6 +5,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uangku_app/core/data/transaction_data.dart';
 import 'package:uangku_app/core/models/transaction_model.dart';
 import 'package:uangku_app/features/profile/screens/export_preview_screen.dart';
+import 'dart:ui' as ui;
+import 'dart:typed_data';
+import 'package:flutter/rendering.dart';
 
 class AnalyticsScreen extends StatefulWidget {
   const AnalyticsScreen({Key? key}) : super(key: key);
@@ -17,6 +20,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   String _selectedFilter = 'Weekly'; // Weekly, Monthly, Custom
   DateTimeRange? _customDateRange;
   DateTimeRange? _exportDateRange;
+  
+  final GlobalKey _lineChartKey = GlobalKey();
+  final GlobalKey _pieChartKey = GlobalKey();
 
   @override
   void initState() {
@@ -274,6 +280,19 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     }
   }
 
+  Future<Uint8List?> _captureWidget(GlobalKey key) async {
+    try {
+      RenderRepaintBoundary? boundary = key.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+      if (boundary == null) return null;
+      ui.Image image = await boundary.toImage(pixelRatio: 3.0);
+      ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      return byteData?.buffer.asUint8List();
+    } catch (e) {
+      debugPrint("Error capturing chart: $e");
+      return null;
+    }
+  }
+
   Future<void> _navigateToPreview(String format) async {
     if (_exportDateRange == null) return;
 
@@ -286,6 +305,14 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         tx.date.isBefore(_exportDateRange!.end.add(const Duration(days: 1)))
     ).toList();
     
+    // Capture charts if PDF
+    Uint8List? lineChartBytes;
+    Uint8List? pieChartBytes;
+    if (format == 'PDF') {
+      lineChartBytes = await _captureWidget(_lineChartKey);
+      pieChartBytes = await _captureWidget(_pieChartKey);
+    }
+
     if (!mounted) return;
 
     Navigator.push(
@@ -296,6 +323,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           exportFormat: format,
           userName: userName,
           transactions: filteredTransactions,
+          lineChartImage: lineChartBytes,
+          pieChartImage: pieChartBytes,
         ),
       ),
     );
@@ -499,117 +528,121 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             ),
           ),
           const SizedBox(height: 32),
-          SizedBox(
-            height: 200,
-            child: LineChart(
-              LineChartData(
-                gridData: FlGridData(
-                  show: true,
-                  drawVerticalLine: false,
-                  horizontalInterval: interval,
-                  getDrawingHorizontalLine: (value) {
-                    return FlLine(
-                      color: const Color(0xFFF1F5F9),
-                      strokeWidth: 1,
-                    );
-                  },
-                ),
-                titlesData: FlTitlesData(
-                  show: true,
-                  rightTitles: AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
+          RepaintBoundary(
+            key: _lineChartKey,
+            child: Container(
+              color: Colors.white, // Ensure white background for capture
+              height: 200,
+              child: LineChart(
+                LineChartData(
+                  gridData: FlGridData(
+                    show: true,
+                    drawVerticalLine: false,
+                    horizontalInterval: interval,
+                    getDrawingHorizontalLine: (value) {
+                      return FlLine(
+                        color: const Color(0xFFF1F5F9),
+                        strokeWidth: 1,
+                      );
+                    },
                   ),
-                  topTitles: AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 30,
-                      interval: 1,
-                      getTitlesWidget: (value, meta) {
-                        const style = TextStyle(
-                          color: Color(0xFF64748B),
-                          fontSize: 11,
-                        );
-                        Widget text;
-                        switch (value.toInt()) {
-                          case 0:
-                            text = const Text('Mon', style: style);
-                            break;
-                          case 1:
-                            text = const Text('Tue', style: style);
-                            break;
-                          case 2:
-                            text = const Text('Wed', style: style);
-                            break;
-                          case 3:
-                            text = const Text('Thu', style: style);
-                            break;
-                          case 4:
-                            text = const Text('Fri', style: style);
-                            break;
-                          case 5:
-                            text = const Text('Sat', style: style);
-                            break;
-                          case 6:
-                            text = const Text('Sun', style: style);
-                            break;
-                          default:
-                            text = const Text('', style: style);
-                            break;
-                        }
-                        return SideTitleWidget(
-                          axisSide: meta.axisSide,
-                          child: text,
-                        );
-                      },
+                  titlesData: FlTitlesData(
+                    show: true,
+                    rightTitles: AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
                     ),
-                  ),
-                  leftTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      interval: interval,
-                      getTitlesWidget: (value, meta) {
-                        if (value == 0) return const SizedBox.shrink(); // hide 0
-                        final compactFormat = NumberFormat.compact(locale: 'id_ID');
-                        return Text(
-                          compactFormat.format(value),
-                          style: const TextStyle(
+                    topTitles: AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 30,
+                        interval: 1,
+                        getTitlesWidget: (value, meta) {
+                          const style = TextStyle(
                             color: Color(0xFF64748B),
                             fontSize: 11,
-                          ),
-                        );
-                      },
-                      reservedSize: 42,
+                          );
+                          Widget text;
+                          switch (value.toInt()) {
+                            case 0:
+                              text = const Text('Mon', style: style);
+                              break;
+                            case 1:
+                              text = const Text('Tue', style: style);
+                              break;
+                            case 2:
+                              text = const Text('Wed', style: style);
+                              break;
+                            case 3:
+                              text = const Text('Thu', style: style);
+                              break;
+                            case 4:
+                              text = const Text('Fri', style: style);
+                              break;
+                            case 5:
+                              text = const Text('Sat', style: style);
+                              break;
+                            case 6:
+                              text = const Text('Sun', style: style);
+                              break;
+                            default:
+                              text = const Text('', style: style);
+                              break;
+                          }
+                          return SideTitleWidget(
+                            axisSide: meta.axisSide,
+                            child: text,
+                          );
+                        },
+                      ),
+                    ),
+                    leftTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        interval: interval,
+                        getTitlesWidget: (value, meta) {
+                          if (value == 0) return const SizedBox.shrink(); // hide 0
+                          final compactFormat = NumberFormat.compact(locale: 'id_ID');
+                          return Text(
+                            compactFormat.format(value),
+                            style: const TextStyle(
+                              color: Color(0xFF64748B),
+                              fontSize: 11,
+                            ),
+                          );
+                        },
+                        reservedSize: 42,
+                      ),
                     ),
                   ),
-                ),
-                borderData: FlBorderData(
-                  show: false,
-                ),
-                minX: 0,
-                maxX: 6,
-                minY: 0,
-                maxY: maxY,
-                lineBarsData: [
-                  LineChartBarData(
-                    spots: List.generate(7, (index) => FlSpot(index.toDouble(), incomeByDay[index])),
-                    isCurved: false,
-                    color: const Color(0xFF10B981), // Income Green
-                    barWidth: 3,
-                    isStrokeCapRound: true,
-                    dotData: FlDotData(show: false),
+                  borderData: FlBorderData(
+                    show: false,
                   ),
-                  LineChartBarData(
-                    spots: List.generate(7, (index) => FlSpot(index.toDouble(), expenseByDay[index])),
-                    isCurved: false,
-                    color: const Color(0xFFF97316), // Expense Orange
-                    barWidth: 3,
-                    isStrokeCapRound: true,
-                    dotData: FlDotData(show: false),
-                  ),
-                ],
+                  minX: 0,
+                  maxX: 6,
+                  minY: 0,
+                  maxY: maxY,
+                  lineBarsData: [
+                    LineChartBarData(
+                      spots: List.generate(7, (index) => FlSpot(index.toDouble(), incomeByDay[index])),
+                      isCurved: false,
+                      color: const Color(0xFF10B981), // Income Green
+                      barWidth: 3,
+                      isStrokeCapRound: true,
+                      dotData: FlDotData(show: false),
+                    ),
+                    LineChartBarData(
+                      spots: List.generate(7, (index) => FlSpot(index.toDouble(), expenseByDay[index])),
+                      isCurved: false,
+                      color: const Color(0xFFF97316), // Expense Orange
+                      barWidth: 3,
+                      isStrokeCapRound: true,
+                      dotData: FlDotData(show: false),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -696,28 +729,32 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               ),
             )
           else
-            SizedBox(
-              height: 220,
-              child: PieChart(
-                PieChartData(
-                  pieTouchData: PieTouchData(enabled: true),
-                  borderData: FlBorderData(show: false),
-                  sectionsSpace: 0,
-                  centerSpaceRadius: 40,
-                  sections: categoryData.map((data) {
-                    return PieChartSectionData(
-                      color: data['color'],
-                      value: data['percent'],
-                      title: '${data['name']}\n${data['percent'].toStringAsFixed(1)}%',
-                      radius: 70,
-                      titleStyle: const TextStyle(
-                        fontSize: 9,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1E293B),
-                      ),
-                      titlePositionPercentageOffset: 1.3,
-                    );
-                  }).toList(),
+            RepaintBoundary(
+              key: _pieChartKey,
+              child: Container(
+                color: Colors.white, // Ensure white background for capture
+                height: 220,
+                child: PieChart(
+                  PieChartData(
+                    pieTouchData: PieTouchData(enabled: true),
+                    borderData: FlBorderData(show: false),
+                    sectionsSpace: 0,
+                    centerSpaceRadius: 40,
+                    sections: categoryData.map((data) {
+                      return PieChartSectionData(
+                        color: data['color'],
+                        value: data['percent'],
+                        title: '${data['name']}\n${data['percent'].toStringAsFixed(1)}%',
+                        radius: 70,
+                        titleStyle: const TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF1E293B),
+                        ),
+                        titlePositionPercentageOffset: 1.3,
+                      );
+                    }).toList(),
+                  ),
                 ),
               ),
             ),

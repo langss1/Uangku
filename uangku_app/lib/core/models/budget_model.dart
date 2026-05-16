@@ -6,7 +6,7 @@ class BudgetModel {
   final double amount;
   final DateTime startDate;
   final DateTime endDate;
-  final IconData icon;
+  final int iconCodePoint; // simpan sebagai int, bukan IconData
   final Color bgColor;
   final Color iconColor;
 
@@ -16,7 +16,7 @@ class BudgetModel {
     required this.amount,
     required this.startDate,
     required this.endDate,
-    required this.icon,
+    required this.iconCodePoint,
     required this.bgColor,
     required this.iconColor,
   });
@@ -28,7 +28,7 @@ class BudgetModel {
       'amount': amount,
       'startDate': startDate.toIso8601String(),
       'endDate': endDate.toIso8601String(),
-      'iconCodePoint': icon.codePoint,
+      'iconCodePoint': iconCodePoint,
       'bgColor': bgColor.value,
       'iconColor': iconColor.value,
     };
@@ -41,9 +41,9 @@ class BudgetModel {
       amount: json['amount'],
       startDate: DateTime.parse(json['startDate']),
       endDate: DateTime.parse(json['endDate']),
-      icon: IconData(json['iconCodePoint'], fontFamily: 'MaterialIcons'),
-      bgColor: Color(json['bgColor']),
-      iconColor: Color(json['iconColor']),
+      iconCodePoint: json['iconCodePoint'] as int,
+      bgColor: Color(json['bgColor'] as int),
+      iconColor: Color(json['iconColor'] as int),
     );
   }
 }

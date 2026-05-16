@@ -367,7 +367,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
                     color: budget.bgColor,
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(budget.icon, color: budget.iconColor, size: 24),
+                  child: Icon(IconData(budget.iconCodePoint, fontFamily: 'MaterialIcons'), color: budget.iconColor, size: 24),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
