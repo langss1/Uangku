@@ -105,6 +105,7 @@ const authController = {
       return res.status(200).json({
         message: 'Login successful',
         token,
+        requiresPasswordChange: user.needs_password_reset || false,
         user: {
           id: user.id,
           full_name: user.full_name,
@@ -141,7 +142,7 @@ const authController = {
       const password_hash = await bcrypt.hash(newPassword, saltRounds);
 
       // Update DB
-      await pool.query('UPDATE users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [password_hash, user.id]);
+      await pool.query('UPDATE users SET password_hash = $1, needs_password_reset = true, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [password_hash, user.id]);
 
       // Send email
       const transporter = nodemailer.createTransport({
@@ -237,6 +238,7 @@ const authController = {
         updates.push(`password_hash = $${counter}`);
         values.push(password_hash);
         counter++;
+        updates.push(`needs_password_reset = false`);
       }
       if (is_2fa_active !== undefined) {
         updates.push(`is_2fa_active = $${counter}`);
@@ -418,6 +420,7 @@ const authController = {
         return res.status(200).json({
           message: 'Login successful',
           token: finalToken,
+          requiresPasswordChange: user.needs_password_reset || false,
           user: {
             id: user.id,
             full_name: user.full_name,

@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uangku_app/core/theme/app_colors.dart';
 import 'package:uangku_app/features/home/home_screen.dart';
+import 'package:uangku_app/features/auth/force_reset_password_screen.dart';
 
 class VerifyLogin2FAScreen extends StatefulWidget {
   final String tempToken;
@@ -51,10 +52,19 @@ class _VerifyLogin2FAScreenState extends State<VerifyLogin2FAScreen> {
           await prefs.setString('user_email', data['user']['email'] ?? '');
         }
 
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const HomeScreen()),
-          (route) => false,
-        );
+        if (data['requiresPasswordChange'] == true) {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(
+              builder: (_) => ForceResetPasswordScreen(token: data['token']),
+            ),
+            (route) => false,
+          );
+        } else {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const HomeScreen()),
+            (route) => false,
+          );
+        }
       } else {
         final errorMsg = jsonDecode(response.body)['error'] ?? 'Verification failed';
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMsg)));

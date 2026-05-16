@@ -7,6 +7,7 @@ import 'package:uangku_app/features/home/home_screen.dart';
 import 'package:uangku_app/features/auth/register_screen.dart';
 import 'package:uangku_app/features/auth/forgot_password_screen.dart';
 import 'package:uangku_app/features/auth/verify_login_2fa_screen.dart';
+import 'package:uangku_app/features/auth/force_reset_password_screen.dart';
 import 'package:video_player/video_player.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -100,6 +101,15 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                 tempToken: data['tempToken'] ?? '',
                 twoFactorType: data['twoFactorType'] ?? 'TOTP',
               ),
+            ),
+          );
+          return;
+        }
+
+        if (data['requiresPasswordChange'] == true) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (_) => ForceResetPasswordScreen(token: data['token']),
             ),
           );
           return;
@@ -214,10 +224,9 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                       constraints: BoxConstraints(
                         minHeight: constraints.maxHeight,
                       ),
-                      child: IntrinsicHeight(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
                             const SizedBox(height: 30),
                             // Video Header
                             Center(
@@ -452,9 +461,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                               ),
                             ),
                             
-                            // Spacer to push footer to bottom
-                            const Spacer(),
-                            const SizedBox(height: 24),
+                            const SizedBox(height: 40),
                             
                             // Footer
                             Row(
@@ -485,15 +492,14 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                           ],
                         ),
                       ),
-                    ),
-                  );
-                }
+                    );
+                  },
+                ),
               ),
             ),
           ),
         ),
-      ),
-    );
+      );
   }
 
   Widget _buildInputLabel(String text) {
