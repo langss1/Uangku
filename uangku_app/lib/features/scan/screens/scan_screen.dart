@@ -161,6 +161,7 @@ class _ScanScreenState extends State<ScanScreen> with TickerProviderStateMixin {
     double highestScore = -1;
 
     final List<String> keywords = ["total", "grand", "jumlah", "bayar", "nett", "pembayaran", "amount", "total belanja", "tunggakan"];
+    final List<String> negativeKeywords = ["kembali", "tunai", "cash", "change", "debit", "kredit", "bca", "qris", "mandiri", "ovo", "gopay", "dana", "shopeepay"];
     
     // 1. Collect all detected numbers with their coordinates
     List<_NumericCandidate> candidates = [];
@@ -171,8 +172,8 @@ class _ScanScreenState extends State<ScanScreen> with TickerProviderStateMixin {
         
         // Filter out dates (e.g. 20/12/2024 or 2024-12-20)
         if (lineText.contains(RegExp(r'\d{1,4}[-/]\d{1,2}[-/]\d{1,4}'))) continue;
-        // Filter out times (e.g. 12:30 or 12.30)
-        if (lineText.contains(RegExp(r'\d{1,2}[:.]\d{2}\s?(am|pm)?'))) {
+        // Filter out times (e.g. 12:30). We strictly use colon (:) to avoid matching thousands separators like 32.000
+        if (lineText.contains(RegExp(r'\d{1,2}:\d{2}\s?(am|pm)?'))) {
            if (!lineText.contains('rp')) continue; // Skip if no currency prefix
         }
 
@@ -230,6 +231,14 @@ class _ScanScreenState extends State<ScanScreen> with TickerProviderStateMixin {
 
     if (candidates.isEmpty) return null;
 
+    // Safely find the maximum value (excluding unreasonably huge numbers like phone numbers)
+    double maxCandidateValue = 0;
+    for (var c in candidates) {
+      if (c.value > maxCandidateValue && c.value < 100000000) { // Limit to 100 Million
+        maxCandidateValue = c.value;
+      }
+    }
+
     // 2. Score each candidate
     for (int i = 0; i < candidates.length; i++) {
       var candidate = candidates[i];
@@ -247,11 +256,16 @@ class _ScanScreenState extends State<ScanScreen> with TickerProviderStateMixin {
           
           // Check if this line contains a keyword
           bool hasKeyword = keywords.any((k) => lineText.contains(k));
-          if (hasKeyword) {
+          bool hasNegativeKeyword = negativeKeywords.any((k) => lineText.contains(k));
+
+          double yDiff = (line.boundingBox.top - candidate.y).abs();
+          
+          if (hasNegativeKeyword && yDiff < candidate.height * 1.5) {
+             score -= 100; // Penalize "Tunai", "Kembalian", etc.
+          } else if (hasKeyword) {
             // Check vertical proximity (Are they on the same line?)
-            double yDiff = (line.boundingBox.top - candidate.y).abs();
             if (yDiff < candidate.height * 1.5) {
-              score += 120; // Massive bonus for same-line keywords
+              score += 150; // Massive bonus for same-line keywords
             } else if (line.boundingBox.top < candidate.y && yDiff < candidate.height * 5) {
               score += 60; // Bonus for keyword appearing slightly above the value
             }
@@ -261,6 +275,12 @@ class _ScanScreenState extends State<ScanScreen> with TickerProviderStateMixin {
 
       // FACTOR C: Currency format indicators
       if (candidate.isCurrencyFormatted) score += 30;
+
+      // FACTOR D: Safe Largest amount heuristic
+      // The total is usually the largest valid number (excluding phone numbers > 100 million)
+      if (candidate.value == maxCandidateValue && maxCandidateValue > 0) {
+        score += 80;
+      }
 
       if (score > highestScore) {
         highestScore = score;
@@ -281,22 +301,22 @@ class _ScanScreenState extends State<ScanScreen> with TickerProviderStateMixin {
       final content = [
         Content.multi([
           TextPart('''
-            You are a professional financial assistant expert in reading Indonesian shopping receipts.
-            Analyze this image carefully:
-            1. Find the final TOTAL transaction amount (after taxes and discounts).
-            2. Find the Name of the Store/Merchant.
+            You are an advanced AI specialized in OCR and data extraction for Indonesian receipts.
+            Your task is to carefully analyze the image and extract the FINAL TOTAL amount and the STORE NAME.
             
-            Return the result ONLY in the following JSON format:
+            STRICT RULES:
+            1. Find the exact FINAL TOTAL (often labeled as "Total", "Grand Total", "Total Bayar", "Nett", or "Jumlah").
+            2. The "amount" MUST be a pure integer without any currency symbols (Rp), dots, or commas.
+               - Example 1: If the receipt says "Rp 150.000", return 150000
+               - Example 2: If the receipt says "32,500.00", return 32500
+               - Example 3: If the receipt truncates zeros (e.g. "Total: 35"), it likely means 35000. Use context.
+            3. The "store" is the name of the shop/merchant, usually at the very top.
+            
+            OUTPUT FORMAT:
+            You must respond ONLY with a raw JSON object. Do not include markdown code blocks (like ```json), do not include any text outside the JSON.
+            
+            Example response:
             {"amount": 150000, "store": "Indomaret"}
-            
-            Notes:
-            - "amount" must be a pure INTEGER without any dots, commas, or currency symbols (e.g., 323000).
-            - IMPORTANT: In Indonesia, "323.000" or "323,000" means three hundred twenty-three thousand. NEVER return it as 323.
-            - If you see a number like "323" that is clearly the total (e.g., net amount or grand total), it is likely "323000". Use context to decide.
-            - Return ONLY the digits for "amount".
-            - If you cannot find the total, return {"amount": 0, "store": "Unknown"}
-            - Prioritize values next to "TOTAL", "GRAND TOTAL", "JUMLAH", "BAYAR", or "NETT".
-            - Ignore dates, times, and phone numbers.
           '''),
           DataPart('image/jpeg', imageBytes),
         ])

@@ -324,7 +324,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Single
                     setState(() {
                       if (result.containsKey('amount')) {
                         _amount = result['amount'];
-                        _amountController.text = _amount.toInt().toString();
+                        final formatter = NumberFormat.currency(locale: 'id_ID', symbol: '', decimalDigits: 0);
+                        _amountController.text = formatter.format(_amount).trim();
                       }
                       if (result.containsKey('note')) {
                         _notesController.text = result['note'];
