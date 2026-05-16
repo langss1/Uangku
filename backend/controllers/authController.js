@@ -196,12 +196,14 @@ const authController = {
 
   generateTOTP: async (req, res) => {
     try {
-      const secret = authenticator.generateSecret();
       const email = req.user.email;
+      const secret = authenticator.generateSecret();
       
+      // Membuat URL buat di-render jadi QR Code di Flutter
       const otpauthUrl = authenticator.keyuri(email, 'UANGKU AI', secret);
       
-      await pool.query('UPDATE users SET two_factor_secret = $1 WHERE id = $2', [secret, req.user.id]);
+      // Simpan ke kolom totp_secret sesuai skema database kamu
+      await pool.query('UPDATE users SET totp_secret = $1 WHERE id = $2', [secret, req.user.id]);
       
       res.json({ secret, qrCodeUrl: otpauthUrl });
     } catch (error) {
@@ -213,16 +215,17 @@ const authController = {
   verifyAndEnableTOTP: async (req, res) => {
     try {
       const { token } = req.body;
-      const user = await pool.query('SELECT two_factor_secret FROM users WHERE id = $1', [req.user.id]);
+      const user = await pool.query('SELECT totp_secret FROM users WHERE id = $1', [req.user.id]);
       
-      if (user.rows.length === 0 || !user.rows[0].two_factor_secret) {
+      if (user.rows.length === 0 || !user.rows[0].totp_secret) {
         return res.status(400).json({ success: false, message: "No TOTP secret found" });
       }
 
-      const isValid = authenticator.check(token, user.rows[0].two_factor_secret);
+      const isValid = authenticator.check(token, user.rows[0].totp_secret);
       
       if (isValid) {
-          await pool.query("UPDATE users SET two_factor_enabled = true, two_factor_type = 'TOTP' WHERE id = $1", [req.user.id]);
+          // Update kolom is_2fa_active menjadi true saat token valid
+          await pool.query("UPDATE users SET is_2fa_active = true WHERE id = $1", [req.user.id]);
           return res.json({ success: true, message: "2FA Google Authenticator Aktif!" });
       }
       
