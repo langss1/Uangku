@@ -20,7 +20,7 @@ services:
       - DATABASE_URL=postgresql://ihab:apayhh@db:5432/finance_uangku
       - SMTP_HOST=smtp.gmail.com
       - SMTP_PORT=465
-      - SMTP_USER=uangku.apps@gmail.com
-      - SMTP_PASS=Ihab@8955
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASS=${SMTP_PASS}
     depends_on:
       - db
