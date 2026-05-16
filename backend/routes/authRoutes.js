@@ -6,15 +6,14 @@ const authMiddleware = require('../middleware/authMiddleware');
 // Public Routes
 router.post('/register', authController.register);
 router.post('/login', authController.login);
-router.post('/login-2fa', authController.login2FA);
+router.post('/login-2fa', authController.verify2FALogin);
 
 // Protected Routes (requires Bearer token)
 router.get('/profile', authMiddleware, authController.getProfile);
 router.put('/profile', authMiddleware, authController.updateProfile);
 router.put('/security', authMiddleware, authController.updateSecurity);
-router.post('/2fa/generate', authMiddleware, authController.generate2FA);
-router.post('/2fa/verify', authMiddleware, authController.verify2FA);
-router.get('/2fa/status', authMiddleware, authController.get2FAStatus);
-router.post('/2fa/toggle', authMiddleware, authController.toggle2FA);
+router.post('/2fa/generate', authMiddleware, authController.generateTOTP);
+router.post('/2fa/verify', authMiddleware, authController.verifyAndEnableTOTP);
+router.post('/2fa/update-type', authMiddleware, authController.update2FAType);
 
 module.exports = router;

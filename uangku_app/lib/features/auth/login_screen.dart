@@ -96,7 +96,10 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
         if (data['requires2FA'] == true) {
           Navigator.of(context).push(
             MaterialPageRoute(
-              builder: (_) => VerifyLogin2FAScreen(userId: data['userId']),
+              builder: (_) => VerifyLogin2FAScreen(
+                tempToken: data['tempToken'] ?? '',
+                twoFactorType: data['twoFactorType'] ?? 'TOTP',
+              ),
             ),
           );
           return;

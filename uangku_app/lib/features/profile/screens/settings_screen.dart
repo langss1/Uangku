@@ -3,6 +3,7 @@ import 'package:uangku_app/core/theme/app_colors.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:qr_flutter/qr_flutter.dart';
 
 class SettingsEditorScreen extends StatefulWidget {
   final String title;
@@ -29,7 +30,7 @@ class _SettingsEditorScreenState extends State<SettingsEditorScreen> {
   final TextEditingController _field2Controller = TextEditingController();
   bool _isLoading = false;
   bool _is2FAEnabled = false;
-  bool _has2FASecret = false;
+  String _twoFactorType = 'NONE';
 
   @override
   void initState() {
@@ -46,26 +47,19 @@ class _SettingsEditorScreenState extends State<SettingsEditorScreen> {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
     
-    // Initial local load
-    setState(() {
-      _is2FAEnabled = prefs.getBool('is_2fa_active') ?? false;
-    });
-
-    if (token == null) return;
-
+    // Update user profile
     try {
       final response = await http.get(
-        Uri.parse('http://145.79.10.157:8000/api/auth/2fa/status'),
+        Uri.parse('http://145.79.10.157:8000/api/auth/profile'),
         headers: {'Authorization': 'Bearer $token'},
       );
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         setState(() {
-          _is2FAEnabled = data['isActive'];
-          _has2FASecret = data['hasSecret'];
+          _is2FAEnabled = data['user']['two_factor_enabled'] ?? data['user']['is_2fa_active'] ?? false;
+          _twoFactorType = data['user']['two_factor_type'] ?? 'NONE';
         });
-        await prefs.setBool('is_2fa_active', _is2FAEnabled);
       }
     } catch (e) {
       debugPrint("Error loading 2FA status: $e");
@@ -92,7 +86,6 @@ class _SettingsEditorScreenState extends State<SettingsEditorScreen> {
     final Map<String, dynamic> body = widget.isSecurity
         ? {
             "password": _field1Controller.text.isNotEmpty ? _field1Controller.text : null,
-            // Can add 2FA logic here later using _field2Controller or Switch
           }
         : {
             "full_name": _field1Controller.text,
@@ -101,6 +94,13 @@ class _SettingsEditorScreenState extends State<SettingsEditorScreen> {
 
     // Remove nulls
     body.removeWhere((key, value) => value == null);
+
+    if (body.isEmpty && widget.isSecurity) {
+        // If nothing to save for security, just pop
+        setState(() => _isLoading = false);
+        Navigator.pop(context, true);
+        return;
+    }
 
     try {
       final response = await http.put(
@@ -121,7 +121,7 @@ class _SettingsEditorScreenState extends State<SettingsEditorScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Settings updated successfully')),
           );
-          Navigator.pop(context, true); // Return true to refresh parent
+          Navigator.pop(context, true);
         }
       } else {
         if (mounted) {
@@ -188,24 +188,34 @@ class _SettingsEditorScreenState extends State<SettingsEditorScreen> {
               const SizedBox(height: 16),
               const Divider(color: Color(0xFFE2E8F0), thickness: 1),
               const SizedBox(height: 16),
-              SwitchListTile(
-                title: const Text('Two-Factor Authentication', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textDark)),
-                subtitle: const Text('Add an extra layer of security to your account.', style: TextStyle(fontSize: 12, color: AppColors.textLight)),
-                value: _is2FAEnabled,
-                activeColor: const Color(0xFF2962FF),
-                contentPadding: EdgeInsets.zero,
-                onChanged: (val) {
-                  if (val) {
-                    if (_has2FASecret) {
-                      _toggle2FA(true);
-                    } else {
-                      _enable2FA();
-                    }
-                  } else {
-                    _toggle2FA(false);
-                  }
-                },
+              const Text('Two-Factor Authentication Type', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textDark)),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: _twoFactorType,
+                    isExpanded: true,
+                    items: const [
+                      DropdownMenuItem(value: 'NONE', child: Text('None')),
+                      DropdownMenuItem(value: 'TOTP', child: Text('Google Authenticator')),
+                      DropdownMenuItem(value: 'EMAIL', child: Text('Email OTP')),
+                      DropdownMenuItem(value: 'BOTH', child: Text('Both (TOTP + Email)')),
+                    ],
+                    onChanged: (String? newValue) {
+                      if (newValue != null && newValue != _twoFactorType) {
+                        _handle2FAChange(newValue);
+                      }
+                    },
+                  ),
+                ),
               ),
+              const SizedBox(height: 8),
+              const Text('Selecting TOTP or BOTH will require setting up Google Authenticator.', style: TextStyle(fontSize: 12, color: AppColors.textLight)),
             ],
             const SizedBox(height: 48),
             SizedBox(
@@ -237,7 +247,54 @@ class _SettingsEditorScreenState extends State<SettingsEditorScreen> {
     );
   }
 
-  Future<void> _enable2FA() async {
+  Future<void> _handle2FAChange(String newType) async {
+    if (newType == 'NONE' || newType == 'EMAIL') {
+      // Direct update
+      await _update2FAType(newType, newType != 'NONE');
+    } else {
+      // Needs TOTP setup
+      await _enable2FA(newType);
+    }
+  }
+
+  Future<void> _update2FAType(String type, bool enabled) async {
+    setState(() => _isLoading = true);
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+
+    try {
+      final response = await http.post(
+        Uri.parse('http://145.79.10.157:8000/api/auth/2fa/update-type'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({"type": type, "enabled": enabled}),
+      );
+
+      if (response.statusCode == 200) {
+        setState(() {
+          _twoFactorType = type;
+          _is2FAEnabled = enabled;
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('2FA settings updated successfully')));
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to update 2FA settings')));
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _enable2FA(String intendedType) async {
     setState(() => _isLoading = true);
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
@@ -250,12 +307,13 @@ class _SettingsEditorScreenState extends State<SettingsEditorScreen> {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final qrCodeData = data['qrCode'] as String;
-        // The QR code is a base64 encoded image string like "data:image/png;base64,..."
-        final base64String = qrCodeData.split(',').last;
-
+        final qrCodeData = data['qrCodeUrl'] as String; // Now using otpauthUrl directly if using qr_flutter, or base64 if not.
+        
+        // Wait, my backend generateTOTP returns qrCodeUrl as otpauth string, not base64!
+        // We will need to use qr_flutter to render it.
+        
         if (mounted) {
-          _show2FADialog(base64String);
+          _show2FADialog(qrCodeData, intendedType);
         }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to generate 2FA QR Code')));
@@ -267,7 +325,7 @@ class _SettingsEditorScreenState extends State<SettingsEditorScreen> {
     }
   }
 
-  void _show2FADialog(String base64Image) {
+  void _show2FADialog(String otpauthUrl, String intendedType) {
     final TextEditingController tokenController = TextEditingController();
     bool isVerifying = false;
 
@@ -286,7 +344,16 @@ class _SettingsEditorScreenState extends State<SettingsEditorScreen> {
                   children: [
                     const Text('Scan this QR code with Google Authenticator or Microsoft Authenticator.', textAlign: TextAlign.center, style: TextStyle(fontSize: 14)),
                     const SizedBox(height: 16),
-                    Image.memory(base64Decode(base64Image), width: 200, height: 200),
+                    SizedBox(
+                      width: 200,
+                      height: 200,
+                      // qr_flutter will be used here. Make sure qr_flutter is imported at top.
+                      child: QrImageView(
+                        data: otpauthUrl,
+                        version: QrVersions.auto,
+                        size: 200.0,
+                      ),
+                    ),
                     const SizedBox(height: 16),
                     TextField(
                       controller: tokenController,
@@ -319,6 +386,7 @@ class _SettingsEditorScreenState extends State<SettingsEditorScreen> {
                           final token = prefs.getString('token');
 
                           try {
+                            // Verify TOTP
                             final response = await http.post(
                               Uri.parse('http://145.79.10.157:8000/api/auth/2fa/verify'),
                               headers: {
@@ -329,12 +397,9 @@ class _SettingsEditorScreenState extends State<SettingsEditorScreen> {
                             );
 
                             if (response.statusCode == 200) {
-                              await prefs.setBool('is_2fa_active', true);
-                              setState(() => _is2FAEnabled = true);
-                              if (mounted) {
-                                Navigator.pop(context);
-                                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('2FA enabled successfully')));
-                              }
+                              if (mounted) Navigator.pop(context); // Close dialog
+                              // Now update the type to the intended one (e.g., BOTH) since verifyAndEnableTOTP sets it to TOTP default.
+                              await _update2FAType(intendedType, true);
                             } else {
                               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Invalid code, try again')));
                             }
@@ -355,50 +420,6 @@ class _SettingsEditorScreenState extends State<SettingsEditorScreen> {
         );
       },
     );
-  }
-
-  Future<void> _toggle2FA(bool active) async {
-    setState(() => _isLoading = true);
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token');
-
-    try {
-      final response = await http.post(
-        Uri.parse('http://145.79.10.157:8000/api/auth/2fa/toggle'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({"active": active}),
-      );
-
-      if (response.statusCode == 200) {
-        await prefs.setBool('is_2fa_active', active);
-        setState(() => _is2FAEnabled = active);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('2FA ${active ? 'enabled' : 'disabled'} successfully')),
-          );
-        }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Failed to toggle 2FA')),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
-      }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _disable2FA() async {
-    // Deprecated in favor of _toggle2FA
-    await _toggle2FA(false);
   }
 
   Widget _buildInputField({

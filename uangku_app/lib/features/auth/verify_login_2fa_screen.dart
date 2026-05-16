@@ -7,9 +7,10 @@ import 'package:uangku_app/core/theme/app_colors.dart';
 import 'package:uangku_app/features/home/home_screen.dart';
 
 class VerifyLogin2FAScreen extends StatefulWidget {
-  final int userId;
+  final String tempToken;
+  final String twoFactorType;
 
-  const VerifyLogin2FAScreen({Key? key, required this.userId}) : super(key: key);
+  const VerifyLogin2FAScreen({Key? key, required this.tempToken, required this.twoFactorType}) : super(key: key);
 
   @override
   State<VerifyLogin2FAScreen> createState() => _VerifyLogin2FAScreenState();
@@ -33,7 +34,7 @@ class _VerifyLogin2FAScreenState extends State<VerifyLogin2FAScreen> {
         Uri.parse('http://145.79.10.157:8000/api/auth/login-2fa'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
-          'userId': widget.userId,
+          'tempToken': widget.tempToken,
           'token': token,
         }),
       );
@@ -67,6 +68,13 @@ class _VerifyLogin2FAScreenState extends State<VerifyLogin2FAScreen> {
 
   @override
   Widget build(BuildContext context) {
+    String message = 'Enter the 6-digit code from your Authenticator app';
+    if (widget.twoFactorType == 'EMAIL') {
+      message = 'Enter the 6-digit OTP sent to your email';
+    } else if (widget.twoFactorType == 'BOTH') {
+      message = 'Enter the 6-digit code from your Authenticator app or Email OTP';
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
@@ -92,7 +100,10 @@ class _VerifyLogin2FAScreenState extends State<VerifyLogin2FAScreen> {
                     color: const Color(0xFFEFF6FF),
                     borderRadius: BorderRadius.circular(24),
                   ),
-                  child: const Icon(Icons.security, size: 40, color: Color(0xFF0066CC)),
+                  child: Icon(
+                    widget.twoFactorType == 'EMAIL' ? Icons.mail_lock : Icons.security, 
+                    size: 40, color: const Color(0xFF0066CC)
+                  ),
                 ),
               ),
               const SizedBox(height: 32),
@@ -102,10 +113,10 @@ class _VerifyLogin2FAScreenState extends State<VerifyLogin2FAScreen> {
                 style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.textDark),
               ),
               const SizedBox(height: 16),
-              const Text(
-                'Enter the 6-digit code from your Authenticator app (Google/Microsoft)',
+              Text(
+                message,
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 14, color: Color(0xFF64748B), height: 1.5),
+                style: const TextStyle(fontSize: 14, color: Color(0xFF64748B), height: 1.5),
               ),
               const SizedBox(height: 48),
               TextField(

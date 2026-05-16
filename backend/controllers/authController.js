@@ -1,8 +1,8 @@
 const pool = require('../config/db');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const speakeasy = require('speakeasy');
-const qrcode = require('qrcode');
+const { authenticator } = require('otplib');
+const nodemailer = require('nodemailer');
 
 // Secret for JWT (Usually kept in .env)
 const JWT_SECRET = process.env.JWT_SECRET || 'super_secret_key_123';
@@ -70,11 +70,25 @@ const authController = {
       }
 
       // Check for 2FA flag
-      if (user.is_2fa_active) {
+      if (user.two_factor_enabled === true || user.is_2fa_active === true) {
+        const type = user.two_factor_type && user.two_factor_type !== 'NONE' ? user.two_factor_type : 'TOTP';
+
+        if (type === 'EMAIL' || type === 'BOTH') {
+            await authController.sendEmailOTP(user.email, user.id);
+        }
+
+        const tempToken = jwt.sign(
+            { id: user.id, email: user.email, isTemp: true },
+            JWT_SECRET,
+            { expiresIn: '5m' }
+        );
+
         return res.status(200).json({
           message: '2FA required',
           requires2FA: true,
-          userId: user.id
+          twoFactorType: type,
+          tempToken: tempToken,
+          userId: user.id // For backward compatibility
         });
       }
 
@@ -107,7 +121,7 @@ const authController = {
       const userId = req.user.id;
 
       const result = await pool.query(
-        'SELECT id, full_name, email, is_2fa_active, created_at, updated_at FROM users WHERE id = $1',
+        'SELECT id, full_name, email, is_2fa_active, two_factor_enabled, two_factor_type, created_at, updated_at FROM users WHERE id = $1',
         [userId]
       );
 
@@ -178,121 +192,142 @@ const authController = {
     }
   },
 
-  // Generate 2FA Secret and QR Code
-  generate2FA: async (req, res) => {
+  // --- NEW 2FA LOGIC ---
+
+  generateTOTP: async (req, res) => {
     try {
-      const userId = req.user.id;
-      const userResult = await pool.query('SELECT email FROM users WHERE id = $1', [userId]);
-      if (userResult.rows.length === 0) return res.status(404).json({ error: 'User not found' });
+      const secret = authenticator.generateSecret();
+      const email = req.user.email;
       
-      const email = userResult.rows[0].email;
-      const secret = speakeasy.generateSecret({
-        name: `UANGKU (${email})`
-      });
-
-      await pool.query('UPDATE users SET totp_secret = $1 WHERE id = $2', [secret.base32, userId]);
-
-      qrcode.toDataURL(secret.otpauth_url, (err, data_url) => {
-        if (err) {
-          return res.status(500).json({ error: 'Error generating QR Code' });
-        }
-        res.status(200).json({
-          secret: secret.base32,
-          qrCode: data_url
-        });
-      });
-    } catch (error) {
-      console.error('Generate 2FA Error:', error);
-      res.status(500).json({ error: 'Internal server error: ' + error.message });
-    }
-  },
-
-  // Check if user has 2FA secret
-  get2FAStatus: async (req, res) => {
-    try {
-      const userId = req.user.id;
-      const result = await pool.query('SELECT totp_secret, is_2fa_active FROM users WHERE id = $1', [userId]);
-      if (result.rows.length === 0) return res.status(404).json({ error: 'User not found' });
+      const otpauthUrl = authenticator.keyuri(email, 'UANGKU AI', secret);
       
-      const hasSecret = result.rows[0].totp_secret !== null;
-      res.status(200).json({
-        hasSecret: hasSecret,
-        isActive: result.rows[0].is_2fa_active
-      });
+      await pool.query('UPDATE users SET two_factor_secret = $1 WHERE id = $2', [secret, req.user.id]);
+      
+      res.json({ secret, qrCodeUrl: otpauthUrl });
     } catch (error) {
-      res.status(500).json({ error: 'Internal server error' });
+      console.error('generateTOTP error:', error);
+      res.status(500).json({ error: 'Failed to generate TOTP' });
     }
   },
 
-  // Toggle 2FA if secret exists
-  toggle2FA: async (req, res) => {
+  verifyAndEnableTOTP: async (req, res) => {
     try {
-      const userId = req.user.id;
-      const { active } = req.body;
-
-      const result = await pool.query('SELECT totp_secret FROM users WHERE id = $1', [userId]);
-      if (result.rows.length === 0) return res.status(404).json({ error: 'User not found' });
-
-      if (active && !result.rows[0].totp_secret) {
-        return res.status(400).json({ error: 'No 2FA secret found. Please setup 2FA first.' });
-      }
-
-      await pool.query('UPDATE users SET is_2fa_active = $1 WHERE id = $2', [active, userId]);
-      res.status(200).json({ message: `2FA ${active ? 'enabled' : 'disabled'} successfully` });
-    } catch (error) {
-      res.status(500).json({ error: 'Internal server error' });
-    }
-  },
-
-  // Verify 2FA Token to enable it
-  verify2FA: async (req, res) => {
-    try {
-      const userId = req.user.id;
       const { token } = req.body;
-
-      const userResult = await pool.query('SELECT totp_secret FROM users WHERE id = $1', [userId]);
-      if (userResult.rows.length === 0) return res.status(404).json({ error: 'User not found' });
-
-      const secret = userResult.rows[0].totp_secret;
+      const user = await pool.query('SELECT two_factor_secret FROM users WHERE id = $1', [req.user.id]);
       
-      const verified = speakeasy.totp.verify({
-        secret: secret,
-        encoding: 'base32',
-        token: token,
-        window: 1 // allows 1 step before/after
-      });
-
-      if (verified) {
-        await pool.query('UPDATE users SET is_2fa_active = true WHERE id = $1', [userId]);
-        return res.status(200).json({ message: '2FA enabled successfully' });
-      } else {
-        return res.status(400).json({ error: 'Invalid 2FA token' });
+      if (user.rows.length === 0 || !user.rows[0].two_factor_secret) {
+        return res.status(400).json({ success: false, message: "No TOTP secret found" });
       }
+
+      const isValid = authenticator.check(token, user.rows[0].two_factor_secret);
+      
+      if (isValid) {
+          await pool.query("UPDATE users SET two_factor_enabled = true, two_factor_type = 'TOTP' WHERE id = $1", [req.user.id]);
+          return res.json({ success: true, message: "2FA Google Authenticator Aktif!" });
+      }
+      
+      res.status(400).json({ success: false, message: "Token tidak valid" });
     } catch (error) {
-      console.error('Verify 2FA Error:', error);
-      res.status(500).json({ error: 'Internal server error' });
+      console.error('verifyAndEnableTOTP error:', error);
+      res.status(500).json({ error: 'Failed to verify TOTP' });
     }
   },
 
-  // Login with 2FA Token
-  login2FA: async (req, res) => {
-    try {
-      const { userId, token } = req.body;
+  sendEmailOTP: async (userEmail, userId) => {
+    const transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST || 'smtp.gmail.com',
+        port: parseInt(process.env.SMTP_PORT || '465', 10),
+        secure: true,
+        auth: {
+            user: process.env.SMTP_USER,
+            pass: process.env.SMTP_PASS
+        }
+    });
 
+    const otp = Math.floor(100000 + Math.random() * 900000).toString(); // 6 digit angka
+    const expires = new Date(Date.now() + 5 * 60 * 1000); // Valid 5 menit
+
+    await pool.query(
+        'UPDATE users SET email_otp_secret = $1, email_otp_expires = $2 WHERE id = $3',
+        [otp, expires, userId]
+    );
+
+    try {
+        await transporter.sendMail({
+            from: '"UANGKU AI" <no-reply@uangku.ai>',
+            to: userEmail,
+            subject: 'Kode Keamanan 2FA UANGKU AI',
+            text: `Kode OTP kamu adalah: ${otp}. Kode ini berlaku selama 5 menit.`
+        });
+    } catch (err) {
+        console.error('Email send error:', err);
+    }
+  },
+
+  update2FAType: async (req, res) => {
+    try {
+      const { type, enabled } = req.body;
+      const validTypes = ['NONE', 'TOTP', 'EMAIL', 'BOTH'];
+      if (!validTypes.includes(type)) {
+        return res.status(400).json({ error: 'Invalid 2FA type' });
+      }
+
+      await pool.query('UPDATE users SET two_factor_enabled = $1, two_factor_type = $2 WHERE id = $3', [enabled, type, req.user.id]);
+      res.json({ success: true, message: '2FA settings updated' });
+    } catch (error) {
+      console.error('update2FAType error:', error);
+      res.status(500).json({ error: 'Failed to update 2FA settings' });
+    }
+  },
+
+  verify2FALogin: async (req, res) => {
+    try {
+      const { tempToken, token } = req.body; // token is the 6-digit pin
+      
+      let decoded;
+      try {
+        decoded = jwt.verify(tempToken, JWT_SECRET);
+      } catch (err) {
+        return res.status(401).json({ error: 'Temporary token expired or invalid' });
+      }
+
+      if (!decoded.isTemp) {
+        return res.status(400).json({ error: 'Invalid token type' });
+      }
+
+      const userId = decoded.id;
       const userResult = await pool.query('SELECT * FROM users WHERE id = $1', [userId]);
       if (userResult.rows.length === 0) return res.status(404).json({ error: 'User not found' });
 
       const user = userResult.rows[0];
-      
-      const verified = speakeasy.totp.verify({
-        secret: user.totp_secret,
-        encoding: 'base32',
-        token: token,
-        window: 1
-      });
+      const type = user.two_factor_type;
 
-      if (verified) {
-        const jwtToken = jwt.sign(
+      let isValid = false;
+
+      // Check TOTP
+      if (type === 'TOTP' || type === 'BOTH' || user.is_2fa_active) {
+        if (user.two_factor_secret) {
+          isValid = authenticator.check(token, user.two_factor_secret);
+        } else if (user.totp_secret) { // Fallback for old schema
+          isValid = authenticator.check(token, user.totp_secret);
+        }
+      }
+
+      // Check Email OTP
+      if (!isValid && (type === 'EMAIL' || type === 'BOTH')) {
+        if (user.email_otp_secret === token) {
+          const now = new Date();
+          const expires = new Date(user.email_otp_expires);
+          if (now <= expires) {
+            isValid = true;
+            // Clear the OTP to prevent reuse
+            await pool.query('UPDATE users SET email_otp_secret = NULL WHERE id = $1', [userId]);
+          }
+        }
+      }
+
+      if (isValid) {
+        const finalToken = jwt.sign(
           { id: user.id, email: user.email },
           JWT_SECRET,
           { expiresIn: '7d' }
@@ -300,7 +335,7 @@ const authController = {
 
         return res.status(200).json({
           message: 'Login successful',
-          token: jwtToken,
+          token: finalToken,
           user: {
             id: user.id,
             full_name: user.full_name,
@@ -310,8 +345,9 @@ const authController = {
       } else {
         return res.status(401).json({ error: 'Invalid 2FA token' });
       }
+
     } catch (error) {
-      console.error('Login 2FA Error:', error);
+      console.error('verify2FALogin error:', error);
       res.status(500).json({ error: 'Internal server error' });
     }
   }
