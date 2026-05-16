@@ -204,7 +204,6 @@ class _SettingsEditorScreenState extends State<SettingsEditorScreen> {
                       DropdownMenuItem(value: 'NONE', child: Text('None')),
                       DropdownMenuItem(value: 'TOTP', child: Text('Google Authenticator')),
                       DropdownMenuItem(value: 'EMAIL', child: Text('Email OTP')),
-                      DropdownMenuItem(value: 'BOTH', child: Text('Both (TOTP + Email)')),
                     ],
                     onChanged: (String? newValue) {
                       if (newValue != null && newValue != _twoFactorType) {
@@ -215,7 +214,7 @@ class _SettingsEditorScreenState extends State<SettingsEditorScreen> {
                 ),
               ),
               const SizedBox(height: 8),
-              const Text('Selecting TOTP or BOTH will require setting up Google Authenticator.', style: TextStyle(fontSize: 12, color: AppColors.textLight)),
+              const Text('Selecting Google Authenticator will require setting up the app.', style: TextStyle(fontSize: 12, color: AppColors.textLight)),
             ],
             const SizedBox(height: 48),
             SizedBox(
