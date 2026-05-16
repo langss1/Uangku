@@ -117,6 +117,69 @@ const authController = {
     }
   },
 
+  // Forgot password
+  forgotPassword: async (req, res) => {
+    try {
+      const { email } = req.body;
+      if (!email) {
+        return res.status(400).json({ error: 'Please provide an email address.' });
+      }
+
+      // Check if user exists
+      const userResult = await pool.query('SELECT id, full_name FROM users WHERE email = $1', [email]);
+      if (userResult.rows.length === 0) {
+        return res.status(404).json({ error: 'Email not found.' });
+      }
+
+      const user = userResult.rows[0];
+
+      // Generate random 8 character alphanumeric password
+      const newPassword = Math.random().toString(36).slice(-8).toUpperCase();
+
+      // Hash password
+      const saltRounds = 10;
+      const password_hash = await bcrypt.hash(newPassword, saltRounds);
+
+      // Update DB
+      await pool.query('UPDATE users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [password_hash, user.id]);
+
+      // Send email
+      const transporter = nodemailer.createTransport({
+          host: process.env.SMTP_HOST || 'smtp.gmail.com',
+          port: parseInt(process.env.SMTP_PORT || '465', 10),
+          secure: true, // true for 465, false for other ports
+          auth: {
+              user: process.env.SMTP_USER,
+              pass: process.env.SMTP_PASS
+          }
+      });
+
+      await transporter.sendMail({
+          from: '"UANGKU AI" <no-reply@uangku.ai>',
+          to: email,
+          subject: 'Password Pemulihan Akun UANGKU AI',
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                <h3 style="color: #333;">Halo ${user.full_name},</h3>
+                <p>Sistem kami telah mereset password Anda sesuai permintaan. Berikut adalah password pemulihan Anda:</p>
+                <div style="background-color: #f8fafc; padding: 15px; border-radius: 8px; text-align: center; margin: 20px 0;">
+                    <h2 style="color: #0066cc; letter-spacing: 3px; margin: 0;">${newPassword}</h2>
+                </div>
+                <p>Silakan gunakan password di atas untuk login ke aplikasi UANGKU AI.</p>
+                <p style="color: #ef4444; font-weight: bold;">PENTING: Segera ubah password Anda di menu Profil > Security Settings setelah berhasil login!</p>
+                <br>
+                <p>Terima kasih,<br>Tim UANGKU AI</p>
+            </div>
+          `
+      });
+
+      return res.status(200).json({ message: 'Recovery password sent to your email.' });
+    } catch (error) {
+      console.error('Forgot password error:', error);
+      return res.status(500).json({ error: 'Failed to process forgot password request.' });
+    }
+  },
+
   // Get user profile (Protected Endpoint)
   getProfile: async (req, res) => {
     try {

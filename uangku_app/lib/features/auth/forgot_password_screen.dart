@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:uangku_app/core/theme/app_colors.dart';
 import 'package:uangku_app/features/auth/otp_screen.dart';
@@ -34,25 +36,42 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       _isLoading = true;
     });
 
-    // Simulate sending email
-    await Future.delayed(const Duration(seconds: 2));
+    try {
+      final response = await http.post(
+        Uri.parse('http://145.79.10.157:8000/api/auth/forgot-password'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email}),
+      );
 
-    if (!mounted) return;
-    
-    // Navigate to OTP Screen
-    Navigator.of(context).push(
-      PageRouteBuilder(
-        transitionDuration: const Duration(milliseconds: 500),
-        pageBuilder: (_, animation, __) => FadeTransition(
-          opacity: animation,
-          child: const OtpScreen(),
-        ),
-      ),
-    );
-    
-    setState(() {
-      _isLoading = false;
-    });
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Password pemulihan telah dikirim ke email Anda.'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 4),
+          ),
+        );
+        Navigator.of(context).pop(); // Back to login screen
+      } else {
+        final data = jsonDecode(response.body);
+        setState(() {
+          _errorMessage = data['error'] ?? "Gagal mengirim password pemulihan.";
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = "Koneksi bermasalah. Silakan coba lagi.";
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override

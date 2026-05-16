@@ -7,6 +7,7 @@ const authMiddleware = require('../middleware/authMiddleware');
 router.post('/register', authController.register);
 router.post('/login', authController.login);
 router.post('/login-2fa', authController.verify2FALogin);
+router.post('/forgot-password', authController.forgotPassword);
 
 // Protected Routes (requires Bearer token)
 router.get('/profile', authMiddleware, authController.getProfile);
