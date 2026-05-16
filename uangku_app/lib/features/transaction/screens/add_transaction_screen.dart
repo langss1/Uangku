@@ -188,31 +188,37 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Single
       TransactionData().addTransaction(newTx);
     }
 
-    Navigator.push(
+    // Always clear the form state first just in case
+    setState(() {
+      _amount = 0;
+      _amountController.clear();
+      _notesController.clear();
+      _selectedCategory = null;
+      _selectedImage = null;
+      _showMoreDetails = false;
+    });
+
+    Navigator.push<bool>(
       context,
       MaterialPageRoute(
-        builder: (_) => TransactionSuccessScreen(
+        builder: (successCtx) => TransactionSuccessScreen(
           onViewHistory: () {
-            Navigator.pop(context); // pop success
-            Navigator.pushReplacement(
+            Navigator.pop(successCtx, false); // false = do not stay
+            Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const TransactionHistoryScreen()),
             );
           },
           onAddAnother: () {
-            Navigator.pop(context); // pop success
-            setState(() {
-              _amount = 0;
-              _amountController.clear();
-              _notesController.clear();
-              _selectedCategory = null;
-              _selectedImage = null;
-              _showMoreDetails = false;
-            });
+            Navigator.pop(successCtx, true); // true = stay on add screen
           },
         ),
       ),
-    );
+    ).then((stay) {
+      if (stay != true) {
+        widget.onBack();
+      }
+    });
   }
 
   Future<void> _selectDate(BuildContext context) async {
