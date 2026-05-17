@@ -252,14 +252,9 @@ class _SettingsEditorScreenState extends State<SettingsEditorScreen> {
     if (newType == 'NONE' || newType == 'EMAIL') {
       // Direct update
       await _update2FAType(newType, newType != 'NONE');
-    } else if (newType == 'TOTP') {
-      if (_hasTotpSecret) {
-        // Already setup previously! Just update the type.
-        await _update2FAType(newType, true);
-      } else {
-        // Needs TOTP setup
-        await _enable2FA(newType);
-      }
+    } else {
+      // Needs TOTP setup
+      await _enable2FA(newType);
     }
   }
 

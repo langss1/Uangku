@@ -359,10 +359,19 @@ const authController = {
       // If type is NONE, we disable everything
       const finalEnabled = type === 'NONE' ? false : enabled;
       
-      await pool.query(
-        'UPDATE users SET two_factor_enabled = $1, is_2fa_active = $1, two_factor_type = $2 WHERE id = $3', 
-        [finalEnabled, type, req.user.id]
-      );
+      // Standar keamanan industri: Hapus secret lama jika TOTP dimatikan
+      if (type !== 'TOTP' && type !== 'BOTH') {
+        await pool.query(
+          'UPDATE users SET two_factor_enabled = $1, is_2fa_active = $1, two_factor_type = $2, totp_secret = NULL, two_factor_secret = NULL WHERE id = $3', 
+          [finalEnabled, type, req.user.id]
+        );
+      } else {
+        await pool.query(
+          'UPDATE users SET two_factor_enabled = $1, is_2fa_active = $1, two_factor_type = $2 WHERE id = $3', 
+          [finalEnabled, type, req.user.id]
+        );
+      }
+
       res.json({ success: true, message: '2FA settings updated' });
     } catch (error) {
       console.error('update2FAType error:', error);
