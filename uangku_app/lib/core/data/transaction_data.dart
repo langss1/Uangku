@@ -192,4 +192,8 @@ class TransactionData {
       return tx.id == updatedTransaction.id ? updatedTransaction : tx;
     }).toList();
   }
+
+  void clearMemory() {
+    transactionsNotifier.value = [];
+  }
 }

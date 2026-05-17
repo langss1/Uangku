@@ -14,9 +14,16 @@ class BudgetData {
 
   final ValueNotifier<List<BudgetModel>> budgetsNotifier = ValueNotifier([]);
 
+  Future<String> _getStorageKey() async {
+    final prefs = await SharedPreferences.getInstance();
+    final email = prefs.getString('user_email') ?? 'default';
+    return 'local_budgets_$email';
+  }
+
   Future<void> loadBudgets() async {
     final prefs = await SharedPreferences.getInstance();
-    final String? budgetsJson = prefs.getString('local_budgets');
+    final key = await _getStorageKey();
+    final String? budgetsJson = prefs.getString(key);
     
     if (budgetsJson != null) {
       try {
@@ -24,14 +31,18 @@ class BudgetData {
         budgetsNotifier.value = decoded.map((json) => BudgetModel.fromJson(json)).toList();
       } catch (e) {
         debugPrint('Error decoding local budgets: $e');
+        budgetsNotifier.value = [];
       }
+    } else {
+      budgetsNotifier.value = [];
     }
   }
 
   Future<void> _saveToLocal() async {
     final prefs = await SharedPreferences.getInstance();
+    final key = await _getStorageKey();
     final String encoded = jsonEncode(budgetsNotifier.value.map((b) => b.toJson()).toList());
-    await prefs.setString('local_budgets', encoded);
+    await prefs.setString(key, encoded);
   }
 
   void addBudget(BudgetModel budget) {
@@ -49,5 +60,9 @@ class BudgetData {
       return b.id == updatedBudget.id ? updatedBudget : b;
     }).toList();
     _saveToLocal();
+  }
+
+  void clearMemory() {
+    budgetsNotifier.value = [];
   }
 }

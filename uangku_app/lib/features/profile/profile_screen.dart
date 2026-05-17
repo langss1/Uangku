@@ -10,6 +10,9 @@ import 'package:uangku_app/features/notification/screens/notification_screen.dar
 import 'package:uangku_app/features/profile/screens/settings_screen.dart';
 import 'package:uangku_app/features/profile/screens/dummy_screens.dart';
 
+import 'package:uangku_app/core/data/budget_data.dart';
+import 'package:uangku_app/core/data/transaction_data.dart';
+
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
@@ -90,6 +93,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _logout(BuildContext context) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('isLoggedIn', false);
+    
+    BudgetData().clearMemory();
+    TransactionData().clearMemory();
+    
     if (context.mounted) {
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => const SplashScreen()),
