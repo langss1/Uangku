@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:ui';
+import 'dart:async';
 import 'dart:math' as math;
 import 'package:uangku_app/core/theme/app_colors.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -25,12 +27,15 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
+class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   int _selectedIndex = 0;
   String _userName = 'Guest';
   int _unreadNotifs = 0;
 
   late AnimationController _animationController;
+  late AnimationController _waveController;
+  late Animation<double> _waveAnimation;
+  Timer? _waveTimer;
 
   @override
   void initState() {
@@ -40,10 +45,37 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       vsync: this,
       duration: const Duration(seconds: 4),
     )..repeat(reverse: true);
+
+    _waveController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    );
+
+    _waveAnimation = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 0.0, end: 0.08).chain(CurveTween(curve: Curves.easeOut)), weight: 1),
+      TweenSequenceItem(tween: Tween(begin: 0.08, end: -0.05).chain(CurveTween(curve: Curves.easeInOut)), weight: 1),
+      TweenSequenceItem(tween: Tween(begin: -0.05, end: 0.08).chain(CurveTween(curve: Curves.easeInOut)), weight: 1),
+      TweenSequenceItem(tween: Tween(begin: 0.08, end: -0.05).chain(CurveTween(curve: Curves.easeInOut)), weight: 1),
+      TweenSequenceItem(tween: Tween(begin: -0.05, end: 0.0).chain(CurveTween(curve: Curves.easeIn)), weight: 1),
+    ]).animate(_waveController);
+
+    // Initial wave after 1 second
+    Future.delayed(const Duration(seconds: 1), () {
+      if (mounted) _waveController.forward();
+    });
+
+    // Wave every 10 seconds
+    _waveTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
+      if (mounted) {
+        _waveController.forward(from: 0.0);
+      }
+    });
   }
 
   @override
   void dispose() {
+    _waveTimer?.cancel();
+    _waveController.dispose();
     _animationController.dispose();
     super.dispose();
   }
@@ -51,13 +83,13 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   String _getGreeting() {
     final hour = DateTime.now().hour;
     if (hour < 12) {
-      return 'Good Morning 👋';
+      return 'Good Morning';
     } else if (hour < 17) {
-      return 'Good Afternoon 👋';
+      return 'Good Afternoon';
     } else if (hour < 20) {
-      return 'Good Evening 👋';
+      return 'Good Evening';
     } else {
-      return 'Good Night 👋';
+      return 'Good Night';
     }
   }
 
@@ -108,6 +140,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
+      extendBody: true,
       body: _buildBody(),
       bottomNavigationBar: _buildBottomNav(),
       floatingActionButton: _selectedIndex != 2 
@@ -139,7 +172,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           _buildHeader(),
           const SizedBox(height: 32),
           _buildRecentTransactions(),
-          const SizedBox(height: 32),
+          const SizedBox(height: 100), // Increased to prevent content from hiding behind floating nav
         ],
       ),
     );
@@ -194,14 +227,17 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       width: double.infinity,
       decoration: const BoxDecoration(
         gradient: LinearGradient(
-          colors: [Color(0xFF2563EB), Color(0xFF3B82F6)],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
+          colors: [Color(0xFF1E3A8A), Color(0xFF3B82F6)], // Matched with Budget Screen
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
       ),
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
+      child: Stack(
+        children: [
+          Positioned.fill(child: _buildAbstractBackground()), // Polar circles background
+          SafeArea(
+            bottom: false,
+            child: Padding(
           padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -241,13 +277,26 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            _getGreeting(),
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.85),
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                            ),
+                          Row(
+                            children: [
+                              Text(
+                                _getGreeting(),
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.85),
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              RotationTransition(
+                                turns: _waveAnimation,
+                                alignment: Alignment.bottomRight,
+                                child: const Text(
+                                  '👋',
+                                  style: TextStyle(fontSize: 14),
+                                ),
+                              ),
+                            ],
                           ),
                           Text(
                             _userName,
@@ -335,9 +384,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         const SizedBox(height: 24),
                         Row(
                           children: [
-                            _buildBalanceInfo("In:", format.format(totalIncome), Colors.greenAccent),
-                            const SizedBox(width: 24),
-                            _buildBalanceInfo("Out:", format.format(totalExpense), Colors.redAccent),
+                            Expanded(child: _buildBalanceInfo("In:", format.format(totalIncome), Colors.greenAccent)),
+                            const SizedBox(width: 12),
+                            Expanded(child: _buildBalanceInfo("Out:", format.format(totalExpense), Colors.redAccent)),
                           ],
                         ),
                       ],
@@ -347,13 +396,16 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               ),
             ],
           ),
-        ),
-      ),
+        ), // End Padding
+      ), // End SafeArea
+        ],
+      ), // End Stack
     );
   }
 
   Widget _buildBalanceInfo(String label, String amount, Color color) {
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Container(
           width: 8,
@@ -361,9 +413,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 8),
-        Text(
-          "$label $amount", 
-          style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500)
+        Expanded(
+          child: Text(
+            "$label $amount", 
+            style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500),
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
       ],
     );
@@ -686,32 +741,41 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   Widget _buildBottomNav() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 20,
-            offset: const Offset(0, -5),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildNavItem(icon: Icons.home_rounded, label: 'Home', index: 0),
-              _buildNavItem(icon: Icons.analytics_outlined, label: 'Analytics', index: 1),
-              _buildNavItem(icon: Icons.add, label: 'Add', index: 2),
-              _buildNavItem(icon: Icons.account_balance_wallet_outlined, label: 'Budget', index: 3),
-              _buildNavItem(icon: Icons.person_outline, label: 'Profile', index: 4),
-            ],
+    return SafeArea(
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        child: ClipRRect(
+            borderRadius: BorderRadius.circular(32),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16), // Stronger blur
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.65), // More transparent to see background
+                  borderRadius: BorderRadius.circular(32), // Pill shaped
+                  border: Border.all(color: const Color(0xFF2563EB).withOpacity(0.4), width: 1.5), // Blue outline
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildNavItem(icon: Icons.home_rounded, label: 'Home', index: 0),
+                    _buildNavItem(icon: Icons.analytics_outlined, label: 'Analytics', index: 1),
+                    _buildNavItem(icon: Icons.add, label: 'Add', index: 2),
+                    _buildNavItem(icon: Icons.account_balance_wallet_outlined, label: 'Budget', index: 3),
+                    _buildNavItem(icon: Icons.person_outline, label: 'Profile', index: 4),
+                  ],
+                ),
+              ),
+            ),
           ),
         ),
-      ),
     );
   }
 
@@ -729,10 +793,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         behavior: HitTestBehavior.opaque,
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 56,
-              height: 56,
+              width: 52,
+              height: 52,
               decoration: BoxDecoration(
                 color: const Color(0xFF2563EB),
                 shape: BoxShape.circle,
@@ -744,16 +809,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   ),
                 ],
               ),
-              child: const Icon(Icons.add, color: Colors.white, size: 32),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                color: const Color(0xFF2563EB),
-                fontSize: 11,
-                fontWeight: FontWeight.w800,
-              ),
+              child: const Icon(Icons.add, color: Colors.white, size: 28),
             ),
           ],
         ),
@@ -767,20 +823,39 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         });
       },
       behavior: HitTestBehavior.opaque,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: color, size: 28),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              color: color,
-              fontSize: 11,
-              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+      child: SizedBox(
+        width: 56, // Fixed width to ensure even spacing
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              decoration: isSelected
+                  ? BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF2563EB).withOpacity(0.35),
+                          blurRadius: 20,
+                          spreadRadius: 8,
+                        ),
+                      ],
+                    )
+                  : null,
+              child: Icon(icon, color: color, size: 26),
             ),
-          ),
-        ],
+            const SizedBox(height: 4),
+            Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.visible,
+              style: TextStyle(
+                color: color,
+                fontSize: 10,
+                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

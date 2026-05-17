@@ -121,21 +121,21 @@ class _SettingsEditorScreenState extends State<SettingsEditorScreen> {
         }
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Settings updated successfully')),
+            const SnackBar(content: Text('Profil berhasil diperbarui')),
           );
           Navigator.pop(context, true);
         }
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Failed to update settings')),
+            const SnackBar(content: Text('Gagal memperbarui profil')),
           );
         }
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
+          SnackBar(content: Text('Terjadi kesalahan: $e')),
         );
       }
     } finally {
@@ -175,14 +175,14 @@ class _SettingsEditorScreenState extends State<SettingsEditorScreen> {
             ),
             const SizedBox(height: 32),
             _buildInputField(
-              label: widget.isSecurity ? 'New Password' : 'Full Name',
+              label: widget.isSecurity ? 'Password Baru' : 'Nama Lengkap',
               controller: _field1Controller,
               isPassword: widget.isSecurity,
             ),
             const SizedBox(height: 24),
             if (!widget.isSecurity)
               _buildInputField(
-                label: 'Email Address',
+                label: 'Alamat Email',
                 controller: _field2Controller,
                 isPassword: false,
               ),
@@ -225,7 +225,7 @@ class _SettingsEditorScreenState extends State<SettingsEditorScreen> {
               child: ElevatedButton(
                 onPressed: _isLoading ? null : _saveSettings,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2962FF),
+                  backgroundColor: AppColors.primaryBlue,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
@@ -233,7 +233,7 @@ class _SettingsEditorScreenState extends State<SettingsEditorScreen> {
                 child: _isLoading
                     ? const CircularProgressIndicator(color: Colors.white)
                     : const Text(
-                        'Save Changes',
+                        'Simpan Perubahan',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -453,7 +453,7 @@ class _SettingsEditorScreenState extends State<SettingsEditorScreen> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFF2962FF), width: 1.5),
+              borderSide: const BorderSide(color: AppColors.primaryBlue, width: 1.5),
             ),
           ),
         ),

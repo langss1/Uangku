@@ -133,9 +133,16 @@ exports.postChat = async (req, res) => {
   }
 
   try {
-    // Get user's full name to enforce strict privacy
-    const userResult = await pool.query('SELECT full_name FROM users WHERE id = $1', [userId]);
-    const userName = userResult.rows.length > 0 ? userResult.rows[0].full_name : 'Pengguna';
+    // Get user's full name and AI preference to enforce strict privacy
+    const userResult = await pool.query('SELECT full_name, pref_ai_insights FROM users WHERE id = $1', [userId]);
+    if (userResult.rows.length === 0) return res.status(404).json({ error: "User not found" });
+    
+    const user = userResult.rows[0];
+    const userName = user.full_name || 'Pengguna';
+    
+    if (user.pref_ai_insights === false) {
+      return res.status(403).json({ error: "Fitur Wawasan AI sedang dimatikan di pengaturan profil Anda. Silakan aktifkan untuk mulai chat." });
+    }
 
     const result = await pool.query(
       'SELECT title, amount, category, date FROM transactions WHERE user_id = $1 ORDER BY date DESC LIMIT 10',

@@ -172,9 +172,14 @@ class _BudgetScreenState extends State<BudgetScreen> with SingleTickerProviderSt
                         children: [
                           _buildArcChart(globalTotalBudget, globalTotalSpent, globalRemaining, daysLeft),
                           const SizedBox(height: 24),
-                          SizedBox(
+                          Container(
                             width: double.infinity,
                             height: 50,
+                            padding: const EdgeInsets.only(left: 1.5, right: 1.5, bottom: 2.0, top: 0),
+                            decoration: BoxDecoration(
+                              color: AppColors.primaryBlue,
+                              borderRadius: BorderRadius.circular(25),
+                            ),
                             child: ElevatedButton(
                               onPressed: () {
                                 Navigator.push(

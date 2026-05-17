@@ -141,6 +141,35 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: AppColors.textDark),
+          onPressed: () {
+            Navigator.of(context).pushReplacement(
+              PageRouteBuilder(
+                transitionDuration: const Duration(milliseconds: 500),
+                pageBuilder: (_, animation, __) => FadeTransition(
+                  opacity: animation,
+                  child: const LoginScreen(),
+                ),
+              ),
+            );
+          },
+        ),
+        title: const Text(
+          'Register Uangku',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w800,
+            color: AppColors.textDark,
+            letterSpacing: -0.5,
+          ),
+        ),
+        centerTitle: true,
+      ),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -165,9 +194,15 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                 slivers: [
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.only(top: 24, left: 24, right: 24, bottom: 24),
+                      padding: EdgeInsets.only(
+                        top: MediaQuery.of(context).size.height * 0.08, // Dynamic big top margin to push it down like Login
+                        bottom: 36, // Increased spacing before the white form container
+                        left: 24, 
+                        right: 24
+                      ),
                       child: Column(
                         children: [
+
                           // Header Illustration with premium shadow
                           Container(
                             decoration: BoxDecoration(
@@ -184,29 +219,20 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                               borderRadius: BorderRadius.circular(24),
                               child: Image.asset(
                                 'assets/images/regis.png',
-                                height: 180,
                                 width: double.infinity,
-                                fit: BoxFit.cover,
+                                fit: BoxFit.contain, // Changed from cover to contain/fitWidth to prevent cropping
                               ),
                             ),
                           ),
-                          const SizedBox(height: 28),
+                          const SizedBox(height: 16), // Spacing before subtitle
                           const Text(
-                            'Register Uangku',
+                            'Join the future of wealth management.\nStart your smart financial journey with us today.',
+                            textAlign: TextAlign.center,
                             style: TextStyle(
-                              fontSize: 26,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.textDark,
-                              letterSpacing: -0.5,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'Join the future of wealth management.',
-                            style: TextStyle(
-                              fontSize: 15,
+                              fontSize: 14, // Compact font
                               color: Color(0xFF64748B),
                               fontWeight: FontWeight.w500,
+                              height: 1.4,
                             ),
                           ),
                         ],
@@ -218,12 +244,12 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                   SliverFillRemaining(
                     hasScrollBody: false,
                     child: Container(
-                      padding: const EdgeInsets.fromLTRB(32, 40, 32, 40),
+                      padding: const EdgeInsets.fromLTRB(24, 28, 24, 24), // Tighter padding
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(40),
-                          topRight: Radius.circular(40),
+                          topLeft: Radius.circular(32), // Match login 32
+                          topRight: Radius.circular(32),
                         ),
                         boxShadow: [
                           BoxShadow(
@@ -244,27 +270,27 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                               color: AppColors.textDark,
                             ),
                           ),
-                          const SizedBox(height: 28),
+                          const SizedBox(height: 20), // Tighter spacing
                           
                           _buildInputLabel('FULL NAME'),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 6),
                           _buildTextField(
                             controller: _fullNameController,
                             hintText: 'John Doe',
                           ),
-                          const SizedBox(height: 20),
+                          const SizedBox(height: 16), // Tighter spacing
                           
                           _buildInputLabel('EMAIL ADDRESS'),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 6),
                           _buildTextField(
                             controller: _emailController,
                             hintText: 'john@example.com',
                             keyboardType: TextInputType.emailAddress,
                           ),
-                          const SizedBox(height: 20),
+                          const SizedBox(height: 16), // Tighter spacing
                           
                           _buildInputLabel('PASSWORD'),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 6),
                           _buildTextField(
                             controller: _passwordController,
                             hintText: '••••••••',
@@ -272,13 +298,13 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                           ),
                           
                           // Password strength indicator
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 10),
                           _buildPasswordStrength(),
                           
-                          const SizedBox(height: 20),
+                          const SizedBox(height: 16), // Tighter spacing
                           
                           _buildInputLabel('CONFIRM PASSWORD'),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 6),
                           _buildTextField(
                             controller: _confirmPassController,
                             hintText: '••••••••',
@@ -470,18 +496,18 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
         keyboardType: keyboardType,
         style: const TextStyle(
           color: AppColors.textDark,
-          fontSize: 16,
+          fontSize: 15,
           fontWeight: FontWeight.w500,
         ),
         decoration: InputDecoration(
           hintText: hintText,
           hintStyle: const TextStyle(
             color: Color(0xFF94A3B8),
-            fontSize: 16,
+            fontSize: 15,
             fontWeight: FontWeight.w500,
           ),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         ),
       ),
     );

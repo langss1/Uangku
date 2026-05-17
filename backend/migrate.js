@@ -77,7 +77,10 @@ const migrate = async () => {
       ADD COLUMN IF NOT EXISTS two_factor_secret TEXT,
       ADD COLUMN IF NOT EXISTS email_otp_secret VARCHAR(6),
       ADD COLUMN IF NOT EXISTS email_otp_expires TIMESTAMP WITH TIME ZONE,
-      ADD COLUMN IF NOT EXISTS needs_password_reset BOOLEAN DEFAULT FALSE;
+      ADD COLUMN IF NOT EXISTS needs_password_reset BOOLEAN DEFAULT FALSE,
+      ADD COLUMN IF NOT EXISTS pref_morning_report BOOLEAN DEFAULT TRUE,
+      ADD COLUMN IF NOT EXISTS pref_budget_alerts BOOLEAN DEFAULT TRUE,
+      ADD COLUMN IF NOT EXISTS pref_ai_insights BOOLEAN DEFAULT TRUE;
     `);
     
     console.log('📦 Creating/Verifying transactions table...');

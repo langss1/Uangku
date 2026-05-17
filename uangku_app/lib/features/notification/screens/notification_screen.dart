@@ -86,11 +86,53 @@ class _NotificationScreenState extends State<NotificationScreen> {
           : _notifications.isEmpty
               ? Center(
                   child: Padding(
-                    padding: const EdgeInsets.only(bottom: 120.0),
-                    child: Image.asset(
-                      'assets/images/notid.png',
-                      width: 350,
-                      fit: BoxFit.contain,
+                    padding: const EdgeInsets.only(bottom: 80.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(24),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.15),
+                                blurRadius: 20,
+                                offset: const Offset(0, 10),
+                              ),
+                            ],
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(24),
+                            child: Image.asset(
+                              'assets/images/notif.png',
+                              width: 320,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        const Text(
+                          'Notifikasi mu kosong',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textDark,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 40),
+                          child: Text(
+                            'notifikasi mu kosong kayak dompet mu nih hahaha',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Color(0xFF64748B),
+                              height: 1.5,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 )

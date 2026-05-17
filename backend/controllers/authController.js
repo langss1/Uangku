@@ -187,7 +187,7 @@ const authController = {
       const userId = req.user.id;
 
       const result = await pool.query(
-        'SELECT id, full_name, email, is_2fa_active, two_factor_enabled, two_factor_type, created_at, updated_at FROM users WHERE id = $1',
+        'SELECT id, full_name, email, is_2fa_active, two_factor_enabled, two_factor_type, pref_morning_report, pref_budget_alerts, pref_ai_insights, created_at, updated_at FROM users WHERE id = $1',
         [userId]
       );
 
@@ -219,6 +219,24 @@ const authController = {
     } catch (error) {
       console.error('Update Profile Error:', error);
       return res.status(500).json({ error: 'Failed to update profile.' });
+    }
+  },
+
+  // Update preferences
+  updatePreferences: async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const { pref_morning_report, pref_budget_alerts, pref_ai_insights } = req.body;
+      
+      const result = await pool.query(
+        'UPDATE users SET pref_morning_report = COALESCE($1, pref_morning_report), pref_budget_alerts = COALESCE($2, pref_budget_alerts), pref_ai_insights = COALESCE($3, pref_ai_insights), updated_at = CURRENT_TIMESTAMP WHERE id = $4 RETURNING pref_morning_report, pref_budget_alerts, pref_ai_insights',
+        [pref_morning_report, pref_budget_alerts, pref_ai_insights, userId]
+      );
+      
+      return res.status(200).json({ message: 'Preferences updated', preferences: result.rows[0] });
+    } catch (error) {
+      console.error('Update Preferences Error:', error);
+      return res.status(500).json({ error: 'Failed to update preferences.' });
     }
   },
 

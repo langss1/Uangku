@@ -197,318 +197,280 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Gradient background
+      backgroundColor: const Color(0xFFF8FAFC),
+      extendBodyBehindAppBar: true,
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
             colors: [
-              Color(0xFFE2EAFB), // Light blueish
-              Color(0xFFF4F7FB), // Basic background
-              Color(0xFFF4F7FB),
+              Color(0xFFE8EFFF), // Slightly blue
+              Color(0xFFF5F8FF),
+              Colors.white,
             ],
-            stops: [0.0, 0.3, 1.0],
+            stops: [0.0, 0.4, 1.0],
           ),
         ),
         child: SafeArea(
+          bottom: false,
           child: FadeTransition(
             opacity: _fadeAnimation,
             child: SlideTransition(
               position: _slideAnimation,
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  return SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 28.0),
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        minHeight: constraints.maxHeight,
+              child: CustomScrollView(
+                physics: const ClampingScrollPhysics(),
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: EdgeInsets.only(
+                        top: MediaQuery.of(context).size.height * 0.08, // Dynamic big top margin to push it down
+                        bottom: 36, // Increased spacing before the white form container
+                        left: 24, 
+                        right: 24
                       ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                            const SizedBox(height: 30),
-                            // Video Header
-                            Center(
-                              child: Container(
-                                width: double.infinity,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(20),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: AppColors.primaryBlue.withOpacity(0.15),
-                                      blurRadius: 25,
-                                      offset: const Offset(0, 12),
-                                    ),
-                                  ],
-                                ),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(20),
-                                  child: _videoController != null && _videoController!.value.isInitialized
-                                      ? AspectRatio(
-                                          aspectRatio: 1920 / 990,
-                                          child: FittedBox(
-                                            fit: BoxFit.cover,
-                                            child: SizedBox(
-                                              width: _videoController!.value.size.width,
-                                              height: _videoController!.value.size.height,
-                                              child: VideoPlayer(_videoController!),
-                                            ),
-                                          ),
-                                        )
-                                      : AspectRatio(
-                                          aspectRatio: 1920 / 990,
-                                          child: Container(
-                                            color: const Color(0xFFF1F5F9),
-                                            child: const Center(
-                                              child: CircularProgressIndicator(strokeWidth: 2),
-                                            ),
-                                          ),
-                                        ),
-                                ),
+                      child: Column(
+                        children: [
+                          // Title with Waving Hand
+                          RichText(
+                            textAlign: TextAlign.center,
+                            text: TextSpan(
+                              style: const TextStyle(
+                                fontSize: 26, // Increased font size as requested
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.textDark,
+                                height: 1.2,
+                                letterSpacing: -0.5,
                               ),
-                            ),
-                            const SizedBox(height: 32),
-                            // Title & Subtitle with Waving Hand
-                            RichText(
-                              textAlign: TextAlign.center,
-                              text: TextSpan(
-                                style: const TextStyle(
-                                  fontSize: 26,
-                                  fontWeight: FontWeight.w800,
-                                  color: AppColors.textDark,
-                                  height: 1.3,
-                                  fontFamily: 'Inter',
-                                ),
-                                children: [
-                                  const TextSpan(text: 'Kelola Keuangan,\nLebih Cerdas '),
-                                  WidgetSpan(
-                                    alignment: PlaceholderAlignment.middle,
-                                    child: const WavingHandEmoji(),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            const Text(
-                              'Ubah cara Anda mencatat pengeluaran menggunakan kecerdasan buatan terdepan.',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Color(0xFF64748B),
-                                height: 1.5,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            const SizedBox(height: 40),
-                            
-                            // Form Email
-                            _buildInputLabel('EMAIL ADDRESS'),
-                            const SizedBox(height: 8),
-                            _buildTextField(
-                              controller: _emailController,
-                              hintText: 'name@example.com',
-                              icon: Icons.mail_outline,
-                              keyboardType: TextInputType.emailAddress,
-                            ),
-                            
-                            const SizedBox(height: 20),
-                            
-                            // Form Password
-                            _buildInputLabel('PASSWORD'),
-                            const SizedBox(height: 8),
-                            _buildTextField(
-                              controller: _passwordController,
-                              hintText: '••••••••',
-                              icon: Icons.lock_outline,
-                              isPassword: true,
-                              obscureText: _obscurePassword,
-                              onTogglePassword: () {
-                                setState(() {
-                                  _obscurePassword = !_obscurePassword;
-                                });
-                              },
-                            ),
-                            
-                            const SizedBox(height: 12),
-                            
-                            // Forgot Password
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: TextButton(
-                                onPressed: () {
-                                  Navigator.of(context).push(
-                                    PageRouteBuilder(
-                                      transitionDuration: const Duration(milliseconds: 500),
-                                      pageBuilder: (_, animation, __) => FadeTransition(
-                                        opacity: animation,
-                                        child: const ForgotPasswordScreen(),
-                                      ),
-                                    ),
-                                  );
-                                },
-                                style: TextButton.styleFrom(
-                                  padding: EdgeInsets.zero,
-                                  minimumSize: const Size(50, 30),
-                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                ),
-                                child: const Text(
-                                  'Forgot Password?',
-                                  style: TextStyle(
-                                    color: AppColors.primaryBlue,
-                                    fontWeight: FontWeight.w800, // Bold
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            
-                            const SizedBox(height: 24),
-                            
-                            // Sign In Button
-                            ElevatedButton(
-                              onPressed: _isLoading ? null : _handleLogin,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primaryBlue,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 16),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                elevation: 6,
-                                shadowColor: AppColors.primaryBlue.withOpacity(0.4),
-                              ),
-                              child: _isLoading 
-                                  ? const SizedBox(
-                                      width: 22, 
-                                      height: 22, 
-                                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5)
-                                    )
-                                  : const Text(
-                                      'Sign In',
-                                      style: TextStyle(
-                                        fontSize: 17,
-                                        fontWeight: FontWeight.w800, // Very Bold
-                                      ),
-                                    ),
-                            ),
-                            
-                            const SizedBox(height: 36),
-                            
-                            // Divider
-                            Row(
                               children: [
-                                Expanded(child: Divider(color: Colors.grey.shade300, thickness: 1.2)),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                                  child: Text(
-                                    'NEW TO UANGKU?',
-                                    style: TextStyle(
-                                      color: Colors.grey.shade400,
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w800,
-                                      letterSpacing: 1.4,
-                                    ),
-                                  ),
+                                const TextSpan(text: 'Kelola Keuangan,\nKini Jadi Lebih Cerdas '),
+                                WidgetSpan(
+                                  alignment: PlaceholderAlignment.middle,
+                                  child: const WavingHandEmoji(),
                                 ),
-                                Expanded(child: Divider(color: Colors.grey.shade300, thickness: 1.2)),
                               ],
                             ),
-                            
-                            const SizedBox(height: 24),
-                            
-                            // Register Section
-                            const Text(
-                              "Don't have an account yet?",
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: Color(0xFF475569),
-                                fontWeight: FontWeight.w600,
-                                fontSize: 14,
-                              ),
+                          ),
+                          const SizedBox(height: 32), // Increased spacing before video
+                          // Video Header
+                          Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(24),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.primaryBlue.withOpacity(0.15),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 10),
+                                ),
+                              ],
                             ),
-                            
-                            const SizedBox(height: 16),
-                            
-                            OutlinedButton.icon(
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(24),
+                              child: _videoController != null && _videoController!.value.isInitialized
+                                  ? SizedBox(
+                                      height: 150, // Reduced to ensure it fits 1 page with the big top margin
+                                      width: double.infinity,
+                                      child: FittedBox(
+                                        fit: BoxFit.cover,
+                                        child: SizedBox(
+                                          width: _videoController!.value.size.width,
+                                          height: _videoController!.value.size.height,
+                                          child: VideoPlayer(_videoController!),
+                                        ),
+                                      ),
+                                    )
+                                  : Container(
+                                      height: 150,
+                                      width: double.infinity,
+                                      color: const Color(0xFFF1F5F9),
+                                      child: const Center(
+                                        child: CircularProgressIndicator(strokeWidth: 2),
+                                      ),
+                                    ),
+                            ),
+                          ),
+                          const SizedBox(height: 16), // Spacing before subtitle
+                          const Text(
+                            'Ubah cara Anda mencatat pengeluaran menggunakan kecerdasan buatan terdepan.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Color(0xFF64748B),
+                              height: 1.3,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  
+                  // Bottom Form Container
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: Container(
+                      padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(32),
+                          topRight: Radius.circular(32),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.03),
+                            blurRadius: 20,
+                            offset: const Offset(0, -5),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // Form Email
+                          _buildInputLabel('EMAIL ADDRESS'),
+                          const SizedBox(height: 8),
+                          _buildTextField(
+                            controller: _emailController,
+                            hintText: 'name@example.com',
+                            icon: Icons.mail_outline,
+                            keyboardType: TextInputType.emailAddress,
+                          ),
+                          
+                          const SizedBox(height: 12),
+                          
+                          // Form Password
+                          _buildInputLabel('PASSWORD'),
+                          const SizedBox(height: 8),
+                          _buildTextField(
+                            controller: _passwordController,
+                            hintText: '••••••••',
+                            icon: Icons.lock_outline,
+                            isPassword: true,
+                            obscureText: _obscurePassword,
+                            onTogglePassword: () {
+                              setState(() {
+                                _obscurePassword = !_obscurePassword;
+                              });
+                            },
+                          ),
+                          
+                          // Forgot Password
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton(
                               onPressed: () {
-                                Navigator.of(context).pushReplacement(
+                                Navigator.of(context).push(
                                   PageRouteBuilder(
-                                    transitionDuration: const Duration(milliseconds: 600),
+                                    transitionDuration: const Duration(milliseconds: 500),
                                     pageBuilder: (_, animation, __) => FadeTransition(
                                       opacity: animation,
-                                      child: const RegisterScreen(),
+                                      child: const ForgotPasswordScreen(),
                                     ),
                                   ),
                                 );
                               },
-                              icon: const Icon(Icons.person_add_alt_1_outlined, size: 20, color: AppColors.textDark),
-                              label: const Text(
-                                'Create Account',
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.only(top: 8, bottom: 12),
+                                minimumSize: const Size(50, 30),
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                              child: const Text(
+                                'Forgot Password?',
                                 style: TextStyle(
-                                  color: AppColors.textDark,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w800, // Bolder
+                                  color: AppColors.primaryBlue,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 12,
                                 ),
                               ),
-                              style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 16),
-                                side: const BorderSide(color: Color(0xFFCBD5E1), width: 1.5),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                backgroundColor: Colors.white.withOpacity(0.7),
+                            ),
+                          ),
+                          
+                          // Sign In Button
+                          ElevatedButton(
+                            onPressed: _isLoading ? null : _handleLogin,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primaryBlue,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
                               ),
+                              elevation: 0,
                             ),
-                            
-                            const SizedBox(height: 40),
-                            
-                            // Footer
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  'PRIVACY POLICY',
+                            child: _isLoading 
+                                ? const SizedBox(
+                                    width: 18, 
+                                    height: 18, 
+                                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5)
+                                  )
+                                : const Text(
+                                    'Sign In',
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                          ),
+                          
+                          const Spacer(),
+                          const SizedBox(height: 12),
+                          
+                          // Register Section
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Text(
+                                "Don't have an account yet? ",
+                                style: TextStyle(
+                                  color: Color(0xFF64748B),
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 13,
+                                ),
+                              ),
+                              GestureDetector(
+                                onTap: () {
+                                  Navigator.of(context).pushReplacement(
+                                    PageRouteBuilder(
+                                      transitionDuration: const Duration(milliseconds: 600),
+                                      pageBuilder: (_, animation, __) => FadeTransition(
+                                        opacity: animation,
+                                        child: const RegisterScreen(),
+                                      ),
+                                    ),
+                                  );
+                                },
+                                child: const Text(
+                                  'Create Account',
                                   style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.grey.shade400,
-                                    letterSpacing: 1.2,
+                                    color: AppColors.primaryBlue,
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 13,
                                   ),
                                 ),
-                                const SizedBox(width: 24),
-                                Text(
-                                  'SECURITY STANDARDS',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.grey.shade400,
-                                    letterSpacing: 1.2,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 24),
-                          ],
-                        ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
-                    );
-                  },
-                ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
         ),
-      );
+      ),
+    );
   }
 
   Widget _buildInputLabel(String text) {
     return Text(
       text,
       style: const TextStyle(
-        fontSize: 12,
+        fontSize: 11,
         fontWeight: FontWeight.w800,
-        color: Color(0xFF94A3B8),
+        color: Color(0xFF64748B),
         letterSpacing: 1.2,
       ),
     );
@@ -525,16 +487,8 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white, // Made totally white so it stands out from blueish-bg
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        color: const Color(0xFFF1F5F9), // Soft gray/blue Fill per design
+        borderRadius: BorderRadius.circular(12),
       ),
       child: TextField(
         controller: controller,
@@ -543,16 +497,16 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
         style: const TextStyle(
           color: AppColors.textDark,
           fontSize: 15,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w500,
         ),
         decoration: InputDecoration(
           hintText: hintText,
           hintStyle: const TextStyle(
-            color: Color(0xFFCBD5E1),
+            color: Color(0xFF94A3B8),
             fontSize: 15,
             fontWeight: FontWeight.w500,
           ),
-          prefixIcon: Icon(icon, color: const Color(0xFF94A3B8), size: 22),
+          prefixIcon: Icon(icon, color: const Color(0xFF94A3B8), size: 20),
           suffixIcon: isPassword
               ? IconButton(
                   icon: Icon(
@@ -564,7 +518,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                 )
               : null,
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(vertical: 18),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         ),
       ),
     );

@@ -9,6 +9,12 @@ import 'package:uangku_app/features/profile/screens/notification_settings_screen
 import 'package:uangku_app/features/notification/screens/notification_screen.dart';
 import 'package:uangku_app/features/profile/screens/settings_screen.dart';
 import 'package:uangku_app/features/profile/screens/dummy_screens.dart';
+import 'package:uangku_app/features/profile/screens/change_password_screen.dart';
+import 'package:uangku_app/features/profile/screens/two_factor_auth_screen.dart';
+import 'package:uangku_app/features/profile/screens/theme_settings_screen.dart';
+import 'package:uangku_app/features/profile/screens/language_settings_screen.dart';
+import 'package:uangku_app/features/profile/screens/about_screen.dart';
+import 'package:uangku_app/features/profile/screens/help_center_screen.dart';
 
 import 'package:uangku_app/core/data/budget_data.dart';
 import 'package:uangku_app/core/data/transaction_data.dart';
@@ -49,12 +55,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _updateNotificationSetting(String key, bool value) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(key, value);
+    final token = prefs.getString('token');
+
     setState(() {
       if (key == 'pref_morning_report') _morningReport = value;
       if (key == 'pref_budget_alerts') _budgetAlerts = value;
       if (key == 'pref_ai_insights') _aiInsights = value;
     });
+
+    try {
+      await prefs.setBool(key, value);
+      
+      if (token != null) {
+        await http.put(
+          Uri.parse('http://145.79.10.157:8000/api/auth/preferences'),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode({
+            'pref_morning_report': _morningReport,
+            'pref_budget_alerts': _budgetAlerts,
+            'pref_ai_insights': _aiInsights,
+          }),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error updating preferences on server: $e');
+    }
   }
 
   Future<void> _loadUserProfile() async {
@@ -78,12 +106,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       if (response.statusCode == 200 && mounted) {
         final data = jsonDecode(response.body);
+        final user = data['user'];
         setState(() {
-          _userName = data['user']['full_name'];
-          _userEmail = data['user']['email'];
+          _userName = user['full_name'] ?? _userName;
+          _userEmail = user['email'] ?? _userEmail;
+          if (user['pref_morning_report'] != null) _morningReport = user['pref_morning_report'];
+          if (user['pref_budget_alerts'] != null) _budgetAlerts = user['pref_budget_alerts'];
+          if (user['pref_ai_insights'] != null) _aiInsights = user['pref_ai_insights'];
         });
         await prefs.setString('user_name', _userName);
         await prefs.setString('user_email', _userEmail);
+        await prefs.setBool('pref_morning_report', _morningReport);
+        await prefs.setBool('pref_budget_alerts', _budgetAlerts);
+        await prefs.setBool('pref_ai_insights', _aiInsights);
       }
     } catch (e) {
       debugPrint('Error fetching profile: $e');
@@ -122,25 +157,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   _buildGroupCard([
                     _buildSettingTile(
                       icon: Icons.person_outline_rounded,
-                      iconColor: Colors.blue,
+                      iconColor: AppColors.primaryBlue,
                       title: 'Informasi Profil',
                       subtitle: 'Ubah nama dan email kamu',
                       onTap: () => _navigateToEditor('Personal Information', false),
                     ),
                     _buildSettingTile(
                       icon: Icons.lock_outline_rounded,
-                      iconColor: Colors.orange,
+                      iconColor: AppColors.primaryBlue,
                       title: 'Ganti Password',
                       subtitle: 'Perbarui kata sandi akun',
-                      onTap: () => _navigateToEditor('Security Settings', true),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const ChangePasswordScreen()),
+                        );
+                      },
                     ),
-                    _buildSwitchTile(
+                    _buildSettingTile(
                       icon: Icons.security_rounded,
-                      iconColor: Colors.green,
+                      iconColor: AppColors.primaryBlue,
                       title: 'Autentikasi 2-Faktor',
                       subtitle: 'Keamanan ekstra untuk akun',
-                      value: _is2FAActive,
-                      onChanged: (val) => _navigateToEditor('Security Settings', true),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const TwoFactorAuthScreen()),
+                        );
+                      },
                     ),
                   ]),
                   
@@ -149,7 +193,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   _buildGroupCard([
                     _buildSwitchTile(
                       icon: Icons.wb_sunny_outlined,
-                      iconColor: Colors.amber,
+                      iconColor: AppColors.primaryBlue,
                       title: 'Laporan Harian',
                       subtitle: 'Ringkasan keuangan setiap pagi',
                       value: _morningReport,
@@ -157,7 +201,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     _buildSwitchTile(
                       icon: Icons.notification_important_outlined,
-                      iconColor: Colors.redAccent,
+                      iconColor: AppColors.primaryBlue,
                       title: 'Peringatan Anggaran',
                       subtitle: 'Notif saat pengeluaran melebihi limit',
                       value: _budgetAlerts,
@@ -165,7 +209,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     _buildSwitchTile(
                       icon: Icons.auto_awesome_outlined,
-                      iconColor: Colors.purple,
+                      iconColor: AppColors.primaryBlue,
                       title: 'Wawasan AI',
                       subtitle: 'Tips cerdas dari Gemini AI',
                       value: _aiInsights,
@@ -178,17 +222,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   _buildGroupCard([
                     _buildSettingTile(
                       icon: Icons.palette_outlined,
-                      iconColor: Colors.indigo,
+                      iconColor: AppColors.primaryBlue,
                       title: 'Tema Aplikasi',
                       subtitle: 'Terang, Gelap, atau Sistem',
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const ThemeSettingsScreen()),
+                        );
+                      },
                     ),
                     _buildSettingTile(
                       icon: Icons.language_rounded,
-                      iconColor: Colors.cyan,
+                      iconColor: AppColors.primaryBlue,
                       title: 'Bahasa',
                       subtitle: 'Indonesia (ID)',
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const LanguageSettingsScreen()),
+                        );
+                      },
                     ),
                   ]),
                   
@@ -197,17 +251,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   _buildGroupCard([
                     _buildSettingTile(
                       icon: Icons.help_outline_rounded,
-                      iconColor: Colors.teal,
+                      iconColor: AppColors.primaryBlue,
                       title: 'Pusat Bantuan',
                       subtitle: 'FAQ dan bantuan teknis',
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const HelpCenterScreen()),
+                        );
+                      },
                     ),
                     _buildSettingTile(
                       icon: Icons.info_outline_rounded,
-                      iconColor: Colors.blueGrey,
+                      iconColor: AppColors.primaryBlue,
                       title: 'Tentang Uangku',
                       subtitle: 'Versi 2.1.4',
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const AboutScreen()),
+                        );
+                      },
                     ),
                   ]),
                   
@@ -244,68 +308,104 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildHeader() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(24, 60, 24, 40),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF448AFF), Color(0xFF0056B3)],
+          colors: [Color(0xFF1E3A8A), Color(0xFF3B82F6)],
         ),
         borderRadius: BorderRadius.only(
           bottomLeft: Radius.circular(40),
           bottomRight: Radius.circular(40),
         ),
       ),
-      child: Column(
+      child: Stack(
         children: [
-          const Text(
-            'Profil Saya',
-            style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 30),
-          Stack(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(4),
-                decoration: const BoxDecoration(color: Colors.white24, shape: BoxShape.circle),
-                child: const CircleAvatar(
-                  radius: 50,
-                  backgroundColor: Colors.white,
-                  child: Icon(Icons.person, size: 60, color: Color(0xFF0056B3)),
-                ),
+          // Polar decorations
+          Positioned(
+            top: -40,
+            right: -20,
+            child: Container(
+              width: 150,
+              height: 150,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withOpacity(0.08),
               ),
-              Positioned(
-                bottom: 0,
-                right: 0,
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-                  child: const Icon(Icons.camera_alt, size: 18, color: Color(0xFF0056B3)),
-                ),
+            ),
+          ),
+          Positioned(
+            bottom: -30,
+            left: -30,
+            child: Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withOpacity(0.06),
               ),
-            ],
+            ),
           ),
-          const SizedBox(height: 16),
-          Text(
-            _userName,
-            style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+          Positioned(
+            top: 40,
+            left: 20,
+            child: Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withOpacity(0.04),
+              ),
+            ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            _userEmail,
-            style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14),
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-            decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(20)),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: const [
-                Icon(Icons.verified_user_rounded, color: Colors.white, size: 14),
-                SizedBox(width: 6),
-                Text('Akun Terverifikasi', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+          
+          // Main content
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 60, 24, 40),
+            child: SizedBox(
+              width: double.infinity,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                const Text(
+                  'Profil Saya',
+                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 30),
+                Stack(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(color: Colors.white24, shape: BoxShape.circle),
+                      child: const CircleAvatar(
+                        radius: 50,
+                        backgroundColor: Colors.white,
+                        child: Icon(Icons.person, size: 60, color: Color(0xFF1E3A8A)),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                        child: const Icon(Icons.camera_alt, size: 18, color: Color(0xFF1E3A8A)),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  _userName,
+                  style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _userEmail,
+                  style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14),
+                ),
               ],
+            ),
             ),
           ),
         ],

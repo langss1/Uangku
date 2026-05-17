@@ -86,6 +86,16 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           icon: const Icon(Icons.arrow_back, color: AppColors.textDark),
           onPressed: () => Navigator.of(context).pop(),
         ),
+        title: const Text(
+          'Forgot Password',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w800,
+            color: AppColors.textDark,
+            letterSpacing: -0.5,
+          ),
+        ),
+        centerTitle: true,
       ),
       body: Container(
         decoration: const BoxDecoration(
@@ -107,9 +117,15 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             slivers: [
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.only(top: 10, bottom: 20, left: 24, right: 24),
+                  padding: EdgeInsets.only(
+                    top: MediaQuery.of(context).size.height * 0.08, 
+                    bottom: 36, // Increased spacing before the white form container
+                    left: 24, 
+                    right: 24
+                  ),
                   child: Column(
                     children: [
+
                       // Header Illustration with premium shadow
                       Container(
                         decoration: BoxDecoration(
@@ -126,23 +142,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                           borderRadius: BorderRadius.circular(24),
                           child: Image.asset(
                             'assets/images/reset.png',
-                            height: 150, // Reduced height
                             width: double.infinity,
-                            fit: BoxFit.cover,
+                            fit: BoxFit.contain, // Match the uncropped style of register screen
                           ),
                         ),
                       ),
-                      const SizedBox(height: 24),
-                      const Text(
-                        'Forgot Password',
-                        style: TextStyle(
-                          fontSize: 24, // Slightly smaller
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.textDark,
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 16), // Spacing before subtitle
                       const Text(
                         "Don't worry! Enter your email address\nand we'll send you a recovery link.",
                         textAlign: TextAlign.center,
