@@ -165,15 +165,24 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                       padding: const EdgeInsets.only(top: 40, bottom: 20, left: 24, right: 24),
                       child: Column(
                         children: [
+                          // Header Illustration
+                          Center(
+                            child: Image.asset(
+                              'assets/images/regis.png',
+                              height: 160,
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                          const SizedBox(height: 20),
                           const Text(
                             'Register Uangku',
                             style: TextStyle(
-                              fontSize: 18,
+                              fontSize: 22,
                               fontWeight: FontWeight.w800,
                               color: AppColors.textDark,
                             ),
                           ),
-                          const SizedBox(height: 6),
+                          const SizedBox(height: 8),
                           const Text(
                             'Join the future of wealth management.',
                             style: TextStyle(
@@ -182,7 +191,7 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                               fontWeight: FontWeight.w500,
                             ),
                           ),
-                          const SizedBox(height: 24),
+                          const SizedBox(height: 32),
                           
                           // Form Card Container
                           Container(
