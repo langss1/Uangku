@@ -167,10 +167,13 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                         children: [
                           // Header Illustration
                           Center(
-                            child: Image.asset(
-                              'assets/images/regis.png',
-                              height: 160,
-                              fit: BoxFit.contain,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(24),
+                              child: Image.asset(
+                                'assets/images/regis.png',
+                                height: 160,
+                                fit: BoxFit.cover,
+                              ),
                             ),
                           ),
                           const SizedBox(height: 20),
