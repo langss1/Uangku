@@ -140,6 +140,7 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -147,42 +148,56 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
             end: Alignment.bottomCenter,
             colors: [
               Color(0xFFE8EFFF), // Slightly blue
-              Color(0xFFF5F8FF), 
-              Color(0xFFFBFDFF),
+              Color(0xFFF5F8FF),
+              Colors.white,
             ],
             stops: [0.0, 0.4, 1.0],
           ),
         ),
         child: SafeArea(
+          bottom: false, // Let the bottom sheet go all the way down
           child: FadeTransition(
             opacity: _fadeAnimation,
             child: SlideTransition(
               position: _slideAnimation,
               child: CustomScrollView(
+                physics: const ClampingScrollPhysics(),
                 slivers: [
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.only(top: 40, bottom: 20, left: 24, right: 24),
+                      padding: const EdgeInsets.only(top: 24, left: 24, right: 24, bottom: 24),
                       child: Column(
                         children: [
-                          // Header Illustration
-                          Center(
+                          // Header Illustration with premium shadow
+                          Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(24),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFF0066CC).withOpacity(0.15),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 10),
+                                ),
+                              ],
+                            ),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(24),
                               child: Image.asset(
                                 'assets/images/regis.png',
-                                height: 160,
+                                height: 180,
+                                width: double.infinity,
                                 fit: BoxFit.cover,
                               ),
                             ),
                           ),
-                          const SizedBox(height: 20),
+                          const SizedBox(height: 28),
                           const Text(
                             'Register Uangku',
                             style: TextStyle(
-                              fontSize: 22,
+                              fontSize: 26,
                               fontWeight: FontWeight.w800,
                               color: AppColors.textDark,
+                              letterSpacing: -0.5,
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -190,117 +205,124 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                             'Join the future of wealth management.',
                             style: TextStyle(
                               fontSize: 15,
-                              color: Color(0xFF475569),
+                              color: Color(0xFF64748B),
                               fontWeight: FontWeight.w500,
                             ),
                           ),
-                          const SizedBox(height: 32),
-                          
-                          // Form Card Container
-                          Container(
-                            padding: const EdgeInsets.all(28.0),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(32),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.04),
-                                  blurRadius: 30,
-                                  offset: const Offset(0, 15),
-                                ),
-                              ],
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                const Text(
-                                  'Create Account',
-                                  style: TextStyle(
-                                    fontSize: 17,
-                                    fontWeight: FontWeight.w800,
-                                    color: AppColors.textDark,
-                                  ),
-                                ),
-                                const SizedBox(height: 28),
-                                
-                                _buildInputLabel('FULL NAME'),
-                                const SizedBox(height: 8),
-                                _buildTextField(
-                                  controller: _fullNameController,
-                                  hintText: 'John Doe',
-                                ),
-                                const SizedBox(height: 20),
-                                
-                                _buildInputLabel('EMAIL ADDRESS'),
-                                const SizedBox(height: 8),
-                                _buildTextField(
-                                  controller: _emailController,
-                                  hintText: 'john@example.com',
-                                  keyboardType: TextInputType.emailAddress,
-                                ),
-                                const SizedBox(height: 20),
-                                
-                                _buildInputLabel('PASSWORD'),
-                                const SizedBox(height: 8),
-                                _buildTextField(
-                                  controller: _passwordController,
-                                  hintText: '••••••••',
-                                  isPassword: true,
-                                ),
-                                
-                                // Password strength indicator
-                                const SizedBox(height: 12),
-                                _buildPasswordStrength(),
-                                
-                                const SizedBox(height: 20),
-                                
-                                _buildInputLabel('CONFIRM PASSWORD'),
-                                const SizedBox(height: 8),
-                                _buildTextField(
-                                  controller: _confirmPassController,
-                                  hintText: '••••••••',
-                                  isPassword: true,
-                                ),
-                                
-                                const SizedBox(height: 36),
-                                
-                                ElevatedButton(
-                                  onPressed: _isLoading ? null : _handleRegister,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFF0066CC),
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(vertical: 18),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    elevation: 0,
-                                  ),
-                                  child: _isLoading 
-                                      ? const SizedBox(
-                                          width: 22, 
-                                          height: 22, 
-                                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5)
-                                        )
-                                      : const Text(
-                                          'Create Account',
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                        ),
-                                ),
-                              ],
+                        ],
+                      ),
+                    ),
+                  ),
+                  
+                  // Bottom Form Container (Spans full width)
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: Container(
+                      padding: const EdgeInsets.fromLTRB(32, 40, 32, 40),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(40),
+                          topRight: Radius.circular(40),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.03),
+                            blurRadius: 20,
+                            offset: const Offset(0, -5),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const Text(
+                            'Create Account',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.textDark,
                             ),
                           ),
+                          const SizedBox(height: 28),
                           
+                          _buildInputLabel('FULL NAME'),
+                          const SizedBox(height: 8),
+                          _buildTextField(
+                            controller: _fullNameController,
+                            hintText: 'John Doe',
+                          ),
+                          const SizedBox(height: 20),
+                          
+                          _buildInputLabel('EMAIL ADDRESS'),
+                          const SizedBox(height: 8),
+                          _buildTextField(
+                            controller: _emailController,
+                            hintText: 'john@example.com',
+                            keyboardType: TextInputType.emailAddress,
+                          ),
+                          const SizedBox(height: 20),
+                          
+                          _buildInputLabel('PASSWORD'),
+                          const SizedBox(height: 8),
+                          _buildTextField(
+                            controller: _passwordController,
+                            hintText: '••••••••',
+                            isPassword: true,
+                          ),
+                          
+                          // Password strength indicator
+                          const SizedBox(height: 12),
+                          _buildPasswordStrength(),
+                          
+                          const SizedBox(height: 20),
+                          
+                          _buildInputLabel('CONFIRM PASSWORD'),
+                          const SizedBox(height: 8),
+                          _buildTextField(
+                            controller: _confirmPassController,
+                            hintText: '••••••••',
+                            isPassword: true,
+                          ),
+                          
+                          const SizedBox(height: 40),
+                          
+                          ElevatedButton(
+                            onPressed: _isLoading ? null : _handleRegister,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF0066CC),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 18),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16), // Softer button
+                              ),
+                              elevation: 0,
+                            ),
+                            child: _isLoading 
+                                ? const SizedBox(
+                                    width: 22, 
+                                    height: 22, 
+                                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5)
+                                  )
+                                : const Text(
+                                    'Create Account',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                          ),
+                          
+                          const Spacer(),
                           const SizedBox(height: 32),
+                          
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               const Text(
                                 'Already have an account? ',
                                 style: TextStyle(
-                                  color: Color(0xFF475569),
+                                  color: Color(0xFF64748B),
                                   fontWeight: FontWeight.w600,
                                   fontSize: 14,
                                 ),
@@ -328,7 +350,6 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                               ),
                             ],
                           ),
-                          const SizedBox(height: 40),
                         ],
                       ),
                     ),
