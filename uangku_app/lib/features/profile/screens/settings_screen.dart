@@ -31,6 +31,7 @@ class _SettingsEditorScreenState extends State<SettingsEditorScreen> {
   bool _isLoading = false;
   bool _is2FAEnabled = false;
   String _twoFactorType = 'NONE';
+  bool _hasTotpSecret = false;
 
   @override
   void initState() {
@@ -59,6 +60,7 @@ class _SettingsEditorScreenState extends State<SettingsEditorScreen> {
         setState(() {
           _is2FAEnabled = data['user']['two_factor_enabled'] ?? data['user']['is_2fa_active'] ?? false;
           _twoFactorType = data['user']['two_factor_type'] ?? 'NONE';
+          _hasTotpSecret = data['user']['has_totp_secret'] ?? false;
         });
       }
     } catch (e) {
@@ -250,9 +252,14 @@ class _SettingsEditorScreenState extends State<SettingsEditorScreen> {
     if (newType == 'NONE' || newType == 'EMAIL') {
       // Direct update
       await _update2FAType(newType, newType != 'NONE');
-    } else {
-      // Needs TOTP setup
-      await _enable2FA(newType);
+    } else if (newType == 'TOTP') {
+      if (_hasTotpSecret) {
+        // Already setup previously! Just update the type.
+        await _update2FAType(newType, true);
+      } else {
+        // Needs TOTP setup
+        await _enable2FA(newType);
+      }
     }
   }
 
