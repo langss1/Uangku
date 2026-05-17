@@ -187,7 +187,7 @@ const authController = {
       const userId = req.user.id;
 
       const result = await pool.query(
-        'SELECT id, full_name, email, is_2fa_active, two_factor_enabled, two_factor_type, created_at, updated_at, totp_secret, two_factor_secret FROM users WHERE id = $1',
+        'SELECT id, full_name, email, is_2fa_active, two_factor_enabled, two_factor_type, created_at, updated_at FROM users WHERE id = $1',
         [userId]
       );
 
@@ -195,13 +195,8 @@ const authController = {
         return res.status(404).json({ error: 'User not found.' });
       }
 
-      const user = result.rows[0];
-      user.has_totp_secret = !!(user.totp_secret || user.two_factor_secret);
-      delete user.totp_secret;
-      delete user.two_factor_secret;
-
       return res.status(200).json({
-        user: user,
+        user: result.rows[0],
       });
     } catch (error) {
       console.error('Profile Fetch Error:', error);
