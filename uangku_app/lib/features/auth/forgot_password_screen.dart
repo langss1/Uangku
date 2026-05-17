@@ -107,7 +107,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             slivers: [
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.only(top: 10, bottom: 30, left: 24, right: 24),
+                  padding: const EdgeInsets.only(top: 10, bottom: 20, left: 24, right: 24),
                   child: Column(
                     children: [
                       // Header Illustration with premium shadow
@@ -126,31 +126,31 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                           borderRadius: BorderRadius.circular(24),
                           child: Image.asset(
                             'assets/images/reset.png',
-                            height: 180,
+                            height: 150, // Reduced height
                             width: double.infinity,
                             fit: BoxFit.cover,
                           ),
                         ),
                       ),
-                      const SizedBox(height: 28),
+                      const SizedBox(height: 24),
                       const Text(
                         'Forgot Password',
                         style: TextStyle(
-                          fontSize: 26,
+                          fontSize: 24, // Slightly smaller
                           fontWeight: FontWeight.w800,
                           color: AppColors.textDark,
                           letterSpacing: -0.5,
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 8),
                       const Text(
                         "Don't worry! Enter your email address\nand we'll send you a recovery link.",
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontSize: 15,
+                          fontSize: 14, // Slightly smaller
                           color: Color(0xFF64748B),
                           fontWeight: FontWeight.w500,
-                          height: 1.5,
+                          height: 1.4,
                         ),
                       ),
                     ],
@@ -162,12 +162,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               SliverFillRemaining(
                 hasScrollBody: false,
                 child: Container(
-                  padding: const EdgeInsets.fromLTRB(32, 40, 32, 40),
+                  padding: const EdgeInsets.fromLTRB(28, 32, 28, 24), // Tighter padding
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(40),
-                      topRight: Radius.circular(40),
+                      topLeft: Radius.circular(32), // Slightly softer radius
+                      topRight: Radius.circular(32),
                     ),
                     boxShadow: [
                       BoxShadow(
@@ -201,19 +201,19 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                           keyboardType: TextInputType.emailAddress,
                           style: const TextStyle(
                             color: AppColors.textDark,
-                            fontSize: 16,
+                            fontSize: 15,
                             fontWeight: FontWeight.w500,
                           ),
                           decoration: InputDecoration(
                             hintText: 'name@example.com',
                             hintStyle: const TextStyle(
                               color: Color(0xFF94A3B8),
-                              fontSize: 16,
+                              fontSize: 15,
                               fontWeight: FontWeight.w500,
                             ),
-                            prefixIcon: const Icon(Icons.mail_outline, color: Color(0xFF94A3B8), size: 22),
+                            prefixIcon: const Icon(Icons.mail_outline, color: Color(0xFF94A3B8), size: 20),
                             border: InputBorder.none,
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                             errorText: _errorMessage,
                           ),
                           onChanged: (val) {
@@ -224,7 +224,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         ),
                       ),
                       
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 24), // Reduced from 32
                       
                       // Send Button
                       ElevatedButton(
@@ -232,16 +232,16 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF0066CC),
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 18),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(14),
                           ),
                           elevation: 0,
                         ),
                         child: _isLoading 
                             ? const SizedBox(
-                                width: 22, 
-                                height: 22, 
+                                width: 20, 
+                                height: 20, 
                                 child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5)
                               )
                             : Row(
@@ -250,17 +250,17 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                   Text(
                                     'Send Recovery Link',
                                     style: TextStyle(
-                                      fontSize: 16,
+                                      fontSize: 15,
                                       fontWeight: FontWeight.w700,
                                     ),
                                   ),
                                   SizedBox(width: 8),
-                                  Icon(Icons.arrow_forward_outlined, size: 20),
+                                  Icon(Icons.arrow_forward_outlined, size: 18),
                                 ],
                               ),
                       ),
                       
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 24), // Reduced from 32
                       
                       // Back to Login
                       Center(
@@ -269,12 +269,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: const [
-                              Icon(Icons.chevron_left, color: Color(0xFF0066CC), size: 20),
+                              Icon(Icons.chevron_left, color: Color(0xFF0066CC), size: 18),
                               Text(
                                 'Back to Login',
                                 style: TextStyle(
                                   color: Color(0xFF0066CC),
-                                  fontSize: 15,
+                                  fontSize: 14,
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
@@ -284,49 +284,29 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       ),
                       
                       const Spacer(),
-                      const SizedBox(height: 32),
                       
-                      // Need Help Card
-                      Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF8FAFC),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: const Color(0xFFE2E8F0)),
-                        ),
-                        child: Column(
-                          children: [
-                            const Text(
-                              'Need help?',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.textDark,
-                              ),
+                      // Need Help - Compact version
+                      Padding(
+                        padding: const EdgeInsets.only(top: 24),
+                        child: RichText(
+                          textAlign: TextAlign.center,
+                          text: const TextSpan(
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF94A3B8),
+                              height: 1.5,
                             ),
-                            const SizedBox(height: 8),
-                            RichText(
-                              textAlign: TextAlign.center,
-                              text: const TextSpan(
+                            children: [
+                              TextSpan(text: 'Need help? Contact our '),
+                              TextSpan(
+                                text: 'Security Support',
                                 style: TextStyle(
-                                  fontSize: 12,
-                                  color: Color(0xFF64748B),
-                                  height: 1.5,
+                                  color: Color(0xFF0066CC),
+                                  fontWeight: FontWeight.w600,
                                 ),
-                                children: [
-                                  TextSpan(text: 'If you no longer have access to this email, please contact our '),
-                                  TextSpan(
-                                    text: 'Security Support',
-                                    style: TextStyle(
-                                      color: Color(0xFF0066CC),
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  TextSpan(text: ' team for identity verification.'),
-                                ],
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     ],

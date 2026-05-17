@@ -69,7 +69,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
             slivers: [
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.only(top: 10, bottom: 30, left: 24, right: 24),
+                  padding: const EdgeInsets.only(top: 10, bottom: 20, left: 24, right: 24),
                   child: Column(
                     children: [
                       // Header Illustration with premium shadow
@@ -88,31 +88,31 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                           borderRadius: BorderRadius.circular(24),
                           child: Image.asset(
                             'assets/images/reset.png',
-                            height: 180,
+                            height: 150, // Reduced height
                             width: double.infinity,
                             fit: BoxFit.cover,
                           ),
                         ),
                       ),
-                      const SizedBox(height: 28),
+                      const SizedBox(height: 24),
                       const Text(
                         'Set New Password',
                         style: TextStyle(
-                          fontSize: 26,
+                          fontSize: 24, // Slightly smaller
                           fontWeight: FontWeight.w800,
                           color: AppColors.textDark,
                           letterSpacing: -0.5,
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 8),
                       const Text(
                         "Your new password must be different\nfrom previously used passwords.",
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontSize: 15,
+                          fontSize: 14, // Slightly smaller
                           color: Color(0xFF64748B),
                           fontWeight: FontWeight.w500,
-                          height: 1.5,
+                          height: 1.4,
                         ),
                       ),
                     ],
@@ -124,12 +124,12 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
               SliverFillRemaining(
                 hasScrollBody: false,
                 child: Container(
-                  padding: const EdgeInsets.fromLTRB(32, 40, 32, 40),
+                  padding: const EdgeInsets.fromLTRB(28, 32, 28, 24), // Tighter padding
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(40),
-                      topRight: Radius.circular(40),
+                      topLeft: Radius.circular(32), // Slightly softer radius
+                      topRight: Radius.circular(32),
                     ),
                     boxShadow: [
                       BoxShadow(
@@ -152,7 +152,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                       const SizedBox(height: 12),
                       _buildPasswordStrength(),
                       
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 20), // Tighter spacing
                       _buildInputLabel('CONFIRM NEW PASSWORD'),
                       const SizedBox(height: 8),
                       _buildTextField(
@@ -161,19 +161,19 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                         isPassword: true,
                       ),
                       
-                      const SizedBox(height: 40),
+                      const SizedBox(height: 24), // Reduced from 40
                       ElevatedButton(
                         onPressed: _isLoading ? null : _resetPassword,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF0066CC),
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 18),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                           elevation: 0,
                         ),
                         child: _isLoading 
-                            ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
-                            : const Text('Reset Password', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
+                            : const Text('Reset Password', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
                       ),
                       const Spacer(),
                     ],
