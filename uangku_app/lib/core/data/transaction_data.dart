@@ -120,6 +120,25 @@ class TransactionData {
 
         if (response.statusCode == 200 || response.statusCode == 201) {
           await DatabaseHelper.instance.markAsSynced([item['id'].toString()]);
+          
+          // Trigger notification for successful offline sync
+          final title = item['title'];
+          final amount = double.parse(item['amount'].toString());
+          await NotificationService().triggerTransactionAdded(title, amount);
+          
+          final isIncome = item['type'] == 'income';
+          final tx = TransactionModel(
+            id: item['id'].toString(),
+            title: title,
+            category: item['category'] ?? 'Other',
+            amount: amount,
+            date: DateTime.parse(item['date']),
+            icon: isIncome ? Icons.arrow_downward : Icons.arrow_upward,
+            bgColor: isIncome ? const Color(0xFFD1FAE5) : const Color(0xFFFEE2E2),
+            iconColor: isIncome ? const Color(0xFF059669) : const Color(0xFFDC2626),
+            isIncome: isIncome,
+          );
+          await NotificationService().checkBudgetThreshold(tx);
         }
       } catch (e) {
         debugPrint('Sync failed for item ${item['id']}: $e');
@@ -170,13 +189,13 @@ class TransactionData {
       if (response.statusCode == 200 || response.statusCode == 201) {
         // Jika berhasil, update status di SQLite
         await DatabaseHelper.instance.markAsSynced([transaction.id]);
+
+        // Trigger notification only after successfully synced to server
+        await NotificationService().triggerTransactionAdded(transaction.title, transaction.amount);
+
+        // Check budget threshold
+        await NotificationService().checkBudgetThreshold(transaction);
       }
-
-      // Trigger notification
-      await NotificationService().triggerTransactionAdded(transaction.title, transaction.amount);
-
-      // Check budget threshold
-      await NotificationService().checkBudgetThreshold(transaction);
     } catch (e) {
       debugPrint('Error saving transaction to backend (will sync later): $e');
     }
