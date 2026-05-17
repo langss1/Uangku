@@ -43,84 +43,143 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF8FAFC),
+        backgroundColor: Colors.transparent,
         elevation: 0,
         automaticallyImplyLeading: false, // Don't want them to go back from here easily
-        title: const Text(
-          'Create New Password',
-          style: TextStyle(color: AppColors.textDark, fontWeight: FontWeight.w700, fontSize: 18),
-        ),
-        centerTitle: true,
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1.0),
-          child: Container(color: Colors.grey.shade200, height: 1.0),
-        ),
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 28.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: 48),
-              Center(
-                child: Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEFF6FF), 
-                    borderRadius: BorderRadius.circular(24),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFFE8EFFF), // Slightly blue
+              Color(0xFFF5F8FF),
+              Colors.white,
+            ],
+            stops: [0.0, 0.4, 1.0],
+          ),
+        ),
+        child: SafeArea(
+          bottom: false,
+          child: CustomScrollView(
+            physics: const ClampingScrollPhysics(),
+            slivers: [
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 10, bottom: 30, left: 24, right: 24),
+                  child: Column(
+                    children: [
+                      // Header Icon with premium glow
+                      Container(
+                        width: 90,
+                        height: 90,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF0066CC).withOpacity(0.15),
+                              blurRadius: 25,
+                              offset: const Offset(0, 10),
+                            ),
+                          ],
+                        ),
+                        child: const Center(
+                          child: Icon(
+                            Icons.shield_outlined,
+                            size: 44,
+                            color: Color(0xFF0066CC),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 28),
+                      const Text(
+                        'Set New Password',
+                        style: TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.textDark,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      const Text(
+                        "Your new password must be different\nfrom previously used passwords.",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: Color(0xFF64748B),
+                          fontWeight: FontWeight.w500,
+                          height: 1.5,
+                        ),
+                      ),
+                    ],
                   ),
-                  child: const Icon(Icons.shield_outlined, size: 40, color: Color(0xFF0066CC)),
                 ),
               ),
-              const SizedBox(height: 32),
-              const Text(
-                'Set New Password',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: AppColors.textDark),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                "Your new password must be different\nfrom previous used passwords.",
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 15, color: Color(0xFF64748B), fontWeight: FontWeight.w500, height: 1.5),
-              ),
-              const SizedBox(height: 40),
               
-              _buildInputLabel('NEW PASSWORD'),
-              const SizedBox(height: 8),
-              _buildTextField(
-                controller: _passwordController,
-                hintText: '••••••••',
-                isPassword: true,
-              ),
-              const SizedBox(height: 12),
-              _buildPasswordStrength(),
-              
-              const SizedBox(height: 24),
-              _buildInputLabel('CONFIRM NEW PASSWORD'),
-              const SizedBox(height: 8),
-              _buildTextField(
-                controller: _confirmPassController,
-                hintText: '••••••••',
-                isPassword: true,
-              ),
-              
-              const SizedBox(height: 40),
-              ElevatedButton(
-                onPressed: _isLoading ? null : _resetPassword,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0066CC),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 18),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  elevation: 0,
+              // Bottom Form Container (Spans full width)
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: Container(
+                  padding: const EdgeInsets.fromLTRB(32, 40, 32, 40),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(40),
+                      topRight: Radius.circular(40),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.03),
+                        blurRadius: 20,
+                        offset: const Offset(0, -5),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _buildInputLabel('NEW PASSWORD'),
+                      const SizedBox(height: 8),
+                      _buildTextField(
+                        controller: _passwordController,
+                        hintText: '••••••••',
+                        isPassword: true,
+                      ),
+                      const SizedBox(height: 12),
+                      _buildPasswordStrength(),
+                      
+                      const SizedBox(height: 24),
+                      _buildInputLabel('CONFIRM NEW PASSWORD'),
+                      const SizedBox(height: 8),
+                      _buildTextField(
+                        controller: _confirmPassController,
+                        hintText: '••••••••',
+                        isPassword: true,
+                      ),
+                      
+                      const SizedBox(height: 40),
+                      ElevatedButton(
+                        onPressed: _isLoading ? null : _resetPassword,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF0066CC),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 18),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          elevation: 0,
+                        ),
+                        child: _isLoading 
+                            ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
+                            : const Text('Reset Password', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                      ),
+                      const Spacer(),
+                    ],
+                  ),
                 ),
-                child: _isLoading 
-                    ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
-                    : const Text('Reset Password', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
               ),
             ],
           ),
