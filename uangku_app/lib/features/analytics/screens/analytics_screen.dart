@@ -8,6 +8,7 @@ import 'package:uangku_app/features/profile/screens/export_preview_screen.dart';
 import 'dart:ui' as ui;
 import 'dart:typed_data';
 import 'package:flutter/rendering.dart';
+import 'package:uangku_app/core/theme/app_colors.dart';
 
 class AnalyticsScreen extends StatefulWidget {
   const AnalyticsScreen({Key? key}) : super(key: key);
@@ -345,23 +346,23 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F7FB), // Background mirip gambar
+      backgroundColor: context.scaffoldBackgroundColor, // Background mirip gambar
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        backgroundColor: Colors.white,
+        backgroundColor: context.scaffoldBackgroundColor,
         elevation: 0,
         centerTitle: true,
-        title: const Text(
+        title: Text(
           'Financial Analytics',
           style: TextStyle(
-            color: Colors.black87,
+            color: context.textPrimary,
             fontWeight: FontWeight.w700,
             fontSize: 18,
           ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.more_vert, color: Colors.black87),
+            icon: Icon(Icons.more_vert, color: context.textPrimary),
             onPressed: () {},
           ),
         ],
@@ -420,7 +421,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   Widget _buildFilterTabs() {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFE2E8F0).withOpacity(0.5),
+        color: context.borderColor,
         borderRadius: BorderRadius.circular(12),
       ),
       padding: const EdgeInsets.all(4),
@@ -442,7 +443,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: isSelected ? Colors.white : Colors.transparent,
+            color: isSelected ? context.cardColor : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
             boxShadow: isSelected
                 ? [
@@ -459,7 +460,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               title,
               style: TextStyle(
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                color: isSelected ? Colors.black87 : const Color(0xFF64748B),
+                color: isSelected ? context.textPrimary : context.textSecondary,
                 fontSize: 14,
               ),
             ),
@@ -497,7 +498,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.cardColor,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -510,28 +511,28 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Income vs Expense',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w800,
-              color: Color(0xFF1E293B),
+              color: context.textPrimary,
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             'Trend analysis by day',
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w500,
-              color: Color(0xFF64748B),
+              color: context.textSecondary,
             ),
           ),
           const SizedBox(height: 32),
           RepaintBoundary(
             key: _lineChartKey,
             child: Container(
-              color: Colors.white, // Ensure white background for capture
+              color: context.cardColor, // Ensure white background for capture
               height: 200,
               child: LineChart(
                 LineChartData(
@@ -541,7 +542,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     horizontalInterval: interval,
                     getDrawingHorizontalLine: (value) {
                       return FlLine(
-                        color: const Color(0xFFF1F5F9),
+                        color: context.borderColor,
                         strokeWidth: 1,
                       );
                     },
@@ -690,7 +691,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.cardColor,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -703,21 +704,21 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Spending by Category',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w800,
-              color: Color(0xFF1E293B),
+              color: context.textPrimary,
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             'Distribution overview',
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w500,
-              color: Color(0xFF64748B),
+              color: context.textSecondary,
             ),
           ),
           const SizedBox(height: 24),
@@ -750,7 +751,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             RepaintBoundary(
               key: _pieChartKey,
               child: Container(
-                color: Colors.white, // Ensure white background for capture
+                color: context.cardColor, // Ensure white background for capture
                 height: 220,
                 child: PieChart(
                   PieChartData(
@@ -795,8 +796,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     const SizedBox(width: 8),
                     Text(
                       data['name'],
-                      style: const TextStyle(
-                        color: Color(0xFF475569),
+                      style: TextStyle(
+                        color: context.textSecondary,
                         fontWeight: FontWeight.w500,
                         fontSize: 13,
                       ),
@@ -804,8 +805,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     const Spacer(),
                     Text(
                       format.format(data['amount']),
-                      style: const TextStyle(
-                        color: Color(0xFF1E293B),
+                      style: TextStyle(
+                        color: context.textPrimary,
                         fontWeight: FontWeight.w700,
                         fontSize: 14,
                       ),
@@ -840,7 +841,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFFDCFCE7), // Light green background
+              color: const Color(0xFF059669).withOpacity(0.1), // Light green background
               borderRadius: BorderRadius.circular(16),
             ),
             child: Column(
@@ -892,7 +893,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFFFFE4E6), // Light red background
+              color: const Color(0xFFE11D48).withOpacity(0.1), // Light red background
               borderRadius: BorderRadius.circular(16),
             ),
             child: Column(
@@ -947,7 +948,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.cardColor,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -960,14 +961,14 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text(
+          Text(
             'Export Analytics',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Color(0xFF1E293B)),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: context.textPrimary),
           ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             'Download your financial reports in preferred format',
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Color(0xFF64748B)),
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: context.textSecondary),
           ),
           const SizedBox(height: 24),
         
@@ -1037,26 +1038,26 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 }
 
   Widget _buildInputLabel(String text) {
-    return Text(text, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF475569)));
+    return Text(text, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: context.textSecondary));
   }
 
   Widget _buildDatePicker({required String label, required String value}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: Color(0xFF94A3B8))),
+        Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: context.textSecondary)),
         const SizedBox(height: 4),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade300),
+            border: Border.all(color: context.borderColor),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(value, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Color(0xFF1E293B))),
-              const Icon(Icons.calendar_today_outlined, size: 20, color: Color(0xFF94A3B8)),
+              Text(value, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: context.textPrimary)),
+              Icon(Icons.calendar_today_outlined, size: 20, color: context.textSecondary),
             ],
           ),
         ),
@@ -1074,8 +1075,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: Colors.grey.shade200),
+        color: context.cardColor,
+        border: Border.all(color: context.borderColor),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
@@ -1091,13 +1092,13 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Color(0xFF1E293B))),
+                Text(title, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: context.textPrimary)),
                 const SizedBox(height: 2),
-                Text(subtitle, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Color(0xFF64748B))),
+                Text(subtitle, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: context.textSecondary)),
               ],
             ),
           ),
-          const Icon(Icons.chevron_right, color: Color(0xFFCBD5E1), size: 24),
+          Icon(Icons.chevron_right, color: context.textSecondary, size: 24),
         ],
       ),
     );

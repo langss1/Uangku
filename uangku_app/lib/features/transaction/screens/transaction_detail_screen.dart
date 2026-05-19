@@ -20,12 +20,12 @@ class TransactionDetailScreen extends StatelessWidget {
         if (txIndex == -1) {
           // Transaction not found or deleted
           return Scaffold(
-            backgroundColor: Colors.white,
+            backgroundColor: context.scaffoldBackgroundColor,
             appBar: AppBar(
-              backgroundColor: Colors.white,
+              backgroundColor: context.scaffoldBackgroundColor,
               elevation: 0,
               leading: IconButton(
-                icon: const Icon(Icons.arrow_back, color: AppColors.textDark),
+                icon: Icon(Icons.arrow_back, color: context.textPrimary),
                 onPressed: () => Navigator.pop(context),
               ),
             ),
@@ -134,9 +134,9 @@ class TransactionDetailScreen extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: context.cardColor,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.grey.withOpacity(0.1)),
+                      border: Border.all(color: context.borderColor),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withOpacity(0.02),
@@ -148,12 +148,12 @@ class TransactionDetailScreen extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Transaction Details',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: AppColors.textDark,
+                            color: context.textPrimary,
                           ),
                         ),
                         const SizedBox(height: 24),
@@ -164,38 +164,42 @@ class TransactionDetailScreen extends StatelessWidget {
                           label: 'Category',
                           value: tx.category,
                           originalIcon: tx.icon,
+                          context: context,
                         ),
-                        const Divider(height: 32, color: Color(0xFFF1F5F9)),
+                        Divider(height: 32, color: context.borderColor),
                         _buildDetailRow(
                           icon: Icons.calendar_today,
                           iconBgColor: const Color(0xFFEFF6FF),
                           iconColor: const Color(0xFF3B82F6),
                           label: 'Date',
                           value: DateFormat('dd MMM yyyy').format(tx.date),
+                          context: context,
                         ),
-                        const Divider(height: 32, color: Color(0xFFF1F5F9)),
+                        Divider(height: 32, color: context.borderColor),
                         _buildDetailRow(
                           icon: Icons.access_time,
                           iconBgColor: const Color(0xFFEFF6FF),
                           iconColor: const Color(0xFF3B82F6),
                           label: 'Time',
                           value: DateFormat('HH:mm').format(tx.date),
+                          context: context,
                         ),
-                        const Divider(height: 32, color: Color(0xFFF1F5F9)),
+                        Divider(height: 32, color: context.borderColor),
                         _buildDetailRow(
                           icon: Icons.note,
                           iconBgColor: const Color(0xFFF1F5F9),
                           iconColor: const Color(0xFF64748B),
                           label: 'Note',
                           value: tx.note.isNotEmpty ? tx.note : '-',
+                          context: context,
                         ),
                         if (tx.imagePath != null) ...[
-                          const Divider(height: 32, color: Color(0xFFF1F5F9)),
-                          const Text(
+                          Divider(height: 32, color: context.borderColor),
+                          Text(
                             'Attachment',
                             style: TextStyle(
                               fontSize: 13,
-                              color: AppColors.textLight,
+                              color: context.textSecondary,
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -260,7 +264,7 @@ class TransactionDetailScreen extends StatelessWidget {
                       ),
                       style: OutlinedButton.styleFrom(
                         side: const BorderSide(color: Color(0xFFFECACA), width: 1.5),
-                        backgroundColor: const Color(0xFFFEF2F2),
+                        backgroundColor: context.isDarkMode ? const Color(0xFF450A0A) : const Color(0xFFFEF2F2),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
@@ -315,6 +319,7 @@ class TransactionDetailScreen extends StatelessWidget {
     required String label,
     required String value,
     IconData? originalIcon,
+    required BuildContext context,
   }) {
     return Row(
       children: [
@@ -333,18 +338,18 @@ class TransactionDetailScreen extends StatelessWidget {
           children: [
             Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
-                color: AppColors.textLight,
+                color: context.textSecondary,
               ),
             ),
             const SizedBox(height: 4),
             Text(
               value,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: AppColors.textDark,
+                color: context.textPrimary,
               ),
             ),
           ],

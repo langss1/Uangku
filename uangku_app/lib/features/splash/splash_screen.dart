@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:uangku_app/core/theme/app_theme.dart';
 import 'dart:math' as math;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uangku_app/features/auth/login_screen.dart';
@@ -100,9 +101,10 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: Container(
+    return Theme(
+      data: AppTheme.lightTheme,
+      child: Scaffold(
+        body: Container(
         width: double.infinity,
         height: double.infinity,
         decoration: BoxDecoration(
@@ -290,6 +292,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
           },
         ),
       ),
+    )
     );
   }
 }

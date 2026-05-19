@@ -143,7 +143,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: context.scaffoldBackgroundColor,
       body: SingleChildScrollView(
         child: Column(
           children: [
@@ -418,7 +418,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       padding: const EdgeInsets.only(left: 4, bottom: 12),
       child: Text(
         title,
-        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Color(0xFF64748B), letterSpacing: 1.2),
+        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: context.textSecondary, letterSpacing: 1.2),
       ),
     );
   }
@@ -426,7 +426,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildGroupCard(List<Widget> children) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.cardColor,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 20, offset: const Offset(0, 10)),
@@ -451,9 +451,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         decoration: BoxDecoration(color: iconColor.withOpacity(0.1), borderRadius: BorderRadius.circular(14)),
         child: Icon(icon, color: iconColor, size: 22),
       ),
-      title: Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
-      subtitle: Text(subtitle, style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
-      trailing: const Icon(Icons.chevron_right_rounded, color: Color(0xFFCBD5E1)),
+      title: Text(title, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: context.textPrimary)),
+      subtitle: Text(subtitle, style: TextStyle(fontSize: 12, color: context.textSecondary)),
+      trailing: Icon(Icons.chevron_right_rounded, color: context.textSecondary),
     );
   }
 
@@ -479,9 +479,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
+                Text(title, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: context.textPrimary)),
                 const SizedBox(height: 2),
-                Text(subtitle, style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+                Text(subtitle, style: TextStyle(fontSize: 12, color: context.textSecondary)),
               ],
             ),
           ),
@@ -501,7 +501,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: ElevatedButton(
         onPressed: () => _logout(context),
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.white,
+          backgroundColor: context.cardColor,
           foregroundColor: const Color(0xFFE11D48),
           elevation: 0,
           padding: const EdgeInsets.symmetric(vertical: 18),

@@ -268,17 +268,17 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Single
     final canSave = _amount > 0 && _selectedCategory != null;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: context.scaffoldBackgroundColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.close, color: AppColors.textDark),
+          icon: Icon(Icons.close, color: context.textPrimary),
           onPressed: widget.onBack,
         ),
-        title: const Text(
+        title: Text(
           'Add Transaction',
-          style: TextStyle(color: AppColors.textDark, fontWeight: FontWeight.bold, fontSize: 18),
+          style: TextStyle(color: context.textPrimary, fontWeight: FontWeight.bold, fontSize: 18),
         ),
         centerTitle: true,
       ),
@@ -386,7 +386,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Single
             child: Container(
               height: 44,
               decoration: BoxDecoration(
-                color: Colors.grey[100],
+                color: context.cardColor,
                 borderRadius: BorderRadius.circular(22),
               ),
               child: Row(
@@ -406,7 +406,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Single
                           child: Text(
                             'Expense',
                             style: TextStyle(
-                              color: !_isIncome ? Colors.white : AppColors.textDark,
+                              color: !_isIncome ? Colors.white : context.textPrimary,
                               fontWeight: FontWeight.bold,
                               fontSize: 14,
                             ),
@@ -430,7 +430,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Single
                           child: Text(
                             'Income',
                             style: TextStyle(
-                              color: _isIncome ? Colors.white : AppColors.textDark,
+                              color: _isIncome ? Colors.white : context.textPrimary,
                               fontWeight: FontWeight.bold,
                               fontSize: 14,
                             ),
@@ -457,14 +457,14 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Single
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: Colors.grey[100],
+                          color: context.cardColor,
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: DropdownButtonHideUnderline(
                           child: DropdownButton<String>(
                             value: _selectedCurrency,
-                            icon: const Icon(Icons.arrow_drop_down, color: AppColors.textDark),
-                            style: const TextStyle(color: AppColors.textDark, fontWeight: FontWeight.bold, fontSize: 14),
+                            icon: Icon(Icons.arrow_drop_down, color: context.textPrimary),
+                            style: TextStyle(color: context.textPrimary, fontWeight: FontWeight.bold, fontSize: 14),
                             onChanged: (String? newValue) {
                               if (newValue != null) {
                                 setState(() {
@@ -526,34 +526,34 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Single
                     leading: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: _selectedCategory?.color ?? Colors.grey[200],
+                        color: _selectedCategory?.color ?? context.cardColor,
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
                         _selectedCategory?.icon ?? Icons.category, 
-                        color: _selectedCategory?.iconColor ?? Colors.grey[500], 
+                        color: _selectedCategory?.iconColor ?? context.textSecondary, 
                         size: 24
                       ),
                     ),
                     title: Text(
                       _selectedCategory?.name ?? 'Select Category',
                       style: TextStyle(
-                        color: _selectedCategory != null ? AppColors.textDark : Colors.grey[600], 
+                        color: _selectedCategory != null ? context.textPrimary : context.textSecondary, 
                         fontSize: 16,
                       ),
                     ),
                     onTap: _openCategorySelection,
                   ),
-                  const Divider(color: Color(0xFFF1F5F9), height: 16),
+                  Divider(color: context.borderColor, height: 16),
 
                   // Notes
                   ListTile(
                     contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.notes, color: Color(0xFF64748B), size: 24),
+                    leading: Icon(Icons.notes, color: context.textSecondary, size: 24),
                     title: Text(
                       _notesController.text.isEmpty ? 'Write a note' : _notesController.text,
                       style: TextStyle(
-                        color: _notesController.text.isEmpty ? const Color(0xFF94A3B8) : AppColors.textDark,
+                        color: _notesController.text.isEmpty ? context.textSecondary : context.textPrimary,
                         fontSize: 16,
                       ),
                     ),
@@ -571,18 +571,18 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Single
                       }
                     },
                   ),
-                  const Divider(color: Color(0xFFF1F5F9), height: 16),
+                  Divider(color: context.borderColor, height: 16),
 
                   // Date Picker
                   ListTile(
                     contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.calendar_today, color: Color(0xFF64748B), size: 24),
+                    leading: Icon(Icons.calendar_today, color: context.textSecondary, size: 24),
                     title: Row(
                       children: [
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                           decoration: BoxDecoration(
-                            color: Colors.grey[100],
+                            color: context.cardColor,
                             borderRadius: BorderRadius.circular(16),
                           ),
                           child: Row(
@@ -594,9 +594,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Single
                                     _selectedDate = _selectedDate.subtract(const Duration(days: 1));
                                   });
                                 },
-                                child: const Padding(
-                                  padding: EdgeInsets.all(4.0),
-                                  child: Icon(Icons.chevron_left, color: Color(0xFF64748B), size: 18),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(4.0),
+                                  child: Icon(Icons.chevron_left, color: context.textSecondary, size: 18),
                                 ),
                               ),
                               const SizedBox(width: 8),
@@ -604,7 +604,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Single
                                 onTap: () => _selectDate(context),
                                 child: Text(
                                   DateFormat('EEEE, dd/MM/yyyy').format(_selectedDate),
-                                  style: const TextStyle(color: AppColors.textDark, fontSize: 14),
+                                  style: TextStyle(color: context.textPrimary, fontSize: 14),
                                 ),
                               ),
                               const SizedBox(width: 8),
@@ -614,9 +614,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Single
                                     _selectedDate = _selectedDate.add(const Duration(days: 1));
                                   });
                                 },
-                                child: const Padding(
-                                  padding: EdgeInsets.all(4.0),
-                                  child: Icon(Icons.chevron_right, color: Color(0xFF64748B), size: 18),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(4.0),
+                                  child: Icon(Icons.chevron_right, color: context.textSecondary, size: 18),
                                 ),
                               ),
                             ],
@@ -651,10 +651,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Single
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Divider(color: Color(0xFFF1F5F9), height: 32),
-                        const Text(
+                        Divider(color: context.borderColor, height: 32),
+                        Text(
                           'Attachments',
-                          style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold),
+                          style: TextStyle(color: context.textSecondary, fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 16),
                         Row(
@@ -665,15 +665,15 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Single
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(vertical: 24),
                                   decoration: BoxDecoration(
-                                    color: Colors.grey[100],
+                                    color: context.cardColor,
                                     borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(color: Colors.grey[300]!),
+                                    border: Border.all(color: context.borderColor),
                                   ),
                                   child: Column(
-                                    children: const [
-                                      Icon(Icons.photo_library, size: 32, color: Color(0xFF64748B)),
-                                      SizedBox(height: 8),
-                                      Text('Gallery', style: TextStyle(color: Color(0xFF64748B))),
+                                    children: [
+                                      Icon(Icons.photo_library, size: 32, color: context.textSecondary),
+                                      const SizedBox(height: 8),
+                                      Text('Gallery', style: TextStyle(color: context.textSecondary)),
                                     ],
                                   ),
                                 ),
@@ -686,15 +686,15 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Single
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(vertical: 24),
                                   decoration: BoxDecoration(
-                                    color: Colors.grey[100],
+                                    color: context.cardColor,
                                     borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(color: Colors.grey[300]!),
+                                    border: Border.all(color: context.borderColor),
                                   ),
                                   child: Column(
-                                    children: const [
-                                      Icon(Icons.camera_alt, size: 32, color: Color(0xFF64748B)),
-                                      SizedBox(height: 8),
-                                      Text('Camera', style: TextStyle(color: Color(0xFF64748B))),
+                                    children: [
+                                      Icon(Icons.camera_alt, size: 32, color: context.textSecondary),
+                                      const SizedBox(height: 8),
+                                      Text('Camera', style: TextStyle(color: context.textSecondary)),
                                     ],
                                   ),
                                 ),

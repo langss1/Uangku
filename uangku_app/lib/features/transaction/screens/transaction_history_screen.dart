@@ -58,7 +58,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: AppColors.primaryBlue,
         elevation: 0,
@@ -220,7 +220,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
   Widget _buildTransactionList(List<TransactionModel> transactions) {
     if (transactions.isEmpty) {
       return Container(
-        color: Colors.white,
+        color: context.scaffoldBackgroundColor,
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -290,7 +290,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
       ..sort((a, b) => b.compareTo(a)); // sort descending roughly
 
     return Container(
-      color: Colors.white,
+      color: context.scaffoldBackgroundColor,
       child: ListView.builder(
         padding: const EdgeInsets.only(top: 16, bottom: 100),
         itemCount: sortedKeys.length,
@@ -317,26 +317,26 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
                   children: [
                     Text(
                       dayStr,
-                      style: const TextStyle(color: AppColors.textDark, fontSize: 32, fontWeight: FontWeight.bold),
+                      style: TextStyle(color: context.textPrimary, fontSize: 32, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         descStr,
-                        style: const TextStyle(color: Color(0xFF64748B), fontSize: 12),
+                        style: TextStyle(color: context.textSecondary, fontSize: 12),
                       ),
                     ),
                     Text(
                       NumberFormat.currency(locale: 'id_ID', symbol: '', decimalDigits: 0).format(dayTotal),
-                      style: const TextStyle(color: AppColors.textDark, fontSize: 16, fontWeight: FontWeight.bold),
+                      style: TextStyle(color: context.textPrimary, fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
               ),
-              const Divider(color: Color(0xFFF1F5F9), height: 1),
+              Divider(color: context.borderColor, height: 1),
               // Items
               ...dayTxs.map((tx) => _buildTransactionItem(context, tx)).toList(),
-              const Divider(color: Color(0xFFF1F5F9), height: 1),
+              Divider(color: context.borderColor, height: 1),
             ],
           );
         },
@@ -374,25 +374,25 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
                 children: [
                   Text(
                     tx.title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.textDark,
+                      color: context.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Row(
                     children: [
                       if (tx.imagePath != null) ...[
-                        const Icon(Icons.image, size: 14, color: Color(0xFF64748B)),
+                        Icon(Icons.image, size: 14, color: context.textSecondary),
                         const SizedBox(width: 4),
                       ],
                       Expanded(
                         child: Text(
                           tx.note.isNotEmpty ? tx.note : tx.category,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
-                            color: Color(0xFF64748B),
+                            color: context.textSecondary,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,

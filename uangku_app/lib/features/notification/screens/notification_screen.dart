@@ -61,17 +61,17 @@ class _NotificationScreenState extends State<NotificationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: context.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF8FAFC),
+        backgroundColor: context.scaffoldBackgroundColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textDark),
+          icon: Icon(Icons.arrow_back, color: context.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           'Notifications',
-          style: TextStyle(color: AppColors.textDark, fontWeight: FontWeight.bold),
+          style: TextStyle(color: context.textPrimary, fontWeight: FontWeight.bold),
         ),
         actions: [
           if (_notifications.isNotEmpty)
@@ -166,9 +166,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
                       margin: const EdgeInsets.only(bottom: 14),
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: context.cardColor,
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: const Color(0xFFF1F5F9), width: 1.5),
+                        border: Border.all(color: context.borderColor, width: 1.5),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withOpacity(0.01),
@@ -202,20 +202,20 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                         notif.title,
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.w700,
-                                          color: AppColors.textDark,
+                                          color: context.textPrimary,
                                         ),
                                       ),
                                     ),
                                     const SizedBox(width: 8),
                                     Text(
                                       DateFormat('MMM dd').format(notif.createdAt),
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 12,
                                         fontWeight: FontWeight.w500,
-                                        color: Color(0xFF94A3B8),
+                                        color: context.textSecondary,
                                       ),
                                     ),
                                   ],
@@ -223,10 +223,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                 const SizedBox(height: 4),
                                 Text(
                                   notif.message,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w500,
-                                    color: Color(0xFF64748B),
+                                    color: context.textSecondary,
                                     height: 1.4,
                                   ),
                                 ),

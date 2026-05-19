@@ -38,7 +38,7 @@ class _BudgetScreenState extends State<BudgetScreen> with SingleTickerProviderSt
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF1F5F9), // Light background
+      backgroundColor: context.scaffoldBackgroundColor,
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
@@ -216,10 +216,10 @@ class _BudgetScreenState extends State<BudgetScreen> with SingleTickerProviderSt
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Container(
+                                 Container(
                                   padding: const EdgeInsets.all(24),
                                   decoration: BoxDecoration(
-                                    color: Colors.white,
+                                    color: context.cardColor,
                                     shape: BoxShape.circle,
                                     boxShadow: [
                                       BoxShadow(
@@ -229,30 +229,30 @@ class _BudgetScreenState extends State<BudgetScreen> with SingleTickerProviderSt
                                       ),
                                     ],
                                   ),
-                                  child: const Icon(
+                                  child: Icon(
                                     Icons.account_balance_wallet_outlined,
                                     size: 80,
-                                    color: Color(0xFF94A3B8),
+                                    color: context.textSecondary,
                                   ),
                                 ),
                                 const SizedBox(height: 24),
-                                const Text(
+                                Text(
                                   "Belum Ada Anggaran",
                                   style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.w800,
-                                    color: Color(0xFF475569),
+                                    color: context.textPrimary,
                                   ),
                                 ),
                                 const SizedBox(height: 8),
-                                const Padding(
-                                  padding: EdgeInsets.symmetric(horizontal: 40),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 40),
                                   child: Text(
                                     "Buat rencana anggaranmu untuk mengontrol pengeluaran dengan lebih baik.",
                                     textAlign: TextAlign.center,
                                     style: TextStyle(
                                       fontSize: 14,
-                                      color: Color(0xFF94A3B8),
+                                      color: context.textSecondary,
                                       height: 1.5,
                                     ),
                                   ),
@@ -424,7 +424,7 @@ class _BudgetScreenState extends State<BudgetScreen> with SingleTickerProviderSt
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.cardColor,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
@@ -451,7 +451,7 @@ class _BudgetScreenState extends State<BudgetScreen> with SingleTickerProviderSt
                 Expanded(
                   child: Text(
                     budget.category,
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textDark),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: context.textPrimary),
                   ),
                 ),
                 Column(
@@ -459,12 +459,12 @@ class _BudgetScreenState extends State<BudgetScreen> with SingleTickerProviderSt
                   children: [
                     Text(
                       format.format(budget.amount),
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textDark),
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: context.textPrimary),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       'Remaining ${format.format(remaining < 0 ? 0 : remaining)}',
-                      style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                      style: TextStyle(fontSize: 12, color: context.textSecondary),
                     ),
                   ],
                 ),
@@ -483,7 +483,7 @@ class _BudgetScreenState extends State<BudgetScreen> with SingleTickerProviderSt
                       width: double.infinity,
                       height: 8,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF1F5F9),
+                        color: context.borderColor,
                         borderRadius: BorderRadius.circular(4),
                       ),
                     ),
@@ -503,7 +503,7 @@ class _BudgetScreenState extends State<BudgetScreen> with SingleTickerProviderSt
                       child: Container(
                         width: 2,
                         height: 16,
-                        color: const Color(0xFF94A3B8),
+                        color: context.textSecondary,
                       ),
                     ),
                     Positioned(
@@ -512,12 +512,12 @@ class _BudgetScreenState extends State<BudgetScreen> with SingleTickerProviderSt
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF1F5F9),
+                          color: context.borderColor,
                           borderRadius: BorderRadius.circular(4),
                         ),
-                        child: const Text(
+                        child: Text(
                           'Today',
-                          style: TextStyle(fontSize: 10, color: Color(0xFF64748B)),
+                          style: TextStyle(fontSize: 10, color: context.textSecondary),
                         ),
                       ),
                     ),
