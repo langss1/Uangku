@@ -77,7 +77,7 @@ class UangkuApp extends StatelessWidget {
           debugShowCheckedModeBanner: false,
           theme: AppTheme.lightTheme,
           darkTheme: AppTheme.darkTheme,
-          themeMode: prefs.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+          themeMode: prefs.themeMode,
           home: const SplashScreen(),
         );
       },

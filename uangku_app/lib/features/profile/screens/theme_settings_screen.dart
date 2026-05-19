@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:uangku_app/core/theme/app_colors.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uangku_app/core/providers/preferences_provider.dart';
 
 class ThemeSettingsScreen extends StatefulWidget {
   const ThemeSettingsScreen({super.key});
@@ -10,28 +11,9 @@ class ThemeSettingsScreen extends StatefulWidget {
 }
 
 class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
-  String _selectedTheme = 'Sistem';
-
-  @override
-  void initState() {
-    super.initState();
-    _loadTheme();
-  }
-
-  Future<void> _loadTheme() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _selectedTheme = prefs.getString('pref_app_theme') ?? 'Sistem';
-    });
-  }
-
   Future<void> _selectTheme(String theme) async {
-    setState(() {
-      _selectedTheme = theme;
-    });
-    
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('pref_app_theme', theme);
+    final prefsProvider = Provider.of<PreferencesProvider>(context, listen: false);
+    await prefsProvider.setThemeString(theme);
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -42,18 +24,21 @@ class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final prefsProvider = Provider.of<PreferencesProvider>(context);
+    final selectedTheme = prefsProvider.themeString;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
-        title: const Text(
+        title: Text(
           'Tema Aplikasi',
-          style: TextStyle(color: AppColors.textDark, fontWeight: FontWeight.w800, fontSize: 18),
+          style: TextStyle(color: context.textPrimary, fontWeight: FontWeight.w800, fontSize: 18),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textDark),
+          icon: Icon(Icons.arrow_back, color: context.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -62,9 +47,9 @@ class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Sesuaikan tampilan aplikasi dengan preferensi Anda. Mode Gelap dapat membantu menghemat baterai.',
-              style: TextStyle(fontSize: 14, color: AppColors.textLight),
+              style: TextStyle(fontSize: 14, color: context.textSecondary),
             ),
             const SizedBox(height: 32),
 
@@ -72,7 +57,7 @@ class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
               title: 'Terang (Light)',
               subtitle: 'Tampilan standar dengan dominasi warna putih yang bersih.',
               icon: Icons.light_mode_outlined,
-              isSelected: _selectedTheme == 'Terang',
+              isSelected: selectedTheme == 'Terang',
               onTap: () => _selectTheme('Terang'),
             ),
             
@@ -82,7 +67,7 @@ class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
               title: 'Gelap (Dark)',
               subtitle: 'Tampilan gelap yang nyaman untuk mata dan hemat baterai.',
               icon: Icons.dark_mode_outlined,
-              isSelected: _selectedTheme == 'Gelap',
+              isSelected: selectedTheme == 'Gelap',
               onTap: () => _selectTheme('Gelap'),
             ),
 
@@ -92,7 +77,7 @@ class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
               title: 'Sistem',
               subtitle: 'Otomatis mengikuti pengaturan tema pada perangkat Anda.',
               icon: Icons.settings_brightness_outlined,
-              isSelected: _selectedTheme == 'Sistem',
+              isSelected: selectedTheme == 'Sistem',
               onTap: () => _selectTheme('Sistem'),
             ),
           ],
@@ -113,10 +98,10 @@ class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: const Color(0xFFF8FAFC),
+          color: context.cardColor,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? AppColors.primaryBlue : Colors.transparent,
+            color: isSelected ? AppColors.primaryBlue : context.borderColor,
             width: 1.5,
           ),
         ),
@@ -138,19 +123,19 @@ class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textDark),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: context.textPrimary),
                   ),
                   const SizedBox(height: 6),
                   Text(
                     subtitle,
-                    style: const TextStyle(fontSize: 13, color: Color(0xFF64748B), height: 1.4),
+                    style: TextStyle(fontSize: 13, color: context.textSecondary, height: 1.4),
                   ),
                 ],
               ),
             ),
             Icon(
               isSelected ? Icons.radio_button_checked_rounded : Icons.radio_button_unchecked_rounded,
-              color: isSelected ? AppColors.primaryBlue : const Color(0xFFCBD5E1),
+              color: isSelected ? AppColors.primaryBlue : context.textSecondary,
             ),
           ],
         ),
