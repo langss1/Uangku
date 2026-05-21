@@ -4,6 +4,8 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:uangku_app/core/theme/app_colors.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:provider/provider.dart';
+import 'package:uangku_app/core/providers/preferences_provider.dart';
 import 'package:uangku_app/features/splash/splash_screen.dart';
 import 'package:uangku_app/features/profile/profile_screen.dart';
 import 'package:uangku_app/core/models/transaction_model.dart';
@@ -80,16 +82,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     super.dispose();
   }
 
-  String _getGreeting() {
+  String _getGreeting(bool isIndo) {
     final hour = DateTime.now().hour;
     if (hour < 12) {
-      return 'Good Morning';
+      return isIndo ? 'Selamat Pagi' : 'Good Morning';
     } else if (hour < 17) {
-      return 'Good Afternoon';
+      return isIndo ? 'Selamat Siang' : 'Good Afternoon';
     } else if (hour < 20) {
-      return 'Good Evening';
+      return isIndo ? 'Selamat Sore' : 'Good Evening';
     } else {
-      return 'Good Night';
+      return isIndo ? 'Selamat Malam' : 'Good Night';
     }
   }
 
@@ -279,14 +281,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         children: [
                           Row(
                             children: [
-                              Text(
-                                _getGreeting(),
-                                style: TextStyle(
-                                  color: Colors.white.withOpacity(0.85),
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
+                              Builder(builder: (context) {
+                                final isIndo = Provider.of<PreferencesProvider>(context).language == 'id';
+                                return Text(
+                                  _getGreeting(isIndo),
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.85),
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                );
+                              }),
                               const SizedBox(width: 4),
                               RotationTransition(
                                 turns: _waveAnimation,
@@ -369,10 +374,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          "Total Balance", 
-                          style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.w500)
-                        ),
+                        Builder(builder: (context) {
+                          final isIndo = Provider.of<PreferencesProvider>(context).language == 'id';
+                          return Text(
+                            isIndo ? "Total Saldo" : "Total Balance", 
+                            style: const TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.w500)
+                          );
+                        }),
                         const SizedBox(height: 8),
                         FittedBox(
                           fit: BoxFit.scaleDown,
@@ -382,13 +390,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           ),
                         ),
                         const SizedBox(height: 24),
-                        Row(
-                          children: [
-                            Expanded(child: _buildBalanceInfo("In:", format.format(totalIncome), Colors.greenAccent)),
-                            const SizedBox(width: 12),
-                            Expanded(child: _buildBalanceInfo("Out:", format.format(totalExpense), Colors.redAccent)),
-                          ],
-                        ),
+                        Builder(builder: (context) {
+                          final isIndo = Provider.of<PreferencesProvider>(context).language == 'id';
+                          return Row(
+                            children: [
+                              Expanded(child: _buildBalanceInfo(isIndo ? "Masuk:" : "In:", format.format(totalIncome), Colors.greenAccent)),
+                              const SizedBox(width: 12),
+                              Expanded(child: _buildBalanceInfo(isIndo ? "Keluar:" : "Out:", format.format(totalExpense), Colors.redAccent)),
+                            ],
+                          );
+                        }),
                       ],
                     ),
                   );
@@ -427,24 +438,26 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Widget _buildQuickActions() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Quick Actions',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-              color: context.textPrimary,
+      child: Builder(builder: (context) {
+        final isIndo = Provider.of<PreferencesProvider>(context).language == 'id';
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              isIndo ? 'Aksi Cepat' : 'Quick Actions',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: context.textPrimary,
+              ),
             ),
-          ),
           const SizedBox(height: 20),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _buildActionItem(
                 icon: Icons.qr_code_scanner,
-                label: 'Scan',
+                label: isIndo ? 'Pindai' : 'Scan',
                 color: const Color(0xFFDBEAFE),
                 iconColor: const Color(0xFF2563EB),
                 onTap: () {
@@ -479,7 +492,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
               _buildActionItem(
                 icon: Icons.history,
-                label: 'History',
+                label: isIndo ? 'Riwayat' : 'History',
                 color: const Color(0xFFFFEDD5),
                 iconColor: const Color(0xFFD97706),
                 onTap: () {
@@ -492,7 +505,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ],
           ),
         ],
-      ),
+        );
+      }),
     );
   }
 
@@ -527,20 +541,22 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Widget _buildRecentTransactions() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Recent Transactions',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: context.textPrimary,
+      child: Builder(builder: (context) {
+        final isIndo = Provider.of<PreferencesProvider>(context).language == 'id';
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  isIndo ? 'Transaksi Terakhir' : 'Recent Transactions',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: context.textPrimary,
+                  ),
                 ),
-              ),
               GestureDetector(
                 onTap: () {
                   Navigator.push(
@@ -548,9 +564,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     MaterialPageRoute(builder: (_) => const TransactionHistoryScreen()),
                   );
                 },
-                child: const Text(
-                  'See All',
-                  style: TextStyle(
+                child: Text(
+                  isIndo ? 'Lihat Semua' : 'See All',
+                  style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
                     color: Color(0xFF2962FF),
@@ -585,7 +601,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         ),
                         const SizedBox(height: 20),
                         Text(
-                          "Belum Ada Transaksi",
+                          isIndo ? "Belum Ada Transaksi" : "No Transactions Yet",
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
@@ -594,7 +610,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          "Ayo mulai catat pengeluaran harianmu!",
+                          isIndo ? "Ayo mulai catat pengeluaran harianmu!" : "Start recording your daily expenses!",
                           style: TextStyle(
                             fontSize: 13,
                             color: context.textSecondary,
@@ -638,7 +654,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             },
           ),
         ],
-      ),
+        );
+      }),
     );
   }
 
@@ -765,11 +782,26 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    _buildNavItem(icon: Icons.home_rounded, label: 'Home', index: 0),
-                    _buildNavItem(icon: Icons.analytics_outlined, label: 'Analytics', index: 1),
-                    _buildNavItem(icon: Icons.add, label: 'Add', index: 2),
-                    _buildNavItem(icon: Icons.account_balance_wallet_outlined, label: 'Budget', index: 3),
-                    _buildNavItem(icon: Icons.person_outline, label: 'Profile', index: 4),
+                    Builder(builder: (context) {
+                      final isIndo = Provider.of<PreferencesProvider>(context).language == 'id';
+                      return _buildNavItem(icon: Icons.home_rounded, label: isIndo ? 'Beranda' : 'Home', index: 0);
+                    }),
+                    Builder(builder: (context) {
+                      final isIndo = Provider.of<PreferencesProvider>(context).language == 'id';
+                      return _buildNavItem(icon: Icons.analytics_outlined, label: isIndo ? 'Analisis' : 'Analytics', index: 1);
+                    }),
+                    Builder(builder: (context) {
+                      final isIndo = Provider.of<PreferencesProvider>(context).language == 'id';
+                      return _buildNavItem(icon: Icons.add, label: isIndo ? 'Tambah' : 'Add', index: 2);
+                    }),
+                    Builder(builder: (context) {
+                      final isIndo = Provider.of<PreferencesProvider>(context).language == 'id';
+                      return _buildNavItem(icon: Icons.account_balance_wallet_outlined, label: isIndo ? 'Anggaran' : 'Budget', index: 3);
+                    }),
+                    Builder(builder: (context) {
+                      final isIndo = Provider.of<PreferencesProvider>(context).language == 'id';
+                      return _buildNavItem(icon: Icons.person_outline, label: isIndo ? 'Profil' : 'Profile', index: 4);
+                    }),
                   ],
                 ),
               ),

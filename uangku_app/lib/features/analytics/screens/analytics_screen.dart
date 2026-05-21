@@ -9,6 +9,8 @@ import 'dart:ui' as ui;
 import 'dart:typed_data';
 import 'package:flutter/rendering.dart';
 import 'package:uangku_app/core/theme/app_colors.dart';
+import 'package:provider/provider.dart';
+import 'package:uangku_app/core/providers/preferences_provider.dart';
 
 class AnalyticsScreen extends StatefulWidget {
   const AnalyticsScreen({Key? key}) : super(key: key);
@@ -345,6 +347,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isIndo = Provider.of<PreferencesProvider>(context).language == 'id';
     return Scaffold(
       backgroundColor: context.scaffoldBackgroundColor, // Background mirip gambar
       appBar: AppBar(
@@ -353,7 +356,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         elevation: 0,
         centerTitle: true,
         title: Text(
-          'Financial Analytics',
+          isIndo ? 'Analisis Keuangan' : 'Financial Analytics',
           style: TextStyle(
             color: context.textPrimary,
             fontWeight: FontWeight.w700,
@@ -388,7 +391,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _buildFilterTabs(),
+                _buildFilterTabs(isIndo),
                 if (_selectedFilter == 'Custom' && _customDateRange != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 8.0, bottom: 8.0),
@@ -402,13 +405,13 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     ),
                   ),
                 const SizedBox(height: 16),
-                _buildSummaryCards(filteredTransactions),
+                _buildSummaryCards(filteredTransactions, isIndo),
                 const SizedBox(height: 16),
-                _buildIncomeVsExpenseCard(filteredTransactions),
+                _buildIncomeVsExpenseCard(filteredTransactions, isIndo),
                 const SizedBox(height: 16),
-                _buildSpendingByCategoryCard(filteredTransactions),
+                _buildSpendingByCategoryCard(filteredTransactions, isIndo),
                 const SizedBox(height: 32),
-                _buildExportSection(),
+                _buildExportSection(isIndo),
                 const SizedBox(height: 32),
               ],
             ),
@@ -418,7 +421,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     );
   }
 
-  Widget _buildFilterTabs() {
+  Widget _buildFilterTabs(bool isIndo) {
     return Container(
       decoration: BoxDecoration(
         color: context.borderColor,
@@ -427,19 +430,19 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       padding: const EdgeInsets.all(4),
       child: Row(
         children: [
-          _buildFilterTabItem('Weekly'),
-          _buildFilterTabItem('Monthly'),
-          _buildFilterTabItem('Custom'),
+          _buildFilterTabItem('Weekly', isIndo ? 'Mingguan' : 'Weekly'),
+          _buildFilterTabItem('Monthly', isIndo ? 'Bulanan' : 'Monthly'),
+          _buildFilterTabItem('Custom', isIndo ? 'Kustom' : 'Custom'),
         ],
       ),
     );
   }
 
-  Widget _buildFilterTabItem(String title) {
-    bool isSelected = _selectedFilter == title;
+  Widget _buildFilterTabItem(String value, String title) {
+    bool isSelected = _selectedFilter == value;
     return Expanded(
       child: GestureDetector(
-        onTap: () => _onFilterChanged(title),
+        onTap: () => _onFilterChanged(value),
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
@@ -470,7 +473,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     );
   }
 
-  Widget _buildIncomeVsExpenseCard(List<TransactionModel> transactions) {
+  Widget _buildIncomeVsExpenseCard(List<TransactionModel> transactions, bool isIndo) {
     List<double> incomeByDay = List.filled(7, 0.0);
     List<double> expenseByDay = List.filled(7, 0.0);
 
@@ -512,7 +515,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Income vs Expense',
+            isIndo ? 'Pemasukan vs Pengeluaran' : 'Income vs Expense',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w800,
@@ -521,7 +524,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            'Trend analysis by day',
+            isIndo ? 'Analisis tren per hari' : 'Trend analysis by day',
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w500,
@@ -628,19 +631,27 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   lineBarsData: [
                     LineChartBarData(
                       spots: List.generate(7, (index) => FlSpot(index.toDouble(), incomeByDay[index])),
-                      isCurved: false,
+                      isCurved: true,
                       color: const Color(0xFF10B981), // Income Green
                       barWidth: 3,
                       isStrokeCapRound: true,
                       dotData: FlDotData(show: false),
+                      belowBarData: BarAreaData(
+                        show: true,
+                        color: const Color(0xFF10B981).withOpacity(0.15),
+                      ),
                     ),
                     LineChartBarData(
                       spots: List.generate(7, (index) => FlSpot(index.toDouble(), expenseByDay[index])),
-                      isCurved: false,
-                      color: const Color(0xFFF97316), // Expense Orange
+                      isCurved: true,
+                      color: const Color(0xFFEF4444), // Expense Red
                       barWidth: 3,
                       isStrokeCapRound: true,
                       dotData: FlDotData(show: false),
+                      belowBarData: BarAreaData(
+                        show: true,
+                        color: const Color(0xFFEF4444).withOpacity(0.15),
+                      ),
                     ),
                   ],
                 ),
@@ -652,7 +663,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     );
   }
 
-  Widget _buildSpendingByCategoryCard(List<TransactionModel> transactions) {
+  Widget _buildSpendingByCategoryCard(List<TransactionModel> transactions, bool isIndo) {
     Map<String, double> categorySums = {};
     double totalExpense = 0;
 
@@ -705,7 +716,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Spending by Category',
+            isIndo ? 'Pengeluaran per Kategori' : 'Spending by Category',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w800,
@@ -714,7 +725,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            'Distribution overview',
+            isIndo ? 'Tinjauan distribusi' : 'Distribution overview',
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w500,
@@ -736,7 +747,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'Belum ada pengeluaran',
+                      isIndo ? 'Belum ada pengeluaran' : 'No expenses yet',
                       style: TextStyle(
                         color: Colors.grey[500],
                         fontSize: 14,
@@ -821,7 +832,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     );
   }
 
-  Widget _buildSummaryCards(List<TransactionModel> transactions) {
+  Widget _buildSummaryCards(List<TransactionModel> transactions, bool isIndo) {
     double totalIncome = 0;
     double totalExpense = 0;
 
@@ -852,8 +863,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     Icon(Icons.trending_up, color: Color(0xFF059669), size: 16),
                     SizedBox(width: 4),
                     Text(
-                      'INCOME',
-                      style: TextStyle(
+                      isIndo ? 'PEMASUKAN' : 'INCOME',
+                      style: const TextStyle(
                         color: Color(0xFF059669),
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
@@ -876,9 +887,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
-                  'Based on filter',
-                  style: TextStyle(
+                Text(
+                  isIndo ? 'Berdasarkan filter' : 'Based on filter',
+                  style: const TextStyle(
                     color: Color(0xFF059669),
                     fontSize: 10,
                     fontWeight: FontWeight.w500,
@@ -904,8 +915,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     Icon(Icons.trending_down, color: Color(0xFFE11D48), size: 16),
                     SizedBox(width: 4),
                     Text(
-                      'EXPENSES',
-                      style: TextStyle(
+                      isIndo ? 'PENGELUARAN' : 'EXPENSES',
+                      style: const TextStyle(
                         color: Color(0xFFE11D48),
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
@@ -928,9 +939,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
-                  'Based on filter',
-                  style: TextStyle(
+                Text(
+                  isIndo ? 'Berdasarkan filter' : 'Based on filter',
+                  style: const TextStyle(
                     color: Color(0xFFE11D48),
                     fontSize: 10,
                     fontWeight: FontWeight.w500,
@@ -944,7 +955,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     );
   }
 
-  Widget _buildExportSection() {
+  Widget _buildExportSection(bool isIndo) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -962,12 +973,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'Export Analytics',
+            isIndo ? 'Ekspor Analisis' : 'Export Analytics',
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: context.textPrimary),
           ),
           const SizedBox(height: 4),
           Text(
-            'Download your financial reports in preferred format',
+            isIndo ? 'Unduh laporan keuangan dalam format pilihan' : 'Download your financial reports in preferred format',
             style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: context.textSecondary),
           ),
           const SizedBox(height: 24),
@@ -975,12 +986,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            _buildInputLabel('Select Date Range'),
+            _buildInputLabel(isIndo ? 'Pilih Rentang Waktu' : 'Select Date Range'),
             GestureDetector(
               onTap: _selectExportDateRange,
-              child: const Text(
-                'Change',
-                style: TextStyle(
+              child: Text(
+                isIndo ? 'Ubah' : 'Change',
+                style: const TextStyle(
                   color: Color(0xFF2962FF),
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
@@ -993,7 +1004,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         GestureDetector(
           onTap: _selectExportDateRange,
           child: _buildDatePicker(
-            label: 'Start Date', 
+            label: isIndo ? 'Tanggal Mulai' : 'Start Date', 
             value: DateFormat('dd MMM yyyy').format(_exportDateRange!.start)
           ),
         ),
@@ -1001,14 +1012,14 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         GestureDetector(
           onTap: _selectExportDateRange,
           child: _buildDatePicker(
-            label: 'End Date', 
+            label: isIndo ? 'Tanggal Selesai' : 'End Date', 
             value: DateFormat('dd MMM yyyy').format(_exportDateRange!.end)
           ),
         ),
         
         const SizedBox(height: 24),
         
-        _buildInputLabel('Choose Export Format'),
+        _buildInputLabel(isIndo ? 'Pilih Format Ekspor' : 'Choose Export Format'),
         const SizedBox(height: 12),
         
         GestureDetector(
@@ -1017,8 +1028,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             icon: Icons.picture_as_pdf,
             iconBgColor: const Color(0xFFFEE2E2),
             iconColor: const Color(0xFFDC2626),
-            title: 'PDF Report',
-            subtitle: 'Formatted financial report',
+            title: isIndo ? 'Laporan PDF' : 'PDF Report',
+            subtitle: isIndo ? 'Laporan keuangan terformat' : 'Formatted financial report',
           ),
         ),
         const SizedBox(height: 12),
@@ -1028,8 +1039,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             icon: Icons.insert_drive_file_outlined,
             iconBgColor: const Color(0xFFD1FAE5),
             iconColor: const Color(0xFF059669),
-            title: 'CSV File',
-            subtitle: 'Raw data for analysis',
+            title: isIndo ? 'Berkas CSV' : 'CSV File',
+            subtitle: isIndo ? 'Data mentah untuk analisis' : 'Raw data for analysis',
           ),
         ),
       ],

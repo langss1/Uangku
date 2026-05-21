@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:uangku_app/core/theme/app_colors.dart';
+import 'package:provider/provider.dart';
+import 'package:uangku_app/core/providers/preferences_provider.dart';
 
 class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final isIndo = Provider.of<PreferencesProvider>(context).language == 'id';
     return Scaffold(
       backgroundColor: context.scaffoldBackgroundColor,
       appBar: AppBar(
@@ -13,7 +16,7 @@ class AboutScreen extends StatelessWidget {
         elevation: 0,
         centerTitle: true,
         title: Text(
-          'Tentang Uangku',
+          isIndo ? 'Tentang Uangku' : 'About Uangku',
           style: TextStyle(color: context.textPrimary, fontWeight: FontWeight.w800, fontSize: 18),
         ),
         leading: IconButton(
@@ -60,9 +63,9 @@ class AboutScreen extends StatelessWidget {
                 color: AppColors.primaryBlue.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: const Text(
-                'Versi 2.1.4',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primaryBlue),
+              child: Text(
+                isIndo ? 'Versi 2.1.4' : 'Version 2.1.4',
+                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primaryBlue),
               ),
             ),
             
@@ -98,14 +101,16 @@ class AboutScreen extends StatelessWidget {
                       ),
                       const SizedBox(width: 12),
                       Text(
-                        'Tentang Aplikasi',
+                        isIndo ? 'Tentang Aplikasi' : 'About App',
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: context.textPrimary),
                       ),
                     ],
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Uangku adalah asisten keuangan pribadi cerdas yang dirancang khusus untuk mempermudah Anda dalam mencatat transaksi, menyusun anggaran bulanan, dan memberikan saran (insight) otomatis berbasis AI. Kami percaya mengelola uang tidak harus rumit.',
+                    isIndo 
+                        ? 'Uangku adalah asisten keuangan pribadi cerdas yang dirancang khusus untuk mempermudah Anda dalam mencatat transaksi, menyusun anggaran bulanan, dan memberikan saran (insight) otomatis berbasis AI. Kami percaya mengelola uang tidak harus rumit.'
+                        : 'Uangku is a smart personal financial assistant designed specifically to make it easier for you to record transactions, set up monthly budgets, and provide automatic AI-based insights. We believe managing money doesn\'t have to be complicated.',
                     style: TextStyle(fontSize: 14, color: context.textSecondary, height: 1.5),
                   ),
                 ],
@@ -143,17 +148,19 @@ class AboutScreen extends StatelessWidget {
                         child: const Icon(Icons.school_rounded, color: Colors.white, size: 20),
                       ),
                       const SizedBox(width: 12),
-                      const Expanded(
+                      Expanded(
                         child: Text(
-                          'Proyek Tugas Besar',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                          isIndo ? 'Proyek Tugas Besar' : 'Final Project',
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'Dikembangkan sepenuh hati untuk memenuhi Tugas Besar mata kuliah Aplikasi Perangkat Bergerak (APB).',
+                    isIndo 
+                        ? 'Dikembangkan sepenuh hati untuk memenuhi Tugas Besar mata kuliah Aplikasi Perangkat Bergerak (APB).'
+                        : 'Developed wholeheartedly to fulfill the Final Project for the Mobile Application Development course.',
                     style: TextStyle(fontSize: 14, color: Colors.white.withOpacity(0.9), height: 1.5),
                   ),
                 ],
@@ -166,15 +173,15 @@ class AboutScreen extends StatelessWidget {
             Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                'Tim Pengembang',
+                isIndo ? 'Tim Pengembang' : 'Development Team',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: context.textPrimary),
               ),
             ),
             const SizedBox(height: 16),
-            _buildDeveloperTile(context, 'Gilang Wasis Wicaksono', 'Mobile Developer / UI/UX', 'G'),
-            _buildDeveloperTile(context, 'Ihab Hasanin Akmal', 'Mobile Developer / Backend', 'I'),
-            _buildDeveloperTile(context, 'Farhan Muamar Fawwaz', 'Mobile Developer / QA', 'F'),
-            _buildDeveloperTile(context, 'Arina Rahmania Nabila', 'Mobile Developer / PM', 'A'),
+            _buildDeveloperTile(context, 'Gilang Wasis Wicaksono', isIndo ? 'Pengembang Mobile / UI/UX' : 'Mobile Developer / UI/UX', 'G'),
+            _buildDeveloperTile(context, 'Ihab Hasanin Akmal', isIndo ? 'Pengembang Mobile / Backend' : 'Mobile Developer / Backend', 'I'),
+            _buildDeveloperTile(context, 'Farhan Muamar Fawwaz', isIndo ? 'Pengembang Mobile / QA' : 'Mobile Developer / QA', 'F'),
+            _buildDeveloperTile(context, 'Arina Rahmania Nabila', isIndo ? 'Pengembang Mobile / PM' : 'Mobile Developer / PM', 'A'),
             
             const SizedBox(height: 40),
             const Text(

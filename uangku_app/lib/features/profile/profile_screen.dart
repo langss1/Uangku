@@ -20,6 +20,8 @@ import 'package:uangku_app/features/profile/screens/help_center_screen.dart';
 
 import 'package:uangku_app/core/data/budget_data.dart';
 import 'package:uangku_app/core/data/transaction_data.dart';
+import 'package:provider/provider.dart';
+import 'package:uangku_app/core/providers/preferences_provider.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -158,31 +160,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isIndo = Provider.of<PreferencesProvider>(context).language == 'id';
     return Scaffold(
       backgroundColor: context.scaffoldBackgroundColor,
       body: SingleChildScrollView(
         child: Column(
           children: [
-            _buildHeader(),
+            _buildHeader(isIndo),
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 24, 20, 100),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildSectionHeader('AKUN & KEAMANAN'),
+                  _buildSectionHeader(isIndo ? 'AKUN & KEAMANAN' : 'ACCOUNT & SECURITY'),
                   _buildGroupCard([
                     _buildSettingTile(
                       icon: Icons.person_outline_rounded,
                       iconColor: AppColors.primaryBlue,
-                      title: 'Informasi Profil',
-                      subtitle: 'Ubah nama dan email kamu',
-                      onTap: () => _navigateToEditor('Personal Information', false),
+                      title: isIndo ? 'Informasi Profil' : 'Profile Information',
+                      subtitle: isIndo ? 'Ubah nama dan email kamu' : 'Change your name and email',
+                      onTap: () => _navigateToEditor(isIndo ? 'Informasi Personal' : 'Personal Information', false),
                     ),
                     _buildSettingTile(
                       icon: Icons.lock_outline_rounded,
                       iconColor: AppColors.primaryBlue,
-                      title: 'Ganti Password',
-                      subtitle: 'Perbarui kata sandi akun',
+                      title: isIndo ? 'Ganti Password' : 'Change Password',
+                      subtitle: isIndo ? 'Perbarui kata sandi akun' : 'Update account password',
                       onTap: () {
                         Navigator.push(
                           context,
@@ -193,8 +196,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     _buildSettingTile(
                       icon: Icons.security_rounded,
                       iconColor: AppColors.primaryBlue,
-                      title: 'Autentikasi 2-Faktor',
-                      subtitle: 'Keamanan ekstra untuk akun',
+                      title: isIndo ? 'Autentikasi 2-Faktor' : '2-Factor Authentication',
+                      subtitle: isIndo ? 'Keamanan ekstra untuk akun' : 'Extra security for your account',
                       onTap: () {
                         Navigator.push(
                           context,
@@ -205,42 +208,42 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ]),
                   
                   const SizedBox(height: 24),
-                  _buildSectionHeader('NOTIFIKASI'),
+                  _buildSectionHeader(isIndo ? 'NOTIFIKASI' : 'NOTIFICATIONS'),
                   _buildGroupCard([
                     _buildSwitchTile(
                       icon: Icons.wb_sunny_outlined,
                       iconColor: AppColors.primaryBlue,
-                      title: 'Laporan Harian',
-                      subtitle: 'Ringkasan keuangan setiap pagi',
+                      title: isIndo ? 'Laporan Harian' : 'Daily Report',
+                      subtitle: isIndo ? 'Ringkasan keuangan setiap pagi' : 'Financial summary every morning',
                       value: _morningReport,
                       onChanged: (val) => _updateNotificationSetting('pref_morning_report', val),
                     ),
                     _buildSwitchTile(
                       icon: Icons.notification_important_outlined,
                       iconColor: AppColors.primaryBlue,
-                      title: 'Peringatan Anggaran',
-                      subtitle: 'Notif saat pengeluaran melebihi limit',
+                      title: isIndo ? 'Peringatan Anggaran' : 'Budget Alerts',
+                      subtitle: isIndo ? 'Notif saat pengeluaran melebihi limit' : 'Notify when expenses exceed limit',
                       value: _budgetAlerts,
                       onChanged: (val) => _updateNotificationSetting('pref_budget_alerts', val),
                     ),
                     _buildSwitchTile(
                       icon: Icons.auto_awesome_outlined,
                       iconColor: AppColors.primaryBlue,
-                      title: 'Wawasan AI',
-                      subtitle: 'Tips cerdas dari Gemini AI',
+                      title: isIndo ? 'Wawasan AI' : 'AI Insights',
+                      subtitle: isIndo ? 'Tips cerdas dari Gemini AI' : 'Smart tips from Gemini AI',
                       value: _aiInsights,
                       onChanged: (val) => _updateNotificationSetting('pref_ai_insights', val),
                     ),
                   ]),
                   
                   const SizedBox(height: 24),
-                  _buildSectionHeader('PREFERENSI APLIKASI'),
+                  _buildSectionHeader(isIndo ? 'PREFERENSI APLIKASI' : 'APP PREFERENCES'),
                   _buildGroupCard([
                     _buildSettingTile(
                       icon: Icons.palette_outlined,
                       iconColor: AppColors.primaryBlue,
-                      title: 'Tema Aplikasi',
-                      subtitle: 'Terang, Gelap, atau Sistem',
+                      title: isIndo ? 'Tema Aplikasi' : 'App Theme',
+                      subtitle: isIndo ? 'Terang, Gelap, atau Sistem' : 'Light, Dark, or System',
                       onTap: () {
                         Navigator.push(
                           context,
@@ -251,8 +254,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     _buildSettingTile(
                       icon: Icons.language_rounded,
                       iconColor: AppColors.primaryBlue,
-                      title: 'Bahasa',
-                      subtitle: 'Indonesia (ID)',
+                      title: isIndo ? 'Bahasa' : 'Language',
+                      subtitle: isIndo ? 'Indonesia (ID)' : 'English (US)',
                       onTap: () {
                         Navigator.push(
                           context,
@@ -263,13 +266,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ]),
                   
                   const SizedBox(height: 24),
-                  _buildSectionHeader('SUPPORT'),
+                  _buildSectionHeader(isIndo ? 'DUKUNGAN' : 'SUPPORT'),
                   _buildGroupCard([
                     _buildSettingTile(
                       icon: Icons.help_outline_rounded,
                       iconColor: AppColors.primaryBlue,
-                      title: 'Pusat Bantuan',
-                      subtitle: 'FAQ dan bantuan teknis',
+                      title: isIndo ? 'Pusat Bantuan' : 'Help Center',
+                      subtitle: isIndo ? 'FAQ dan bantuan teknis' : 'FAQ and technical support',
                       onTap: () {
                         Navigator.push(
                           context,
@@ -280,8 +283,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     _buildSettingTile(
                       icon: Icons.info_outline_rounded,
                       iconColor: AppColors.primaryBlue,
-                      title: 'Tentang Uangku',
-                      subtitle: 'Versi 2.1.4',
+                      title: isIndo ? 'Tentang Uangku' : 'About Uangku',
+                      subtitle: isIndo ? 'Versi 2.1.4' : 'Version 2.1.4',
                       onTap: () {
                         Navigator.push(
                           context,
@@ -292,7 +295,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ]),
                   
                   const SizedBox(height: 40),
-                  _buildLogoutButton(),
+                  _buildLogoutButton(isIndo),
                 ],
               ),
             ),
@@ -303,12 +306,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _navigateToEditor(String title, bool isSecurity) async {
+    final isIndo = Provider.of<PreferencesProvider>(context, listen: false).language == 'id';
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => SettingsEditorScreen(
           title: title,
-          subtitle: isSecurity ? 'Perbarui keamanan akun kamu' : 'Update profil kamu',
+          subtitle: isSecurity 
+              ? (isIndo ? 'Perbarui keamanan akun kamu' : 'Update your account security') 
+              : (isIndo ? 'Update profil kamu' : 'Update your profile'),
           isSecurity: isSecurity,
           initialName: _userName,
           initialEmail: _userEmail,
@@ -321,7 +327,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(bool isIndo) {
     return Container(
       width: double.infinity,
       decoration: const BoxDecoration(
@@ -383,9 +389,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                const Text(
-                  'Profil Saya',
-                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                Text(
+                  isIndo ? 'Profil Saya' : 'My Profile',
+                  style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 30),
                 Stack(
@@ -523,7 +529,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildLogoutButton() {
+  Widget _buildLogoutButton(bool isIndo) {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
@@ -540,10 +546,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
-            Icon(Icons.logout_rounded, size: 20),
-            SizedBox(width: 10),
-            Text('Keluar Akun', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+          children: [
+            const Icon(Icons.logout_rounded, size: 20),
+            const SizedBox(width: 10),
+            Text(isIndo ? 'Keluar Akun' : 'Log Out', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
           ],
         ),
       ),

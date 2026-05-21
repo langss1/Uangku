@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:uangku_app/core/theme/app_colors.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:provider/provider.dart';
+import 'package:uangku_app/core/providers/preferences_provider.dart';
 
 class LanguageSettingsScreen extends StatefulWidget {
   const LanguageSettingsScreen({super.key});
@@ -25,10 +27,13 @@ class _LanguageSettingsScreenState extends State<LanguageSettingsScreen> {
     });
   }
 
-  Future<void> _selectLanguage(String langCode) async {
+  Future<void> _selectLanguage(String langCode, BuildContext context) async {
     setState(() {
       _selectedLanguage = langCode;
     });
+    
+    final prefsProvider = Provider.of<PreferencesProvider>(context, listen: false);
+    await prefsProvider.setLanguage(langCode.toLowerCase());
     
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('pref_app_language', langCode);
@@ -42,6 +47,9 @@ class _LanguageSettingsScreenState extends State<LanguageSettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final prefsProvider = Provider.of<PreferencesProvider>(context);
+    final isIndo = prefsProvider.language == 'id';
+
     return Scaffold(
       backgroundColor: context.scaffoldBackgroundColor,
       appBar: AppBar(
@@ -49,7 +57,7 @@ class _LanguageSettingsScreenState extends State<LanguageSettingsScreen> {
         elevation: 0,
         centerTitle: true,
         title: Text(
-          'Bahasa',
+          isIndo ? 'Bahasa' : 'Language',
           style: TextStyle(color: context.textPrimary, fontWeight: FontWeight.w800, fontSize: 18),
         ),
         leading: IconButton(
@@ -63,7 +71,9 @@ class _LanguageSettingsScreenState extends State<LanguageSettingsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Pilih bahasa yang akan digunakan pada antarmuka aplikasi Uangku.',
+              isIndo 
+                ? 'Pilih bahasa yang akan digunakan pada antarmuka aplikasi Uangku.'
+                : 'Select the language to be used in the Uangku app interface.',
               style: TextStyle(fontSize: 14, color: context.textSecondary),
             ),
             const SizedBox(height: 32),
@@ -73,7 +83,7 @@ class _LanguageSettingsScreenState extends State<LanguageSettingsScreen> {
               subtitle: 'Bahasa Indonesia',
               icon: Icons.language_rounded,
               isSelected: _selectedLanguage == 'ID',
-              onTap: () => _selectLanguage('ID'),
+              onTap: () => _selectLanguage('ID', context),
             ),
             
             const SizedBox(height: 16),
@@ -83,7 +93,7 @@ class _LanguageSettingsScreenState extends State<LanguageSettingsScreen> {
               subtitle: 'American English',
               icon: Icons.public_rounded,
               isSelected: _selectedLanguage == 'EN',
-              onTap: () => _selectLanguage('EN'),
+              onTap: () => _selectLanguage('EN', context),
             ),
           ],
         ),

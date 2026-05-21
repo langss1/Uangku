@@ -15,6 +15,8 @@ import 'dart:io';
 import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:uangku_app/core/utils/currency_input_formatter.dart';
+import 'package:provider/provider.dart';
+import 'package:uangku_app/core/providers/preferences_provider.dart';
 class AddTransactionScreen extends StatefulWidget {
   final VoidCallback onBack;
   final TransactionModel? transactionToEdit;
@@ -276,10 +278,13 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Single
           icon: Icon(Icons.close, color: context.textPrimary),
           onPressed: widget.onBack,
         ),
-        title: Text(
-          'Add Transaction',
-          style: TextStyle(color: context.textPrimary, fontWeight: FontWeight.bold, fontSize: 18),
-        ),
+        title: Builder(builder: (context) {
+          final isIndo = Provider.of<PreferencesProvider>(context).language == 'id';
+          return Text(
+            isIndo ? 'Tambah Transaksi' : 'Add Transaction',
+            style: TextStyle(color: context.textPrimary, fontWeight: FontWeight.bold, fontSize: 18),
+          );
+        }),
         centerTitle: true,
       ),
       floatingActionButton: Column(
@@ -366,14 +371,17 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Single
                 elevation: 0,
                 disabledBackgroundColor: Colors.grey[300],
               ),
-              child: Text(
-                'Save',
-                style: TextStyle(
-                  fontSize: 16, 
-                  fontWeight: FontWeight.bold, 
-                  color: canSave ? Colors.white : Colors.grey[500],
-                ),
-              ),
+              child: Builder(builder: (context) {
+                final isIndo = Provider.of<PreferencesProvider>(context).language == 'id';
+                return Text(
+                  isIndo ? 'Simpan' : 'Save',
+                  style: TextStyle(
+                    fontSize: 16, 
+                    fontWeight: FontWeight.bold, 
+                    color: canSave ? Colors.white : Colors.grey[500],
+                  ),
+                );
+              }),
             ),
           ),
         ),
@@ -403,14 +411,17 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Single
                           borderRadius: BorderRadius.circular(22),
                         ),
                         child: Center(
-                          child: Text(
-                            'Expense',
-                            style: TextStyle(
-                              color: !_isIncome ? Colors.white : context.textPrimary,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                          ),
+                          child: Builder(builder: (context) {
+                            final isIndo = Provider.of<PreferencesProvider>(context).language == 'id';
+                            return Text(
+                              isIndo ? 'Pengeluaran' : 'Expense',
+                              style: TextStyle(
+                                color: !_isIncome ? Colors.white : context.textPrimary,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            );
+                          }),
                         ),
                       ),
                     ),
@@ -427,14 +438,17 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Single
                           borderRadius: BorderRadius.circular(22),
                         ),
                         child: Center(
-                          child: Text(
-                            'Income',
-                            style: TextStyle(
-                              color: _isIncome ? Colors.white : context.textPrimary,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                          ),
+                          child: Builder(builder: (context) {
+                            final isIndo = Provider.of<PreferencesProvider>(context).language == 'id';
+                            return Text(
+                              isIndo ? 'Pemasukan' : 'Income',
+                              style: TextStyle(
+                                color: _isIncome ? Colors.white : context.textPrimary,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            );
+                          }),
                         ),
                       ),
                     ),
@@ -535,13 +549,16 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Single
                         size: 24
                       ),
                     ),
-                    title: Text(
-                      _selectedCategory?.name ?? 'Select Category',
-                      style: TextStyle(
-                        color: _selectedCategory != null ? context.textPrimary : context.textSecondary, 
-                        fontSize: 16,
-                      ),
-                    ),
+                    title: Builder(builder: (context) {
+                      final isIndo = Provider.of<PreferencesProvider>(context).language == 'id';
+                      return Text(
+                        _selectedCategory?.name ?? (isIndo ? 'Pilih Kategori' : 'Select Category'),
+                        style: TextStyle(
+                          color: _selectedCategory != null ? context.textPrimary : context.textSecondary, 
+                          fontSize: 16,
+                        ),
+                      );
+                    }),
                     onTap: _openCategorySelection,
                   ),
                   Divider(color: context.borderColor, height: 16),
@@ -550,13 +567,16 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Single
                   ListTile(
                     contentPadding: EdgeInsets.zero,
                     leading: Icon(Icons.notes, color: context.textSecondary, size: 24),
-                    title: Text(
-                      _notesController.text.isEmpty ? 'Write a note' : _notesController.text,
-                      style: TextStyle(
-                        color: _notesController.text.isEmpty ? context.textSecondary : context.textPrimary,
-                        fontSize: 16,
-                      ),
-                    ),
+                    title: Builder(builder: (context) {
+                      final isIndo = Provider.of<PreferencesProvider>(context).language == 'id';
+                      return Text(
+                        _notesController.text.isEmpty ? (isIndo ? 'Tulis catatan' : 'Write a note') : _notesController.text,
+                        style: TextStyle(
+                          color: _notesController.text.isEmpty ? context.textSecondary : context.textPrimary,
+                          fontSize: 16,
+                        ),
+                      );
+                    }),
                     onTap: () async {
                       final result = await Navigator.push(
                         context,
@@ -637,14 +657,17 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Single
                             _showMoreDetails = true;
                           });
                         },
-                        child: const Text(
-                          'ADD MORE DETAILS',
-                          style: TextStyle(
-                            color: Color(0xFF059669),
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
+                        child: Builder(builder: (context) {
+                          final isIndo = Provider.of<PreferencesProvider>(context).language == 'id';
+                          return Text(
+                            isIndo ? 'TAMBAH DETAIL LAIN' : 'ADD MORE DETAILS',
+                            style: const TextStyle(
+                              color: Color(0xFF059669),
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                            ),
+                          );
+                        }),
                       ),
                     )
                   else
@@ -652,10 +675,13 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Single
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Divider(color: context.borderColor, height: 32),
-                        Text(
-                          'Attachments',
-                          style: TextStyle(color: context.textSecondary, fontWeight: FontWeight.bold),
-                        ),
+                        Builder(builder: (context) {
+                          final isIndo = Provider.of<PreferencesProvider>(context).language == 'id';
+                          return Text(
+                            isIndo ? 'Lampiran' : 'Attachments',
+                            style: TextStyle(color: context.textSecondary, fontWeight: FontWeight.bold),
+                          );
+                        }),
                         const SizedBox(height: 16),
                         Row(
                           children: [
@@ -673,7 +699,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Single
                                     children: [
                                       Icon(Icons.photo_library, size: 32, color: context.textSecondary),
                                       const SizedBox(height: 8),
-                                      Text('Gallery', style: TextStyle(color: context.textSecondary)),
+                                      Builder(builder: (context) {
+                                        final isIndo = Provider.of<PreferencesProvider>(context).language == 'id';
+                                        return Text(isIndo ? 'Galeri' : 'Gallery', style: TextStyle(color: context.textSecondary));
+                                      }),
                                     ],
                                   ),
                                 ),
@@ -694,7 +723,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Single
                                     children: [
                                       Icon(Icons.camera_alt, size: 32, color: context.textSecondary),
                                       const SizedBox(height: 8),
-                                      Text('Camera', style: TextStyle(color: context.textSecondary)),
+                                      Builder(builder: (context) {
+                                        final isIndo = Provider.of<PreferencesProvider>(context).language == 'id';
+                                        return Text(isIndo ? 'Kamera' : 'Camera', style: TextStyle(color: context.textSecondary));
+                                      }),
                                     ],
                                   ),
                                 ),

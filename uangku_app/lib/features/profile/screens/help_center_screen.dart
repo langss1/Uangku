@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:uangku_app/core/theme/app_colors.dart';
+import 'package:provider/provider.dart';
+import 'package:uangku_app/core/providers/preferences_provider.dart';
 
 class HelpCenterScreen extends StatelessWidget {
   const HelpCenterScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final isIndo = Provider.of<PreferencesProvider>(context).language == 'id';
     return Scaffold(
       backgroundColor: context.scaffoldBackgroundColor,
       appBar: AppBar(
@@ -13,7 +16,7 @@ class HelpCenterScreen extends StatelessWidget {
         elevation: 0,
         centerTitle: true,
         title: Text(
-          'Pusat Bantuan',
+          isIndo ? 'Pusat Bantuan' : 'Help Center',
           style: TextStyle(color: context.textPrimary, fontWeight: FontWeight.w800, fontSize: 18),
         ),
         leading: IconButton(
@@ -27,35 +30,35 @@ class HelpCenterScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'FAQ & Solusi Cepat',
+              isIndo ? 'FAQ & Solusi Cepat' : 'FAQ & Quick Solutions',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: context.textPrimary),
             ),
             const SizedBox(height: 8),
             Text(
-              'Temukan jawaban untuk pertanyaan umum seputar aplikasi Uangku.',
+              isIndo ? 'Temukan jawaban untuk pertanyaan umum seputar aplikasi Uangku.' : 'Find answers to frequently asked questions about the Uangku app.',
               style: TextStyle(fontSize: 14, color: context.textSecondary),
             ),
             const SizedBox(height: 24),
             
             _buildFaqItem(
               context: context,
-              question: 'Bagaimana cara menambah pengeluaran baru?',
-              answer: 'Anda dapat menekan tombol tambah (+) berwarna biru di menu navigasi bawah pada layar utama, kemudian pilih tipe transaksi dan masukkan nominal serta kategori.',
+              question: isIndo ? 'Bagaimana cara menambah pengeluaran baru?' : 'How to add a new expense?',
+              answer: isIndo ? 'Anda dapat menekan tombol tambah (+) berwarna biru di menu navigasi bawah pada layar utama, kemudian pilih tipe transaksi dan masukkan nominal serta kategori.' : 'You can press the blue add (+) button in the bottom navigation menu on the main screen, then select the transaction type and enter the amount and category.',
             ),
             _buildFaqItem(
               context: context,
-              question: 'Apakah Uangku menyimpan data di cloud?',
-              answer: 'Saat ini, Uangku menyimpan data secara aman. Jika Anda mengaktifkan sinkronisasi akun, data akan dicadangkan ke server untuk memudahkan akses dari perangkat lain.',
+              question: isIndo ? 'Apakah Uangku menyimpan data di cloud?' : 'Does Uangku store data in the cloud?',
+              answer: isIndo ? 'Saat ini, Uangku menyimpan data secara aman. Jika Anda mengaktifkan sinkronisasi akun, data akan dicadangkan ke server untuk memudahkan akses dari perangkat lain.' : 'Currently, Uangku stores data securely. If you enable account synchronization, data will be backed up to the server for easy access from other devices.',
             ),
             _buildFaqItem(
               context: context,
-              question: 'Bagaimana cara kerja Wawasan AI (AI Insights)?',
-              answer: 'Fitur Wawasan AI menggunakan model analisis cerdas untuk mempelajari pola pengeluaran Anda dan memberikan saran keuangan personal untuk membantu Anda berhemat.',
+              question: isIndo ? 'Bagaimana cara kerja Wawasan AI (AI Insights)?' : 'How does AI Insights work?',
+              answer: isIndo ? 'Fitur Wawasan AI menggunakan model analisis cerdas untuk mempelajari pola pengeluaran Anda dan memberikan saran keuangan personal untuk membantu Anda berhemat.' : 'The AI Insights feature uses smart analysis models to learn your spending patterns and provide personalized financial advice to help you save.',
             ),
             _buildFaqItem(
               context: context,
-              question: 'Saya lupa password, apa yang harus dilakukan?',
-              answer: 'Jika Anda belum login, tekan "Lupa Password" di halaman login. Jika sudah login dan ingin mengganti, masuk ke menu Profil > Ganti Password.',
+              question: isIndo ? 'Saya lupa password, apa yang harus dilakukan?' : 'I forgot my password, what should I do?',
+              answer: isIndo ? 'Jika Anda belum login, tekan "Lupa Password" di halaman login. Jika sudah login dan ingin mengganti, masuk ke menu Profil > Ganti Password.' : 'If you haven\'t logged in, press "Forgot Password" on the login page. If logged in and want to change it, go to Profile > Change Password.',
             ),
             
             Container(
@@ -84,9 +87,9 @@ class HelpCenterScreen extends StatelessWidget {
                     child: const Icon(Icons.mark_email_unread_rounded, size: 32, color: Colors.white),
                   ),
                   const SizedBox(height: 12),
-                  const Text(
-                    'Punya Pertanyaan Lain?',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                  Text(
+                    isIndo ? 'Punya Pertanyaan Lain?' : 'Have Other Questions?',
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
                   ),
                   const SizedBox(height: 16),
                   Container(
@@ -120,7 +123,7 @@ class HelpCenterScreen extends StatelessWidget {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                         elevation: 0,
                       ),
-                      child: const Text('Hubungi Kami Sekarang', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                      child: Text(isIndo ? 'Hubungi Kami Sekarang' : 'Contact Us Now', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                     ),
                   ),
                 ],
@@ -148,7 +151,7 @@ class HelpCenterScreen extends StatelessWidget {
         ],
       ),
       child: Theme(
-        data: ThemeData().copyWith(dividerColor: Colors.transparent),
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
           title: Text(
             question,

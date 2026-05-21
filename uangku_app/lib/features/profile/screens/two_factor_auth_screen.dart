@@ -4,6 +4,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:provider/provider.dart';
+import 'package:uangku_app/core/providers/preferences_provider.dart';
 
 class TwoFactorAuthScreen extends StatefulWidget {
   const TwoFactorAuthScreen({super.key});
@@ -126,15 +128,16 @@ class _TwoFactorAuthScreenState extends State<TwoFactorAuthScreen> {
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setStateDialog) {
+            final isIndo = Provider.of<PreferencesProvider>(context, listen: false).language == 'id';
             return AlertDialog(
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              title: const Text('Setup Google Auth', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold)),
+              title: Text(isIndo ? 'Setup Google Auth' : 'Google Auth Setup', textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.bold)),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text(
-                      'Scan QR code ini menggunakan aplikasi Google Authenticator.',
+                    Text(
+                      isIndo ? 'Scan QR code ini menggunakan aplikasi Google Authenticator.' : 'Scan this QR code using Google Authenticator app.',
                       textAlign: TextAlign.center,
                       style: TextStyle(fontSize: 14),
                     ),
@@ -146,6 +149,7 @@ class _TwoFactorAuthScreenState extends State<TwoFactorAuthScreen> {
                         data: qrCodeUrl,
                         version: QrVersions.auto,
                         size: 200.0,
+                        backgroundColor: Colors.white,
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -153,9 +157,9 @@ class _TwoFactorAuthScreenState extends State<TwoFactorAuthScreen> {
                       controller: tokenController,
                       keyboardType: TextInputType.number,
                       decoration: InputDecoration(
-                        hintText: 'Masukkan 6 digit kode',
+                        hintText: isIndo ? 'Masukkan 6 digit kode' : 'Enter 6 digit code',
                         filled: true,
-                        fillColor: const Color(0xFFF8FAFC),
+                        fillColor: context.cardColor,
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                       ),
                     ),
@@ -165,7 +169,7 @@ class _TwoFactorAuthScreenState extends State<TwoFactorAuthScreen> {
               actions: [
                 TextButton(
                   onPressed: isVerifying ? null : () => Navigator.pop(context),
-                  child: const Text('Batal', style: TextStyle(color: Colors.grey)),
+                  child: Text(isIndo ? 'Batal' : 'Cancel', style: const TextStyle(color: Colors.grey)),
                 ),
                 ElevatedButton(
                   onPressed: isVerifying
@@ -242,6 +246,7 @@ class _TwoFactorAuthScreenState extends State<TwoFactorAuthScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isIndo = Provider.of<PreferencesProvider>(context).language == 'id';
     return Scaffold(
       backgroundColor: context.scaffoldBackgroundColor,
       appBar: AppBar(
@@ -249,7 +254,7 @@ class _TwoFactorAuthScreenState extends State<TwoFactorAuthScreen> {
         elevation: 0,
         centerTitle: true,
         title: Text(
-          'Autentikasi 2-Faktor',
+          isIndo ? 'Autentikasi 2-Faktor' : '2-Factor Authentication',
           style: TextStyle(color: context.textPrimary, fontWeight: FontWeight.w800, fontSize: 18),
         ),
         leading: IconButton(
@@ -263,43 +268,46 @@ class _TwoFactorAuthScreenState extends State<TwoFactorAuthScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Tambahkan lapisan keamanan ekstra pada akun Anda. Pilih metode yang paling sesuai untuk Anda.',
+              isIndo ? 'Tambahkan lapisan keamanan ekstra pada akun Anda. Pilih metode yang paling sesuai untuk Anda.' : 'Add an extra layer of security to your account. Choose the method that suits you best.',
               style: TextStyle(fontSize: 14, color: context.textSecondary, height: 1.5),
             ),
             const SizedBox(height: 24),
 
             _buildMethodCard(
-              title: 'Tidak Ada (None)',
-              subtitle: 'Tanpa proteksi 2FA. Tidak dianjurkan untuk keamanan akun Anda.',
+              title: isIndo ? 'Tidak Ada (None)' : 'None',
+              subtitle: isIndo ? 'Tanpa proteksi 2FA. Tidak dianjurkan untuk keamanan akun Anda.' : 'No 2FA protection. Not recommended for your account security.',
               icon: Icons.no_encryption_outlined,
               iconColor: AppColors.primaryBlue,
               isRecommended: false,
               isSelected: _selectedMethod == 'None',
               onTap: () => _selectMethod('None'),
+              isIndo: isIndo,
             ),
             
             const SizedBox(height: 12),
 
             _buildMethodCard(
               title: 'Email OTP',
-              subtitle: 'Kode OTP akan dikirimkan ke email terdaftar Anda saat login.',
+              subtitle: isIndo ? 'Kode OTP akan dikirimkan ke email terdaftar Anda saat login.' : 'OTP code will be sent to your registered email when logging in.',
               icon: Icons.email_outlined,
               iconColor: AppColors.primaryBlue,
               isRecommended: true,
               isSelected: _selectedMethod == 'Email',
               onTap: () => _selectMethod('Email'),
+              isIndo: isIndo,
             ),
             
             const SizedBox(height: 12),
             
             _buildMethodCard(
               title: 'Google Authenticator',
-              subtitle: 'Gunakan aplikasi Google Authenticator untuk menghasilkan kode OTP.',
+              subtitle: isIndo ? 'Gunakan aplikasi Google Authenticator untuk menghasilkan kode OTP.' : 'Use Google Authenticator app to generate OTP codes.',
               icon: Icons.qr_code_scanner_rounded,
               iconColor: AppColors.primaryBlue,
               isRecommended: false,
               isSelected: _selectedMethod == 'Google Auth',
               onTap: () => _selectMethod('Google Auth'),
+              isIndo: isIndo,
             ),
 
             const SizedBox(height: 32),
@@ -316,7 +324,7 @@ class _TwoFactorAuthScreenState extends State<TwoFactorAuthScreen> {
                 ),
                 child: _isLoading
                     ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : const Text('Simpan Perubahan', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white)),
+                    : Text(isIndo ? 'Simpan Perubahan' : 'Save Changes', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white)),
               ),
             ),
           ],
@@ -333,6 +341,7 @@ class _TwoFactorAuthScreenState extends State<TwoFactorAuthScreen> {
     required bool isRecommended,
     required bool isSelected,
     required VoidCallback onTap,
+    required bool isIndo,
   }) {
     return GestureDetector(
       onTap: onTap,
@@ -376,9 +385,9 @@ class _TwoFactorAuthScreenState extends State<TwoFactorAuthScreen> {
                             color: Colors.orange.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: const Text(
-                            'Dianjurkan',
-                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.orange),
+                          child: Text(
+                            isIndo ? 'Dianjurkan' : 'Recommended',
+                            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.orange),
                           ),
                         ),
                       ],

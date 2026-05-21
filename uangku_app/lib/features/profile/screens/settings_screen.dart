@@ -4,6 +4,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:provider/provider.dart';
+import 'package:uangku_app/core/providers/preferences_provider.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsEditorScreen extends StatefulWidget {
   final String title;
@@ -32,6 +37,7 @@ class _SettingsEditorScreenState extends State<SettingsEditorScreen> {
   bool _is2FAEnabled = false;
   String _twoFactorType = 'NONE';
   bool _hasTotpSecret = false;
+  String? _profileImagePath;
 
   @override
   void initState() {
@@ -39,8 +45,28 @@ class _SettingsEditorScreenState extends State<SettingsEditorScreen> {
     if (!widget.isSecurity) {
       _field1Controller.text = widget.initialName;
       _field2Controller.text = widget.initialEmail;
+      _loadProfileImage();
     } else {
       _load2FAStatus();
+    }
+  }
+
+  Future<void> _loadProfileImage() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _profileImagePath = prefs.getString('profile_image_path');
+    });
+  }
+
+  Future<void> _pickImage() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+    if (image != null) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('profile_image_path', image.path);
+      setState(() {
+        _profileImagePath = image.path;
+      });
     }
   }
 
@@ -145,6 +171,7 @@ class _SettingsEditorScreenState extends State<SettingsEditorScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isIndo = Provider.of<PreferencesProvider>(context).language == 'id';
     return Scaffold(
       backgroundColor: context.scaffoldBackgroundColor,
       appBar: AppBar(
@@ -174,15 +201,54 @@ class _SettingsEditorScreenState extends State<SettingsEditorScreen> {
               style: TextStyle(fontSize: 14, color: context.textSecondary),
             ),
             const SizedBox(height: 32),
+            if (!widget.isSecurity) ...[
+              Center(
+                child: Stack(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(color: context.borderColor, shape: BoxShape.circle),
+                      child: CircleAvatar(
+                        radius: 50,
+                        backgroundColor: context.cardColor,
+                        child: _profileImagePath != null
+                            ? ClipOval(
+                                child: Image.file(
+                                  File(_profileImagePath!),
+                                  width: 100,
+                                  height: 100,
+                                  fit: BoxFit.cover,
+                                ),
+                              )
+                            : Icon(Icons.person, size: 60, color: AppColors.primaryBlue.withOpacity(0.5)),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: GestureDetector(
+                        onTap: _pickImage,
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: const BoxDecoration(color: AppColors.primaryBlue, shape: BoxShape.circle),
+                          child: const Icon(Icons.camera_alt, size: 18, color: Colors.white),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 32),
+            ],
             _buildInputField(
-              label: widget.isSecurity ? 'Password Baru' : 'Nama Lengkap',
+              label: widget.isSecurity ? (isIndo ? 'Password Baru' : 'New Password') : (isIndo ? 'Nama Lengkap' : 'Full Name'),
               controller: _field1Controller,
               isPassword: widget.isSecurity,
             ),
             const SizedBox(height: 24),
             if (!widget.isSecurity)
               _buildInputField(
-                label: 'Alamat Email',
+                label: isIndo ? 'Alamat Email' : 'Email Address',
                 controller: _field2Controller,
                 isPassword: false,
               ),
@@ -233,9 +299,9 @@ class _SettingsEditorScreenState extends State<SettingsEditorScreen> {
                 ),
                 child: _isLoading
                     ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text(
-                        'Simpan Perubahan',
-                        style: TextStyle(
+                    : Text(
+                        isIndo ? 'Simpan Perubahan' : 'Save Changes',
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,

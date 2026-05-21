@@ -8,6 +8,8 @@ import 'package:uangku_app/features/budget/screens/add_budget_screen.dart';
 import 'package:uangku_app/features/budget/screens/budget_detail_screen.dart';
 import 'package:intl/intl.dart';
 import 'dart:math' as math;
+import 'package:provider/provider.dart';
+import 'package:uangku_app/core/providers/preferences_provider.dart';
 
 class BudgetScreen extends StatefulWidget {
   const BudgetScreen({super.key});
@@ -43,10 +45,13 @@ class _BudgetScreenState extends State<BudgetScreen> with SingleTickerProviderSt
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text(
-          'Budgets',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
-        ),
+        title: Builder(builder: (context) {
+          final isIndo = Provider.of<PreferencesProvider>(context).language == 'id';
+          return Text(
+            isIndo ? 'Anggaran' : 'Budgets',
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+          );
+        }),
         centerTitle: true,
         actions: [
           IconButton(
@@ -61,6 +66,7 @@ class _BudgetScreenState extends State<BudgetScreen> with SingleTickerProviderSt
           return ValueListenableBuilder<List<TransactionModel>>(
             valueListenable: TransactionData().transactionsNotifier,
             builder: (context, transactions, _) {
+              final isIndo = Provider.of<PreferencesProvider>(context).language == 'id';
               
               // Calculate global metrics
               double globalTotalBudget = 0;
@@ -170,7 +176,7 @@ class _BudgetScreenState extends State<BudgetScreen> with SingleTickerProviderSt
                       padding: const EdgeInsets.only(top: 20, bottom: 32, left: 24, right: 24),
                       child: Column(
                         children: [
-                          _buildArcChart(globalTotalBudget, globalTotalSpent, globalRemaining, daysLeft),
+                          _buildArcChart(globalTotalBudget, globalTotalSpent, globalRemaining, daysLeft, isIndo),
                           const SizedBox(height: 24),
                           Container(
                             width: double.infinity,
@@ -195,9 +201,9 @@ class _BudgetScreenState extends State<BudgetScreen> with SingleTickerProviderSt
                                 ),
                                 elevation: 0,
                               ),
-                              child: const Text(
-                                'Create Budget',
-                                style: TextStyle(
+                              child: Text(
+                                isIndo ? 'Buat Anggaran' : 'Create Budget',
+                                style: const TextStyle(
                                   fontSize: 16, 
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -237,7 +243,7 @@ class _BudgetScreenState extends State<BudgetScreen> with SingleTickerProviderSt
                                 ),
                                 const SizedBox(height: 24),
                                 Text(
-                                  "Belum Ada Anggaran",
+                                  isIndo ? "Belum Ada Anggaran" : "No Budgets Yet",
                                   style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.w800,
@@ -248,7 +254,7 @@ class _BudgetScreenState extends State<BudgetScreen> with SingleTickerProviderSt
                                 Padding(
                                   padding: const EdgeInsets.symmetric(horizontal: 40),
                                   child: Text(
-                                    "Buat rencana anggaranmu untuk mengontrol pengeluaran dengan lebih baik.",
+                                    isIndo ? "Buat rencana anggaranmu untuk mengontrol pengeluaran dengan lebih baik." : "Create your budget plan to control expenses better.",
                                     textAlign: TextAlign.center,
                                     style: TextStyle(
                                       fontSize: 14,
@@ -279,7 +285,7 @@ class _BudgetScreenState extends State<BudgetScreen> with SingleTickerProviderSt
                                 }
                               }
                             }
-                            return _buildBudgetListTile(budget, spent);
+                            return _buildBudgetListTile(budget, spent, isIndo);
                           }).toList(),
                         ),
                       ),
@@ -296,7 +302,7 @@ class _BudgetScreenState extends State<BudgetScreen> with SingleTickerProviderSt
     );
   }
 
-  Widget _buildArcChart(double totalBudget, double totalSpent, double remaining, int daysLeft) {
+  Widget _buildArcChart(double totalBudget, double totalSpent, double remaining, int daysLeft, bool isIndo) {
     final format = NumberFormat.currency(locale: 'id_ID', symbol: '', decimalDigits: 0);
     double progress = totalBudget > 0 ? totalSpent / totalBudget : 0;
     if (progress > 1.0) progress = 1.0;
@@ -323,9 +329,9 @@ class _BudgetScreenState extends State<BudgetScreen> with SingleTickerProviderSt
             Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
-                  'Amount you can spend',
-                  style: TextStyle(color: Colors.white70, fontSize: 13),
+                Text(
+                  isIndo ? 'Sisa yang bisa dipakai' : 'Amount you can spend',
+                  style: const TextStyle(color: Colors.white70, fontSize: 13),
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -353,7 +359,7 @@ class _BudgetScreenState extends State<BudgetScreen> with SingleTickerProviderSt
                     style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 4),
-                  const Text('Total budget', style: TextStyle(color: Colors.white70, fontSize: 12), textAlign: TextAlign.center),
+                  Text(isIndo ? 'Total anggaran' : 'Total budget', style: const TextStyle(color: Colors.white70, fontSize: 12), textAlign: TextAlign.center),
                 ],
               ),
             ),
@@ -366,7 +372,7 @@ class _BudgetScreenState extends State<BudgetScreen> with SingleTickerProviderSt
                     style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 4),
-                  const Text('Total spent', style: TextStyle(color: Colors.white70, fontSize: 12), textAlign: TextAlign.center),
+                  Text(isIndo ? 'Total pengeluaran' : 'Total spent', style: const TextStyle(color: Colors.white70, fontSize: 12), textAlign: TextAlign.center),
                 ],
               ),
             ),
@@ -375,11 +381,11 @@ class _BudgetScreenState extends State<BudgetScreen> with SingleTickerProviderSt
               child: Column(
                 children: [
                   Text(
-                    '$daysLeft days',
+                    isIndo ? '$daysLeft hari' : '$daysLeft days',
                     style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 4),
-                  const Text('End of period', style: TextStyle(color: Colors.white70, fontSize: 12), textAlign: TextAlign.center),
+                  Text(isIndo ? 'Akhir periode' : 'End of period', style: const TextStyle(color: Colors.white70, fontSize: 12), textAlign: TextAlign.center),
                 ],
               ),
             ),
@@ -398,7 +404,7 @@ class _BudgetScreenState extends State<BudgetScreen> with SingleTickerProviderSt
     return NumberFormat.currency(locale: 'id_ID', symbol: '', decimalDigits: 0).format(value);
   }
 
-  Widget _buildBudgetListTile(BudgetModel budget, double spent) {
+  Widget _buildBudgetListTile(BudgetModel budget, double spent, bool isIndo) {
     final format = NumberFormat.currency(locale: 'id_ID', symbol: '', decimalDigits: 0);
     double progress = budget.amount > 0 ? spent / budget.amount : 0;
     if (progress > 1.0) progress = 1.0;
@@ -463,7 +469,7 @@ class _BudgetScreenState extends State<BudgetScreen> with SingleTickerProviderSt
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Remaining ${format.format(remaining < 0 ? 0 : remaining)}',
+                      isIndo ? 'Tersisa ${format.format(remaining < 0 ? 0 : remaining)}' : 'Remaining ${format.format(remaining < 0 ? 0 : remaining)}',
                       style: TextStyle(fontSize: 12, color: context.textSecondary),
                     ),
                   ],
@@ -516,7 +522,7 @@ class _BudgetScreenState extends State<BudgetScreen> with SingleTickerProviderSt
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
-                          'Today',
+                          isIndo ? 'Hari ini' : 'Today',
                           style: TextStyle(fontSize: 10, color: context.textSecondary),
                         ),
                       ),

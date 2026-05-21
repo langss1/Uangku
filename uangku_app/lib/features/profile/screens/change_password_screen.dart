@@ -3,6 +3,8 @@ import 'package:uangku_app/core/theme/app_colors.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:provider/provider.dart';
+import 'package:uangku_app/core/providers/preferences_provider.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
   const ChangePasswordScreen({super.key});
@@ -138,80 +140,86 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         backgroundColor: context.scaffoldBackgroundColor,
         elevation: 0,
         centerTitle: true,
-        title: Text(
-          'Ganti Password',
-          style: TextStyle(color: context.textPrimary, fontWeight: FontWeight.w800, fontSize: 18),
-        ),
+        title: Builder(builder: (context) {
+          final isIndo = Provider.of<PreferencesProvider>(context).language == 'id';
+          return Text(
+            isIndo ? 'Ganti Password' : 'Change Password',
+            style: TextStyle(color: context.textPrimary, fontWeight: FontWeight.w800, fontSize: 18),
+          );
+        }),
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: context.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              _isOldPasswordValidated 
-                  ? 'Masukkan password baru Anda untuk mengganti password lama.'
-                  : 'Untuk keamanan, mohon validasi password lama Anda terlebih dahulu.',
-              style: TextStyle(fontSize: 14, color: context.textSecondary),
-            ),
-            const SizedBox(height: 32),
-
-            if (!_isOldPasswordValidated) ...[
-              _buildPasswordField('Password Lama', _oldPasswordController, _obscureOld, () {
-                setState(() => _obscureOld = !_obscureOld);
-              }),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _validateOldPassword,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryBlue,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    elevation: 0,
-                  ),
-                  child: _isLoading
-                      ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                      : const Text('Validasi Password', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
-                ),
+      body: Builder(builder: (context) {
+        final isIndo = Provider.of<PreferencesProvider>(context).language == 'id';
+        return Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                _isOldPasswordValidated 
+                    ? (isIndo ? 'Masukkan password baru Anda untuk mengganti password lama.' : 'Enter your new password to change the old password.')
+                    : (isIndo ? 'Untuk keamanan, mohon validasi password lama Anda terlebih dahulu.' : 'For security, please validate your old password first.'),
+                style: TextStyle(fontSize: 14, color: context.textSecondary),
               ),
-            ] else ...[
-              _buildPasswordField('Password Baru', _newPasswordController, _obscureNew, () {
-                setState(() => _obscureNew = !_obscureNew);
-              }),
-              const SizedBox(height: 20),
-              _buildPasswordField('Konfirmasi Password Baru', _confirmPasswordController, _obscureConfirm, () {
-                setState(() => _obscureConfirm = !_obscureConfirm);
-              }),
               const SizedBox(height: 32),
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _submitNewPassword,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryBlue,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    elevation: 0,
+
+              if (!_isOldPasswordValidated) ...[
+                _buildPasswordField(isIndo ? 'Password Lama' : 'Old Password', _oldPasswordController, _obscureOld, () {
+                  setState(() => _obscureOld = !_obscureOld);
+                }, isIndo),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  height: 56,
+                  child: ElevatedButton(
+                    onPressed: _isLoading ? null : _validateOldPassword,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryBlue,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      elevation: 0,
+                    ),
+                    child: _isLoading
+                        ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                        : Text(isIndo ? 'Validasi Password' : 'Validate Password', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
                   ),
-                  child: _isLoading
-                      ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                      : const Text('Simpan Password Baru', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
                 ),
-              ),
+              ] else ...[
+                _buildPasswordField(isIndo ? 'Password Baru' : 'New Password', _newPasswordController, _obscureNew, () {
+                  setState(() => _obscureNew = !_obscureNew);
+                }, isIndo),
+                const SizedBox(height: 20),
+                _buildPasswordField(isIndo ? 'Konfirmasi Password Baru' : 'Confirm New Password', _confirmPasswordController, _obscureConfirm, () {
+                  setState(() => _obscureConfirm = !_obscureConfirm);
+                }, isIndo),
+                const SizedBox(height: 32),
+                SizedBox(
+                  width: double.infinity,
+                  height: 56,
+                  child: ElevatedButton(
+                    onPressed: _isLoading ? null : _submitNewPassword,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryBlue,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      elevation: 0,
+                    ),
+                    child: _isLoading
+                        ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                        : Text(isIndo ? 'Simpan Password Baru' : 'Save New Password', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                  ),
+                ),
+              ],
             ],
-          ],
-        ),
-      ),
+          ),
+        );
+      }),
     );
   }
 
-  Widget _buildPasswordField(String label, TextEditingController controller, bool obscure, VoidCallback onToggle) {
+  Widget _buildPasswordField(String label, TextEditingController controller, bool obscure, VoidCallback onToggle, bool isIndo) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -224,7 +232,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
           controller: controller,
           obscureText: obscure,
           decoration: InputDecoration(
-            hintText: 'Masukkan $label',
+            hintText: isIndo ? 'Masukkan $label' : 'Enter $label',
             hintStyle: TextStyle(color: context.textSecondary),
             filled: true,
             fillColor: context.cardColor,
