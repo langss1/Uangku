@@ -7,17 +7,17 @@ class AboutScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: context.scaffoldBackgroundColor,
         elevation: 0,
         centerTitle: true,
-        title: const Text(
+        title: Text(
           'Tentang Uangku',
-          style: TextStyle(color: AppColors.textDark, fontWeight: FontWeight.w800, fontSize: 18),
+          style: TextStyle(color: context.textPrimary, fontWeight: FontWeight.w800, fontSize: 18),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textDark),
+          icon: Icon(Icons.arrow_back, color: context.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -49,9 +49,9 @@ class AboutScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'Uangku',
-              style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: AppColors.textDark, letterSpacing: -0.5),
+              style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: context.textPrimary, letterSpacing: -0.5),
             ),
             const SizedBox(height: 4),
             Container(
@@ -72,9 +72,10 @@ class AboutScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: context.cardColor,
                 borderRadius: BorderRadius.circular(20),
-                boxShadow: [
+                border: Border.all(color: context.borderColor),
+                boxShadow: context.isDarkMode ? [] : [
                   BoxShadow(
                     color: const Color(0xFFE2E8F0).withOpacity(0.6),
                     blurRadius: 15,
@@ -96,16 +97,16 @@ class AboutScreen extends StatelessWidget {
                         child: const Icon(Icons.auto_awesome_rounded, color: AppColors.primaryBlue, size: 20),
                       ),
                       const SizedBox(width: 12),
-                      const Text(
+                      Text(
                         'Tentang Aplikasi',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textDark),
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: context.textPrimary),
                       ),
                     ],
                   ),
                   const SizedBox(height: 16),
-                  const Text(
+                  Text(
                     'Uangku adalah asisten keuangan pribadi cerdas yang dirancang khusus untuk mempermudah Anda dalam mencatat transaksi, menyusun anggaran bulanan, dan memberikan saran (insight) otomatis berbasis AI. Kami percaya mengelola uang tidak harus rumit.',
-                    style: TextStyle(fontSize: 14, color: Color(0xFF475569), height: 1.5),
+                    style: TextStyle(fontSize: 14, color: context.textSecondary, height: 1.5),
                   ),
                 ],
               ),
@@ -162,18 +163,18 @@ class AboutScreen extends StatelessWidget {
             const SizedBox(height: 24),
             
             // Developers List
-            const Align(
+            Align(
               alignment: Alignment.centerLeft,
               child: Text(
                 'Tim Pengembang',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.textDark),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: context.textPrimary),
               ),
             ),
             const SizedBox(height: 16),
-            _buildDeveloperTile('Gilang Wasis Wicaksono', 'Mobile Developer / UI/UX', 'G'),
-            _buildDeveloperTile('Ihab Hasanin Akmal', 'Mobile Developer / Backend', 'I'),
-            _buildDeveloperTile('Farhan Muamar Fawwaz', 'Mobile Developer / QA', 'F'),
-            _buildDeveloperTile('Arina Rahmania Nabila', 'Mobile Developer / PM', 'A'),
+            _buildDeveloperTile(context, 'Gilang Wasis Wicaksono', 'Mobile Developer / UI/UX', 'G'),
+            _buildDeveloperTile(context, 'Ihab Hasanin Akmal', 'Mobile Developer / Backend', 'I'),
+            _buildDeveloperTile(context, 'Farhan Muamar Fawwaz', 'Mobile Developer / QA', 'F'),
+            _buildDeveloperTile(context, 'Arina Rahmania Nabila', 'Mobile Developer / PM', 'A'),
             
             const SizedBox(height: 40),
             const Text(
@@ -187,14 +188,15 @@ class AboutScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildDeveloperTile(String name, String role, String initial) {
+  Widget _buildDeveloperTile(BuildContext context, String name, String role, String initial) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.cardColor,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
+        border: Border.all(color: context.borderColor),
+        boxShadow: context.isDarkMode ? [] : [
           BoxShadow(
             color: const Color(0xFFE2E8F0).withOpacity(0.4),
             blurRadius: 8,
@@ -229,12 +231,12 @@ class AboutScreen extends StatelessWidget {
               children: [
                 Text(
                   name,
-                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textDark),
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: context.textPrimary),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   role,
-                  style: const TextStyle(fontSize: 12, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
+                  style: TextStyle(fontSize: 12, color: context.textSecondary, fontWeight: FontWeight.w500),
                 ),
               ],
             ),

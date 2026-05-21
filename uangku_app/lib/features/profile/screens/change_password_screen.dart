@@ -133,17 +133,17 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: context.scaffoldBackgroundColor,
         elevation: 0,
         centerTitle: true,
-        title: const Text(
+        title: Text(
           'Ganti Password',
-          style: TextStyle(color: AppColors.textDark, fontWeight: FontWeight.w800, fontSize: 18),
+          style: TextStyle(color: context.textPrimary, fontWeight: FontWeight.w800, fontSize: 18),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textDark),
+          icon: Icon(Icons.arrow_back, color: context.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -156,7 +156,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
               _isOldPasswordValidated 
                   ? 'Masukkan password baru Anda untuk mengganti password lama.'
                   : 'Untuk keamanan, mohon validasi password lama Anda terlebih dahulu.',
-              style: const TextStyle(fontSize: 14, color: AppColors.textLight),
+              style: TextStyle(fontSize: 14, color: context.textSecondary),
             ),
             const SizedBox(height: 32),
 
@@ -217,7 +217,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       children: [
         Text(
           label,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textDark),
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: context.textPrimary),
         ),
         const SizedBox(height: 8),
         TextField(
@@ -225,9 +225,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
           obscureText: obscure,
           decoration: InputDecoration(
             hintText: 'Masukkan $label',
-            hintStyle: const TextStyle(color: Color(0xFF94A3B8)),
+            hintStyle: TextStyle(color: context.textSecondary),
             filled: true,
-            fillColor: const Color(0xFFF8FAFC),
+            fillColor: context.cardColor,
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),

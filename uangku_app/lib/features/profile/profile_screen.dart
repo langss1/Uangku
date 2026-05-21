@@ -5,6 +5,8 @@ import 'package:uangku_app/features/splash/splash_screen.dart';
 import 'package:intl/intl.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 import 'package:uangku_app/features/profile/screens/notification_settings_screen.dart';
 import 'package:uangku_app/features/notification/screens/notification_screen.dart';
 import 'package:uangku_app/features/profile/screens/settings_screen.dart';
@@ -34,6 +36,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _aiInsights = true;
   bool _is2FAActive = false;
   bool _isLoading = true;
+  String? _profileImagePath;
 
   @override
   void initState() {
@@ -93,6 +96,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       setState(() {
         _userName = prefs.getString('user_name') ?? 'Guest User';
         _userEmail = prefs.getString('user_email') ?? '-';
+        _profileImagePath = prefs.getString('profile_image_path');
       });
     }
 
@@ -137,6 +141,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
         MaterialPageRoute(builder: (_) => const SplashScreen()),
         (Route<dynamic> route) => false,
       );
+    }
+  }
+
+  Future<void> _pickImage() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+    if (image != null) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('profile_image_path', image.path);
+      setState(() {
+        _profileImagePath = image.path;
+      });
     }
   }
 
@@ -377,19 +393,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Container(
                       padding: const EdgeInsets.all(4),
                       decoration: const BoxDecoration(color: Colors.white24, shape: BoxShape.circle),
-                      child: const CircleAvatar(
+                      child: CircleAvatar(
                         radius: 50,
                         backgroundColor: Colors.white,
-                        child: Icon(Icons.person, size: 60, color: Color(0xFF1E3A8A)),
+                        child: _profileImagePath != null
+                            ? ClipOval(
+                                child: Image.file(
+                                  File(_profileImagePath!),
+                                  width: 100,
+                                  height: 100,
+                                  fit: BoxFit.cover,
+                                ),
+                              )
+                            : const Icon(Icons.person, size: 60, color: Color(0xFF1E3A8A)),
                       ),
                     ),
                     Positioned(
                       bottom: 0,
                       right: 0,
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-                        child: const Icon(Icons.camera_alt, size: 18, color: Color(0xFF1E3A8A)),
+                      child: GestureDetector(
+                        onTap: _pickImage,
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                          child: const Icon(Icons.camera_alt, size: 18, color: Color(0xFF1E3A8A)),
+                        ),
                       ),
                     ),
                   ],

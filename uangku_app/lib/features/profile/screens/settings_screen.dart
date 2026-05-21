@@ -146,18 +146,18 @@ class _SettingsEditorScreenState extends State<SettingsEditorScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: context.scaffoldBackgroundColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textDark),
+          icon: Icon(Icons.arrow_back, color: context.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           widget.title,
-          style: const TextStyle(
-            color: AppColors.textDark,
+          style: TextStyle(
+            color: context.textPrimary,
             fontWeight: FontWeight.w800,
             fontSize: 18,
           ),
@@ -171,7 +171,7 @@ class _SettingsEditorScreenState extends State<SettingsEditorScreen> {
           children: [
             Text(
               widget.subtitle,
-              style: const TextStyle(fontSize: 14, color: AppColors.textLight),
+              style: TextStyle(fontSize: 14, color: context.textSecondary),
             ),
             const SizedBox(height: 32),
             _buildInputField(
@@ -190,13 +190,14 @@ class _SettingsEditorScreenState extends State<SettingsEditorScreen> {
               const SizedBox(height: 16),
               const Divider(color: Color(0xFFE2E8F0), thickness: 1),
               const SizedBox(height: 16),
-              const Text('Two-Factor Authentication Type', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textDark)),
+              Text('Two-Factor Authentication Type', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: context.textPrimary)),
               const SizedBox(height: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
+                  color: context.cardColor,
                   borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: context.borderColor),
                 ),
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<String>(
@@ -361,8 +362,9 @@ class _SettingsEditorScreenState extends State<SettingsEditorScreen> {
                       keyboardType: TextInputType.number,
                       decoration: InputDecoration(
                         hintText: 'Enter 6-digit code',
+                        hintStyle: TextStyle(color: context.textSecondary),
                         filled: true,
-                        fillColor: const Color(0xFFF8FAFC),
+                        fillColor: context.cardColor,
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                       ),
                     ),
@@ -433,10 +435,10 @@ class _SettingsEditorScreenState extends State<SettingsEditorScreen> {
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: AppColors.textDark,
+            color: context.textPrimary,
           ),
         ),
         const SizedBox(height: 8),
@@ -445,7 +447,7 @@ class _SettingsEditorScreenState extends State<SettingsEditorScreen> {
           obscureText: isPassword,
           decoration: InputDecoration(
             filled: true,
-            fillColor: const Color(0xFFF8FAFC),
+            fillColor: context.cardColor,
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),

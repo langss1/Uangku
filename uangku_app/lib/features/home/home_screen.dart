@@ -751,7 +751,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.65), // More transparent to see background
+                  color: context.isDarkMode ? Colors.black.withOpacity(0.65) : Colors.white.withOpacity(0.65), // More transparent to see background
                   borderRadius: BorderRadius.circular(32), // Pill shaped
                   border: Border.all(color: const Color(0xFF2563EB).withOpacity(0.4), width: 1.5), // Blue outline
                   boxShadow: [

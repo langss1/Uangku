@@ -43,17 +43,17 @@ class _LanguageSettingsScreenState extends State<LanguageSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: context.scaffoldBackgroundColor,
         elevation: 0,
         centerTitle: true,
-        title: const Text(
+        title: Text(
           'Bahasa',
-          style: TextStyle(color: AppColors.textDark, fontWeight: FontWeight.w800, fontSize: 18),
+          style: TextStyle(color: context.textPrimary, fontWeight: FontWeight.w800, fontSize: 18),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textDark),
+          icon: Icon(Icons.arrow_back, color: context.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -62,9 +62,9 @@ class _LanguageSettingsScreenState extends State<LanguageSettingsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Pilih bahasa yang akan digunakan pada antarmuka aplikasi Uangku.',
-              style: TextStyle(fontSize: 14, color: AppColors.textLight),
+              style: TextStyle(fontSize: 14, color: context.textSecondary),
             ),
             const SizedBox(height: 32),
 
@@ -103,10 +103,10 @@ class _LanguageSettingsScreenState extends State<LanguageSettingsScreen> {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: const Color(0xFFF8FAFC),
+          color: context.cardColor,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? AppColors.primaryBlue : Colors.transparent,
+            color: isSelected ? AppColors.primaryBlue : context.borderColor,
             width: 1.5,
           ),
         ),
@@ -128,12 +128,12 @@ class _LanguageSettingsScreenState extends State<LanguageSettingsScreen> {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textDark),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: context.textPrimary),
                   ),
                   const SizedBox(height: 6),
                   Text(
                     subtitle,
-                    style: const TextStyle(fontSize: 13, color: Color(0xFF64748B), height: 1.4),
+                    style: TextStyle(fontSize: 13, color: context.textSecondary, height: 1.4),
                   ),
                 ],
               ),

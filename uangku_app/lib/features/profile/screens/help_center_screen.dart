@@ -7,17 +7,17 @@ class HelpCenterScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: context.scaffoldBackgroundColor,
         elevation: 0,
         centerTitle: true,
-        title: const Text(
+        title: Text(
           'Pusat Bantuan',
-          style: TextStyle(color: AppColors.textDark, fontWeight: FontWeight.w800, fontSize: 18),
+          style: TextStyle(color: context.textPrimary, fontWeight: FontWeight.w800, fontSize: 18),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textDark),
+          icon: Icon(Icons.arrow_back, color: context.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -26,30 +26,34 @@ class HelpCenterScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'FAQ & Solusi Cepat',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textDark),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: context.textPrimary),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'Temukan jawaban untuk pertanyaan umum seputar aplikasi Uangku.',
-              style: TextStyle(fontSize: 14, color: AppColors.textLight),
+              style: TextStyle(fontSize: 14, color: context.textSecondary),
             ),
             const SizedBox(height: 24),
             
             _buildFaqItem(
+              context: context,
               question: 'Bagaimana cara menambah pengeluaran baru?',
               answer: 'Anda dapat menekan tombol tambah (+) berwarna biru di menu navigasi bawah pada layar utama, kemudian pilih tipe transaksi dan masukkan nominal serta kategori.',
             ),
             _buildFaqItem(
+              context: context,
               question: 'Apakah Uangku menyimpan data di cloud?',
               answer: 'Saat ini, Uangku menyimpan data secara aman. Jika Anda mengaktifkan sinkronisasi akun, data akan dicadangkan ke server untuk memudahkan akses dari perangkat lain.',
             ),
             _buildFaqItem(
+              context: context,
               question: 'Bagaimana cara kerja Wawasan AI (AI Insights)?',
               answer: 'Fitur Wawasan AI menggunakan model analisis cerdas untuk mempelajari pola pengeluaran Anda dan memberikan saran keuangan personal untuk membantu Anda berhemat.',
             ),
             _buildFaqItem(
+              context: context,
               question: 'Saya lupa password, apa yang harus dilakukan?',
               answer: 'Jika Anda belum login, tekan "Lupa Password" di halaman login. Jika sudah login dan ingin mengganti, masuk ke menu Profil > Ganti Password.',
             ),
@@ -128,13 +132,14 @@ class HelpCenterScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildFaqItem({required String question, required String answer}) {
+  Widget _buildFaqItem({required BuildContext context, required String question, required String answer}) {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.cardColor,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
+        border: Border.all(color: context.borderColor),
+        boxShadow: context.isDarkMode ? [] : [
           BoxShadow(
             color: const Color(0xFFE2E8F0).withOpacity(0.6),
             blurRadius: 10,
@@ -147,16 +152,16 @@ class HelpCenterScreen extends StatelessWidget {
         child: ExpansionTile(
           title: Text(
             question,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textDark),
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: context.textPrimary),
           ),
           iconColor: AppColors.primaryBlue,
-          collapsedIconColor: const Color(0xFF94A3B8),
+          collapsedIconColor: context.textSecondary,
           childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           expandedAlignment: Alignment.centerLeft,
           children: [
             Text(
               answer,
-              style: const TextStyle(fontSize: 13, color: Color(0xFF64748B), height: 1.6),
+              style: TextStyle(fontSize: 13, color: context.textSecondary, height: 1.6),
             ),
           ],
         ),
