@@ -624,8 +624,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   borderData: FlBorderData(
                     show: false,
                   ),
-                  minX: 0,
-                  maxX: 6,
+                  clipData: FlClipData.all(),
+                  minX: -0.2,
+                  maxX: 6.2,
                   minY: 0,
                   maxY: maxY,
                   lineBarsData: [
@@ -762,71 +763,71 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             RepaintBoundary(
               key: _pieChartKey,
               child: Container(
-                color: context.cardColor, // Ensure white background for capture
-                height: 220,
-                child: PieChart(
-                  PieChartData(
-                    pieTouchData: PieTouchData(enabled: true),
-                    borderData: FlBorderData(show: false),
-                    sectionsSpace: 0,
-                    centerSpaceRadius: 40,
-                    sections: categoryData.map((data) {
-                      return PieChartSectionData(
-                        color: data['color'],
-                        value: data['percent'],
-                        title: '${data['name']}\n${data['percent'].toStringAsFixed(1)}%',
-                        radius: 70,
-                        titleStyle: const TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF1E293B),
-                        ),
-                        titlePositionPercentageOffset: 1.3,
-                      );
-                    }).toList(),
-                  ),
-                ),
-              ),
-            ),
-          const SizedBox(height: 32),
-          // LEGEND
-          Column(
-            children: categoryData.map((data) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12.0),
-                child: Row(
+                color: context.cardColor, // Ensure background for capture
+                child: Column(
                   children: [
-                    Container(
-                      width: 12,
-                      height: 12,
-                      decoration: BoxDecoration(
-                        color: data['color'],
-                        shape: BoxShape.circle,
+                    SizedBox(
+                      height: 220,
+                      child: PieChart(
+                        PieChartData(
+                          pieTouchData: PieTouchData(enabled: true),
+                          borderData: FlBorderData(show: false),
+                          sectionsSpace: 0,
+                          centerSpaceRadius: 40,
+                          sections: categoryData.map((data) {
+                            return PieChartSectionData(
+                              color: data['color'],
+                              value: data['percent'],
+                              showTitle: false,
+                              radius: 70,
+                            );
+                          }).toList(),
+                        ),
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Text(
-                      data['name'],
-                      style: TextStyle(
-                        color: context.textSecondary,
-                        fontWeight: FontWeight.w500,
-                        fontSize: 13,
-                      ),
-                    ),
-                    const Spacer(),
-                    Text(
-                      format.format(data['amount']),
-                      style: TextStyle(
-                        color: context.textPrimary,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 14,
-                      ),
+                    const SizedBox(height: 32),
+                    // LEGEND
+                    Column(
+                      children: categoryData.map((data) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 12.0),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 12,
+                                height: 12,
+                                decoration: BoxDecoration(
+                                  color: data['color'],
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                data['name'],
+                                style: TextStyle(
+                                  color: context.textSecondary,
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 13,
+                                ),
+                              ),
+                              const Spacer(),
+                              Text(
+                                format.format(data['amount']),
+                                style: TextStyle(
+                                  color: context.textPrimary,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
                     ),
                   ],
                 ),
-              );
-            }).toList(),
-          ),
+              ),
+            ),
         ],
       ),
     );
@@ -859,9 +860,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
-                  children: const [
-                    Icon(Icons.trending_up, color: Color(0xFF059669), size: 16),
-                    SizedBox(width: 4),
+                  children: [
+                    const Icon(Icons.trending_up, color: Color(0xFF059669), size: 16),
+                    const SizedBox(width: 4),
                     Text(
                       isIndo ? 'PEMASUKAN' : 'INCOME',
                       style: const TextStyle(
@@ -911,9 +912,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
-                  children: const [
-                    Icon(Icons.trending_down, color: Color(0xFFE11D48), size: 16),
-                    SizedBox(width: 4),
+                  children: [
+                    const Icon(Icons.trending_down, color: Color(0xFFE11D48), size: 16),
+                    const SizedBox(width: 4),
                     Text(
                       isIndo ? 'PENGELUARAN' : 'EXPENSES',
                       style: const TextStyle(

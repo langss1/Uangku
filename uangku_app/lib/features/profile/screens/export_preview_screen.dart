@@ -62,13 +62,11 @@ class _ExportPreviewScreenState extends State<ExportPreviewScreen> {
     final currencyFormat = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp', decimalDigits: 0);
 
     pdf.addPage(
-      pw.Page(
+      pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         build: (pw.Context context) {
-          return pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              // Header
+          return [
+            // Header
               pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
@@ -109,8 +107,8 @@ class _ExportPreviewScreenState extends State<ExportPreviewScreen> {
                 pw.Text('Income vs Expense Trend', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: PdfColors.black)),
                 pw.SizedBox(height: 10),
                 pw.Container(
-                  height: 200,
-                  child: pw.Image(pw.MemoryImage(widget.lineChartImage!)),
+                  width: double.infinity,
+                  child: pw.Image(pw.MemoryImage(widget.lineChartImage!), fit: pw.BoxFit.contain),
                 ),
                 pw.SizedBox(height: 20),
               ],
@@ -119,12 +117,11 @@ class _ExportPreviewScreenState extends State<ExportPreviewScreen> {
                 pw.Text('Spending by Category', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: PdfColors.black)),
                 pw.SizedBox(height: 10),
                 pw.Container(
-                  height: 220,
-                  child: pw.Image(pw.MemoryImage(widget.pieChartImage!)),
+                  width: double.infinity,
+                  child: pw.Image(pw.MemoryImage(widget.pieChartImage!), fit: pw.BoxFit.contain),
                 ),
               ],
-            ],
-          );
+            ];
         },
       ),
     );
@@ -320,17 +317,17 @@ class _ExportPreviewScreenState extends State<ExportPreviewScreen> {
               columnSpacing: 16,
               horizontalMargin: 12,
               columns: const [
-                DataColumn(label: Text('Date', style: TextStyle(fontWeight: FontWeight.bold))),
-                DataColumn(label: Text('Description', style: TextStyle(fontWeight: FontWeight.bold))),
-                DataColumn(label: Text('Type', style: TextStyle(fontWeight: FontWeight.bold))),
-                DataColumn(label: Text('Amount', style: TextStyle(fontWeight: FontWeight.bold))),
+                DataColumn(label: Text('Date', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87))),
+                DataColumn(label: Text('Description', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87))),
+                DataColumn(label: Text('Type', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87))),
+                DataColumn(label: Text('Amount', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87))),
               ],
               rows: widget.transactions.map((tx) {
                 String typeStr = tx.isIncome ? 'Income' : 'Expense';
                 return DataRow(
                   cells: [
-                    DataCell(Text(DateFormat('yyyy-MM-dd').format(tx.date), style: const TextStyle(fontSize: 12))),
-                    DataCell(Text(tx.title, style: const TextStyle(fontSize: 12))),
+                    DataCell(Text(DateFormat('yyyy-MM-dd').format(tx.date), style: const TextStyle(fontSize: 12, color: Colors.black87))),
+                    DataCell(Text(tx.title, style: const TextStyle(fontSize: 12, color: Colors.black87))),
                     DataCell(
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -347,13 +344,34 @@ class _ExportPreviewScreenState extends State<ExportPreviewScreen> {
                         ),
                       ),
                     ),
-                    DataCell(Text(currencyFormat.format(tx.amount), style: const TextStyle(fontSize: 12))),
+                    DataCell(Text(currencyFormat.format(tx.amount), style: const TextStyle(fontSize: 12, color: Colors.black87))),
                   ],
                 );
               }).toList(),
             ),
           ),
           ),
+          if (widget.exportFormat == 'PDF' && (widget.lineChartImage != null || widget.pieChartImage != null))
+            const SizedBox(height: 32),
+          
+          if (widget.exportFormat == 'PDF' && widget.lineChartImage != null) ...[
+            const Text('Income vs Expense Trend', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black87)),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: Image.memory(widget.lineChartImage!, fit: BoxFit.contain),
+            ),
+            const SizedBox(height: 24),
+          ],
+
+          if (widget.exportFormat == 'PDF' && widget.pieChartImage != null) ...[
+            const Text('Spending by Category', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black87)),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: Image.memory(widget.pieChartImage!, fit: BoxFit.contain),
+            ),
+          ],
           
           const SizedBox(height: 40),
           const Center(
