@@ -24,7 +24,7 @@ class _LanguageSettingsScreenState extends State<LanguageSettingsScreen> {
   Future<void> _loadLanguage() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      _selectedLanguage = prefs.getString('pref_app_language') ?? 'ID';
+      _selectedLanguage = prefs.getString('pref_app_language') ?? prefs.getString('language')?.toUpperCase() ?? 'EN';
     });
   }
 
@@ -35,9 +35,6 @@ class _LanguageSettingsScreenState extends State<LanguageSettingsScreen> {
     
     final prefsProvider = Provider.of<PreferencesProvider>(context, listen: false);
     await prefsProvider.setLanguage(langCode.toLowerCase());
-    
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('pref_app_language', langCode);
 
     if (mounted) {
       CustomPopup.show(context, langCode == 'ID' ? 'Bahasa diubah ke Indonesia' : 'Language changed to English', isSuccess: true);

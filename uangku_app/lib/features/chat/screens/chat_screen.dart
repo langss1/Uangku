@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:math' as math;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uangku_app/core/theme/app_colors.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({Key? key}) : super(key: key);
@@ -159,7 +160,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F4FF),
+      backgroundColor: context.isDarkMode ? context.scaffoldBackgroundColor : const Color(0xFFF0F4FF),
       body: Column(
         children: [
           _buildHeader(),
@@ -381,7 +382,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                 height: 36,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.white,
+                  color: context.cardColor,
                   boxShadow: [
                     BoxShadow(
                       color: const Color(0xFF2563EB).withOpacity(0.15),
@@ -412,8 +413,8 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                     ),
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     decoration: BoxDecoration(
-                      color: isUser ? const Color(0xFF3B82F6) : Colors.white,
-                      border: isUser ? null : Border.all(color: const Color(0xFFE2E8F0), width: 1),
+                      color: isUser ? const Color(0xFF3B82F6) : context.cardColor,
+                      border: isUser ? null : Border.all(color: context.borderColor, width: 1),
                       borderRadius: BorderRadius.only(
                         topLeft: const Radius.circular(20),
                         topRight: const Radius.circular(20),
@@ -423,8 +424,8 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                       boxShadow: [
                         BoxShadow(
                           color: isUser
-                              ? const Color(0xFF2563EB).withOpacity(0.2)
-                              : Colors.black.withOpacity(0.04),
+                              ? const Color(0xFF2563EB).withOpacity(context.isDarkMode ? 0.1 : 0.2)
+                              : Colors.black.withOpacity(context.isDarkMode ? 0.15 : 0.04),
                           blurRadius: 10,
                           offset: const Offset(0, 3),
                         ),
@@ -444,36 +445,36 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                             data: text,
                             shrinkWrap: true,
                             styleSheet: MarkdownStyleSheet(
-                              p: const TextStyle(
+                              p: TextStyle(
                                 fontSize: 14.5,
-                                color: Color(0xFF1E293B),
+                                color: context.textPrimary,
                                 height: 1.55,
                               ),
-                              strong: const TextStyle(
+                              strong: TextStyle(
                                 fontWeight: FontWeight.w800,
-                                color: Color(0xFF1E3A8A),
+                                color: context.isDarkMode ? const Color(0xFF60A5FA) : const Color(0xFF1E3A8A),
                               ),
-                              em: const TextStyle(
+                              em: TextStyle(
                                 fontStyle: FontStyle.italic,
-                                color: Color(0xFF475569),
+                                color: context.textSecondary,
                               ),
-                              h2: const TextStyle(
+                              h2: TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w800,
-                                color: Color(0xFF1E293B),
+                                color: context.textPrimary,
                               ),
                               listBullet: const TextStyle(
                                 color: Color(0xFF2563EB),
                                 fontSize: 14,
                               ),
-                              blockquote: const TextStyle(
-                                color: Color(0xFF64748B),
+                              blockquote: TextStyle(
+                                color: context.textSecondary,
                                 fontStyle: FontStyle.italic,
                                 fontSize: 13,
                               ),
-                              horizontalRuleDecoration: const BoxDecoration(
+                              horizontalRuleDecoration: BoxDecoration(
                                 border: Border(
-                                  top: BorderSide(color: Color(0xFFE2E8F0), width: 1),
+                                  top: BorderSide(color: context.borderColor, width: 1),
                                 ),
                               ),
                             ),
@@ -485,7 +486,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                     child: Text(
                       time,
                       style: TextStyle(
-                        color: const Color(0xFF94A3B8),
+                        color: context.textSecondary,
                         fontSize: 10.5,
                         fontWeight: FontWeight.w500,
                       ),
@@ -532,7 +533,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
             height: 36,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Colors.white,
+              color: context.cardColor,
               boxShadow: [
                 BoxShadow(
                   color: const Color(0xFF2563EB).withOpacity(0.15),
@@ -552,7 +553,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: context.cardColor,
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(20),
                 topRight: Radius.circular(20),
@@ -561,7 +562,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withOpacity(context.isDarkMode ? 0.15 : 0.05),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),
@@ -648,10 +649,10 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 24, 16, 36),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.cardColor,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: Colors.black.withOpacity(context.isDarkMode ? 0.2 : 0.06),
             blurRadius: 20,
             offset: const Offset(0, -6),
           ),
@@ -667,9 +668,9 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
               child: Container(
                 constraints: const BoxConstraints(minHeight: 58, maxHeight: 120),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF0F4FF),
+                  color: context.isDarkMode ? context.scaffoldBackgroundColor : const Color(0xFFF0F4FF),
                   borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: const Color(0xFF2563EB).withOpacity(0.15)),
+                  border: Border.all(color: context.isDarkMode ? context.borderColor : const Color(0xFF2563EB).withOpacity(0.15)),
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
@@ -681,14 +682,14 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                         onSubmitted: (_) => _sendMessage(),
                         maxLines: null,
                         keyboardType: TextInputType.multiline,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           hintText: 'Tanya UANGKU AI...',
-                          hintStyle: TextStyle(color: Color(0xFF94A3B8), fontSize: 14),
+                          hintStyle: TextStyle(color: context.textSecondary.withOpacity(0.6), fontSize: 14),
                           border: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(vertical: 17),
+                          contentPadding: const EdgeInsets.symmetric(vertical: 17),
                         ),
-                        style: const TextStyle(
-                          color: Color(0xFF1E293B),
+                        style: TextStyle(
+                          color: context.textPrimary,
                           fontSize: 14.5,
                           height: 1.4,
                         ),
@@ -715,7 +716,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                           end: Alignment.bottomRight,
                         )
                       : null,
-                  color: _hasText ? null : const Color(0xFFE2E8F0),
+                  color: _hasText ? null : (context.isDarkMode ? Colors.grey[800] : const Color(0xFFE2E8F0)),
                   shape: BoxShape.circle,
                   boxShadow: _hasText
                       ? [

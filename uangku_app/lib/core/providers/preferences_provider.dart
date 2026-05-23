@@ -32,7 +32,7 @@ class PreferencesProvider extends ChangeNotifier {
     _prefs = await SharedPreferences.getInstance();
     _themeString = _prefs?.getString('pref_app_theme') ?? 'Sistem';
     _isDarkMode = _prefs?.getBool('isDarkMode') ?? (_themeString == 'Gelap');
-    _language = _prefs?.getString('language') ?? 'en';
+    _language = _prefs?.getString('pref_app_language')?.toLowerCase() ?? _prefs?.getString('language')?.toLowerCase() ?? 'en';
     _currency = _prefs?.getString('currency') ?? 'IDR';
     notifyListeners();
   }
@@ -54,8 +54,9 @@ class PreferencesProvider extends ChangeNotifier {
   }
 
   Future<void> setLanguage(String langCode) async {
-    _language = langCode;
-    await _prefs?.setString('language', langCode);
+    _language = langCode.toLowerCase();
+    await _prefs?.setString('language', _language);
+    await _prefs?.setString('pref_app_language', langCode.toUpperCase());
     notifyListeners();
   }
 

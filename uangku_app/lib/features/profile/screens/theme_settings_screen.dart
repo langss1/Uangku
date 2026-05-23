@@ -17,7 +17,7 @@ class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
     await prefsProvider.setThemeString(theme);
 
     if (mounted) {
-      final isIndo = prefsProvider.language == 'id';
+      final isIndo = prefsProvider.language.toLowerCase() == 'id';
       String displayTheme = theme;
       if (!isIndo) {
         if (theme == 'Terang') displayTheme = 'Light';
@@ -36,7 +36,7 @@ class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
   Widget build(BuildContext context) {
     final prefsProvider = Provider.of<PreferencesProvider>(context);
     final selectedTheme = prefsProvider.themeString;
-    final isIndo = prefsProvider.language == 'id';
+    final isIndo = prefsProvider.language.toLowerCase() == 'id';
 
     return Scaffold(
       backgroundColor: context.scaffoldBackgroundColor,

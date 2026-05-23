@@ -160,7 +160,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isIndo = Provider.of<PreferencesProvider>(context).language == 'id';
+    final isIndo = Provider.of<PreferencesProvider>(context).language.toLowerCase() == 'id';
     return Scaffold(
       backgroundColor: context.scaffoldBackgroundColor,
       body: SingleChildScrollView(
@@ -306,7 +306,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _navigateToEditor(String title, bool isSecurity) async {
-    final isIndo = Provider.of<PreferencesProvider>(context, listen: false).language == 'id';
+    final isIndo = Provider.of<PreferencesProvider>(context, listen: false).language.toLowerCase() == 'id';
     final result = await Navigator.push(
       context,
       MaterialPageRoute(

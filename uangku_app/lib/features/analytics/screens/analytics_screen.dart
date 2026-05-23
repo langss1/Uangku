@@ -39,6 +39,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   Future<void> _selectCustomDateRange() async {
     DateTime? tempStart = _customDateRange?.start ?? DateTime.now().subtract(const Duration(days: 7));
     DateTime? tempEnd = _customDateRange?.end ?? DateTime.now();
+    final isIndo = Provider.of<PreferencesProvider>(context, listen: false).language == 'id';
 
     final picked = await showDialog<DateTimeRange>(
       context: context,
@@ -46,16 +47,22 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              title: const Text(
-                'Custom Date Range',
-                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+              backgroundColor: context.cardColor,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              title: Text(
+                isIndo ? 'Pilih Rentang Tanggal' : 'Custom Date Range',
+                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18, color: context.textPrimary),
+                textAlign: TextAlign.center,
               ),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text('Select your start and end date below:', style: TextStyle(color: Colors.black54, fontSize: 13)),
-                  const SizedBox(height: 20),
+                  Text(
+                    isIndo ? 'Pilih tanggal mulai dan berakhir di bawah ini:' : 'Select your start and end date below:',
+                    style: TextStyle(color: context.textSecondary, fontSize: 13),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
                   Row(
                     children: [
                       Expanded(
@@ -72,18 +79,25 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                             }
                           },
                           child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF1F5F9),
-                              borderRadius: BorderRadius.circular(8),
+                              color: context.borderColor.withOpacity(0.5),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: context.borderColor),
                             ),
                             child: Column(
                               children: [
-                                const Text('Start Date', style: TextStyle(fontSize: 11, color: Colors.black54)),
-                                const SizedBox(height: 4),
                                 Text(
-                                  DateFormat('dd MMM yyyy').format(tempStart!),
-                                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                                  isIndo ? 'Mulai' : 'Start Date',
+                                  style: TextStyle(fontSize: 11, color: context.textSecondary, fontWeight: FontWeight.w600),
+                                ),
+                                const SizedBox(height: 6),
+                                FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text(
+                                    DateFormat('dd MMM yyyy').format(tempStart!),
+                                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: context.textPrimary),
+                                  ),
                                 ),
                               ],
                             ),
@@ -105,18 +119,25 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                             }
                           },
                           child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF1F5F9),
-                              borderRadius: BorderRadius.circular(8),
+                              color: context.borderColor.withOpacity(0.5),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: context.borderColor),
                             ),
                             child: Column(
                               children: [
-                                const Text('End Date', style: TextStyle(fontSize: 11, color: Colors.black54)),
-                                const SizedBox(height: 4),
                                 Text(
-                                  tempEnd != null ? DateFormat('dd MMM yyyy').format(tempEnd!) : 'Select',
-                                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                                  isIndo ? 'Selesai' : 'End Date',
+                                  style: TextStyle(fontSize: 11, color: context.textSecondary, fontWeight: FontWeight.w600),
+                                ),
+                                const SizedBox(height: 6),
+                                FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text(
+                                    tempEnd != null ? DateFormat('dd MMM yyyy').format(tempEnd!) : (isIndo ? 'Pilih' : 'Select'),
+                                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: context.textPrimary),
+                                  ),
                                 ),
                               ],
                             ),
@@ -127,23 +148,46 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   ),
                 ],
               ),
+              actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel', style: TextStyle(color: Colors.black54)),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    if (tempStart != null && tempEnd != null) {
-                      Navigator.pop(context, DateTimeRange(start: tempStart!, end: tempEnd!));
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2962FF),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    elevation: 0,
-                  ),
-                  child: const Text('Apply', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          side: BorderSide(color: context.borderColor),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        child: Text(
+                          isIndo ? 'Batal' : 'Cancel',
+                          style: TextStyle(color: context.textSecondary, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          if (tempStart != null && tempEnd != null) {
+                            Navigator.pop(context, DateTimeRange(start: tempStart!, end: tempEnd!));
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primaryBlue,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          elevation: 0,
+                        ),
+                        child: Text(
+                          isIndo ? 'Terapkan' : 'Apply',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             );
@@ -163,6 +207,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   Future<void> _selectExportDateRange() async {
     DateTime? tempStart = _exportDateRange?.start ?? DateTime.now().subtract(const Duration(days: 30));
     DateTime? tempEnd = _exportDateRange?.end ?? DateTime.now();
+    final isIndo = Provider.of<PreferencesProvider>(context, listen: false).language.toLowerCase() == 'id';
 
     final picked = await showDialog<DateTimeRange>(
       context: context,
@@ -170,16 +215,22 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              title: const Text(
-                'Custom Date Range',
-                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+              backgroundColor: context.cardColor,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              title: Text(
+                isIndo ? 'Pilih Rentang Tanggal Ekspor' : 'Export Date Range',
+                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18, color: context.textPrimary),
+                textAlign: TextAlign.center,
               ),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text('Select your start and end date below:', style: TextStyle(color: Colors.black54, fontSize: 13)),
-                  const SizedBox(height: 20),
+                  Text(
+                    isIndo ? 'Pilih tanggal mulai dan berakhir untuk ekspor di bawah ini:' : 'Select your start and end date for export below:',
+                    style: TextStyle(color: context.textSecondary, fontSize: 13),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
                   Row(
                     children: [
                       Expanded(
@@ -196,18 +247,25 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                             }
                           },
                           child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF1F5F9),
-                              borderRadius: BorderRadius.circular(8),
+                              color: context.borderColor.withOpacity(0.5),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: context.borderColor),
                             ),
                             child: Column(
                               children: [
-                                const Text('Start Date', style: TextStyle(fontSize: 11, color: Colors.black54)),
-                                const SizedBox(height: 4),
                                 Text(
-                                  DateFormat('dd MMM yyyy').format(tempStart!),
-                                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                                  isIndo ? 'Mulai' : 'Start Date',
+                                  style: TextStyle(fontSize: 11, color: context.textSecondary, fontWeight: FontWeight.w600),
+                                ),
+                                const SizedBox(height: 6),
+                                FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text(
+                                    DateFormat('dd MMM yyyy').format(tempStart!),
+                                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: context.textPrimary),
+                                  ),
                                 ),
                               ],
                             ),
@@ -229,18 +287,25 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                             }
                           },
                           child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF1F5F9),
-                              borderRadius: BorderRadius.circular(8),
+                              color: context.borderColor.withOpacity(0.5),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: context.borderColor),
                             ),
                             child: Column(
                               children: [
-                                const Text('End Date', style: TextStyle(fontSize: 11, color: Colors.black54)),
-                                const SizedBox(height: 4),
                                 Text(
-                                  tempEnd != null ? DateFormat('dd MMM yyyy').format(tempEnd!) : 'Select',
-                                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                                  isIndo ? 'Selesai' : 'End Date',
+                                  style: TextStyle(fontSize: 11, color: context.textSecondary, fontWeight: FontWeight.w600),
+                                ),
+                                const SizedBox(height: 6),
+                                FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text(
+                                    tempEnd != null ? DateFormat('dd MMM yyyy').format(tempEnd!) : (isIndo ? 'Pilih' : 'Select'),
+                                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: context.textPrimary),
+                                  ),
                                 ),
                               ],
                             ),
@@ -251,23 +316,46 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   ),
                 ],
               ),
+              actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel', style: TextStyle(color: Colors.black54)),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    if (tempStart != null && tempEnd != null) {
-                      Navigator.pop(context, DateTimeRange(start: tempStart!, end: tempEnd!));
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2962FF),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    elevation: 0,
-                  ),
-                  child: const Text('Apply', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          side: BorderSide(color: context.borderColor),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        child: Text(
+                          isIndo ? 'Batal' : 'Cancel',
+                          style: TextStyle(color: context.textSecondary, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          if (tempStart != null && tempEnd != null) {
+                            Navigator.pop(context, DateTimeRange(start: tempStart!, end: tempEnd!));
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primaryBlue,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          elevation: 0,
+                        ),
+                        child: Text(
+                          isIndo ? 'Terapkan' : 'Apply',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             );
