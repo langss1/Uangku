@@ -17,7 +17,18 @@ class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
     await prefsProvider.setThemeString(theme);
 
     if (mounted) {
-      CustomPopup.show(context, 'Tema aplikasi diubah ke $theme', isSuccess: true);
+      final isIndo = prefsProvider.language == 'id';
+      String displayTheme = theme;
+      if (!isIndo) {
+        if (theme == 'Terang') displayTheme = 'Light';
+        if (theme == 'Gelap') displayTheme = 'Dark';
+        if (theme == 'Sistem') displayTheme = 'System';
+      }
+      CustomPopup.show(
+        context,
+        isIndo ? 'Tema aplikasi diubah ke $displayTheme' : 'App theme changed to $displayTheme',
+        isSuccess: true,
+      );
     }
   }
 
@@ -25,6 +36,7 @@ class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
   Widget build(BuildContext context) {
     final prefsProvider = Provider.of<PreferencesProvider>(context);
     final selectedTheme = prefsProvider.themeString;
+    final isIndo = prefsProvider.language == 'id';
 
     return Scaffold(
       backgroundColor: context.scaffoldBackgroundColor,
@@ -33,7 +45,7 @@ class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
         elevation: 0,
         centerTitle: true,
         title: Text(
-          'Tema Aplikasi',
+          isIndo ? 'Tema Aplikasi' : 'App Theme',
           style: TextStyle(color: context.textPrimary, fontWeight: FontWeight.w800, fontSize: 18),
         ),
         leading: IconButton(
@@ -47,14 +59,18 @@ class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Sesuaikan tampilan aplikasi dengan preferensi Anda. Mode Gelap dapat membantu menghemat baterai.',
+              isIndo
+                  ? 'Sesuaikan tampilan aplikasi dengan preferensi Anda. Mode Gelap dapat membantu menghemat baterai.'
+                  : 'Customize the application interface to your preference. Dark Mode can help save battery.',
               style: TextStyle(fontSize: 14, color: context.textSecondary),
             ),
             const SizedBox(height: 32),
 
             _buildThemeCard(
-              title: 'Terang (Light)',
-              subtitle: 'Tampilan standar dengan dominasi warna putih yang bersih.',
+              title: isIndo ? 'Terang (Light)' : 'Light',
+              subtitle: isIndo
+                  ? 'Tampilan standar dengan dominasi warna putih yang bersih.'
+                  : 'Standard appearance with a clean, dominant white color.',
               icon: Icons.light_mode_outlined,
               isSelected: selectedTheme == 'Terang',
               onTap: () => _selectTheme('Terang'),
@@ -63,8 +79,10 @@ class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
             const SizedBox(height: 16),
             
             _buildThemeCard(
-              title: 'Gelap (Dark)',
-              subtitle: 'Tampilan gelap yang nyaman untuk mata dan hemat baterai.',
+              title: isIndo ? 'Gelap (Dark)' : 'Dark',
+              subtitle: isIndo
+                  ? 'Tampilan gelap yang nyaman untuk mata dan hemat baterai.'
+                  : 'Comfortable dark theme for your eyes and saves battery.',
               icon: Icons.dark_mode_outlined,
               isSelected: selectedTheme == 'Gelap',
               onTap: () => _selectTheme('Gelap'),
@@ -73,8 +91,10 @@ class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
             const SizedBox(height: 16),
             
             _buildThemeCard(
-              title: 'Sistem',
-              subtitle: 'Otomatis mengikuti pengaturan tema pada perangkat Anda.',
+              title: isIndo ? 'Sistem' : 'System',
+              subtitle: isIndo
+                  ? 'Otomatis mengikuti pengaturan tema pada perangkat Anda.'
+                  : 'Automatically follows the theme settings of your device.',
               icon: Icons.settings_brightness_outlined,
               isSelected: selectedTheme == 'Sistem',
               onTap: () => _selectTheme('Sistem'),
