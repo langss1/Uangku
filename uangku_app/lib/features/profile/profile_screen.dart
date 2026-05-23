@@ -168,7 +168,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           children: [
             _buildHeader(isIndo),
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 24, 20, 100),
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 180),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

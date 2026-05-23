@@ -2,6 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
+  static PageTransitionsTheme get _pageTransitionsTheme {
+    return PageTransitionsTheme(
+      builders: {
+        TargetPlatform.android: const _PremiumPageTransitionsBuilder(),
+        TargetPlatform.iOS: const _PremiumPageTransitionsBuilder(),
+      },
+    );
+  }
+
   static ThemeData get lightTheme {
     return ThemeData(
       scaffoldBackgroundColor: const Color(0xFFF4F7FB),
@@ -11,6 +20,7 @@ class AppTheme {
       ),
       textTheme: GoogleFonts.interTextTheme(),
       useMaterial3: true,
+      pageTransitionsTheme: _pageTransitionsTheme,
     );
   }
 
@@ -29,6 +39,35 @@ class AppTheme {
         elevation: 0,
         iconTheme: IconThemeData(color: Colors.white),
         titleTextStyle: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+      ),
+      pageTransitionsTheme: _pageTransitionsTheme,
+    );
+  }
+}
+
+class _PremiumPageTransitionsBuilder extends PageTransitionsBuilder {
+  const _PremiumPageTransitionsBuilder();
+
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    const begin = Offset(0.0, 0.08); // subtle elegant slide up
+    const end = Offset.zero;
+    const curve = Curves.easeOutCubic;
+
+    var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+    var offsetAnimation = animation.drive(tween);
+
+    return FadeTransition(
+      opacity: animation,
+      child: SlideTransition(
+        position: offsetAnimation,
+        child: child,
       ),
     );
   }

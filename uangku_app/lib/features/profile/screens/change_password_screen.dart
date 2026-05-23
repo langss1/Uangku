@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:uangku_app/core/utils/custom_popup.dart';
 import 'package:uangku_app/core/theme/app_colors.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -37,7 +38,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       final email = prefs.getString('user_email') ?? '';
 
       if (email.isEmpty) {
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Email tidak ditemukan, silakan login ulang.')));
+        if (mounted) CustomPopup.show(context, 'Email tidak ditemukan, silakan login ulang.', isSuccess: false);
         return;
       }
 
@@ -56,12 +57,12 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
             _isOldPasswordValidated = true;
           });
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Password lama salah!')));
+          CustomPopup.show(context, 'Password lama salah!', isSuccess: false);
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Gagal terhubung ke server')));
+        CustomPopup.show(context, 'Gagal terhubung ke server', isSuccess: false);
       }
     } finally {
       if (mounted) {
@@ -76,16 +77,12 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     if (_newPasswordController.text.isEmpty || _confirmPasswordController.text.isEmpty) return;
     
     if (_newPasswordController.text != _confirmPasswordController.text) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Password baru dan konfirmasi tidak cocok!')),
-      );
+      CustomPopup.show(context, 'Password baru dan konfirmasi tidak cocok!', isSuccess: false);
       return;
     }
 
     if (_newPasswordController.text.length < 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Password baru minimal 6 karakter!')),
-      );
+      CustomPopup.show(context, 'Password baru minimal 6 karakter!', isSuccess: false);
       return;
     }
 
@@ -108,20 +105,16 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
       if (mounted) {
         if (response.statusCode == 200) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Password berhasil diubah!')),
-          );
+          CustomPopup.show(context, 'Password berhasil diubah!', isSuccess: true);
           Navigator.pop(context);
         } else {
           final data = jsonDecode(response.body);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(data['error'] ?? 'Gagal mengubah password')),
-          );
+          CustomPopup.show(context, data['error'] ?? 'Gagal mengubah password', isSuccess: false);
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Gagal terhubung ke server')));
+        CustomPopup.show(context, 'Gagal terhubung ke server', isSuccess: false);
       }
     } finally {
       if (mounted) {

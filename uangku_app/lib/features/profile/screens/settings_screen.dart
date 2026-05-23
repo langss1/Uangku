@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:uangku_app/core/utils/custom_popup.dart';
 import 'package:uangku_app/core/theme/app_colors.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
@@ -146,23 +147,17 @@ class _SettingsEditorScreenState extends State<SettingsEditorScreen> {
           await prefs.setString('user_email', _field2Controller.text);
         }
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Profil berhasil diperbarui')),
-          );
+          CustomPopup.show(context, 'Profil berhasil diperbarui', isSuccess: true);
           Navigator.pop(context, true);
         }
       } else {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Gagal memperbarui profil')),
-          );
+          CustomPopup.show(context, 'Gagal memperbarui profil', isSuccess: false);
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Terjadi kesalahan: $e')),
-        );
+        CustomPopup.show(context, 'Terjadi kesalahan: $e', isSuccess: false);
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -346,16 +341,16 @@ class _SettingsEditorScreenState extends State<SettingsEditorScreen> {
           _is2FAEnabled = enabled;
         });
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('2FA settings updated successfully')));
+          CustomPopup.show(context, '2FA settings updated successfully', isSuccess: true);
         }
       } else {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to update 2FA settings')));
+          CustomPopup.show(context, 'Failed to update 2FA settings', isSuccess: false);
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+        CustomPopup.show(context, 'Error: $e', isSuccess: false);
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -384,10 +379,10 @@ class _SettingsEditorScreenState extends State<SettingsEditorScreen> {
           _show2FADialog(qrCodeData, intendedType);
         }
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to generate 2FA QR Code')));
+        CustomPopup.show(context, 'Failed to generate 2FA QR Code', isSuccess: false);
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      CustomPopup.show(context, 'Error: $e', isSuccess: false);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -447,7 +442,7 @@ class _SettingsEditorScreenState extends State<SettingsEditorScreen> {
                       ? null
                       : () async {
                           if (tokenController.text.length != 6) {
-                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Enter a valid 6-digit code')));
+                            CustomPopup.show(context, 'Enter a valid 6-digit code', isSuccess: false);
                             return;
                           }
                           setStateDialog(() => isVerifying = true);
@@ -470,10 +465,10 @@ class _SettingsEditorScreenState extends State<SettingsEditorScreen> {
                               // Now update the type to the intended one (e.g., BOTH) since verifyAndEnableTOTP sets it to TOTP default.
                               await _update2FAType(intendedType, true);
                             } else {
-                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Invalid code, try again')));
+                              CustomPopup.show(context, 'Invalid code, try again', isSuccess: false);
                             }
                           } catch (e) {
-                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+                            CustomPopup.show(context, 'Error: $e', isSuccess: false);
                           } finally {
                             if (mounted) setStateDialog(() => isVerifying = false);
                           }

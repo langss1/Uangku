@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:uangku_app/core/utils/custom_popup.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:uangku_app/core/theme/app_colors.dart';
@@ -46,13 +47,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       if (!mounted) return;
 
       if (response.statusCode == 200) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Password pemulihan telah dikirim ke email Anda.'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 4),
-          ),
-        );
+        CustomPopup.show(context, 'Password pemulihan telah dikirim ke email Anda.', isSuccess: true);
         Navigator.of(context).pop(); // Back to login screen
       } else {
         final data = jsonDecode(response.body);

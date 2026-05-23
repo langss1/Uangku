@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'package:uangku_app/core/utils/custom_popup.dart';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:camera/camera.dart';
@@ -71,9 +72,7 @@ class _ScanScreenState extends State<ScanScreen> with TickerProviderStateMixin {
 
   void _showError(String message) {
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message), backgroundColor: Colors.red),
-      );
+      CustomPopup.show(context, message, isSuccess: true);
       Navigator.pop(context);
     }
   }
@@ -116,38 +115,14 @@ class _ScanScreenState extends State<ScanScreen> with TickerProviderStateMixin {
           final formatter = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
           final formattedAmount = formatter.format(extractedAmount);
 
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                   const Icon(Icons.auto_awesome, color: Colors.amber, size: 20),
-                   const SizedBox(width: 12),
-                   Expanded(
-                     child: Text(
-                       'AI detected $formattedAmount at $storeName',
-                       overflow: TextOverflow.ellipsis,
-                     ),
-                   ),
-                ],
-              ),
-              backgroundColor: const Color(0xFF1E293B),
-              behavior: SnackBarBehavior.floating,
-              duration: const Duration(seconds: 4),
-            ),
-          );
+          CustomPopup.show(context, 'AI detected $formattedAmount at $storeName', isSuccess: true);
           
           Navigator.pop(context, {
             'amount': extractedAmount,
             'note': '$storeName - $formattedAmount (AI Scan)',
           });
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Could not find amount. Please try again.'),
-              backgroundColor: Colors.orange,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
+          CustomPopup.show(context, 'Could not find amount. Please try again.', isSuccess: false);
         }
       }
     } catch (e) {

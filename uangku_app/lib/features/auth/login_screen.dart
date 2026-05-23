@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:uangku_app/core/theme/app_theme.dart';
+import 'package:uangku_app/core/utils/custom_popup.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -72,7 +73,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     final password = _passwordController.text;
 
     if (email.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please fill all fields')));
+      CustomPopup.show(context, 'Please fill all fields', isSuccess: false);
       return;
     }
 

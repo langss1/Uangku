@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:uangku_app/core/utils/custom_popup.dart';
 import 'package:uangku_app/core/theme/app_colors.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
@@ -39,9 +40,7 @@ class _LanguageSettingsScreenState extends State<LanguageSettingsScreen> {
     await prefs.setString('pref_app_language', langCode);
 
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(langCode == 'ID' ? 'Bahasa diubah ke Indonesia' : 'Language changed to English')),
-      );
+      CustomPopup.show(context, langCode == 'ID' ? 'Bahasa diubah ke Indonesia' : 'Language changed to English', isSuccess: true);
     }
   }
 

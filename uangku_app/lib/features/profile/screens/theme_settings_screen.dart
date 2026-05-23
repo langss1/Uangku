@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:uangku_app/core/utils/custom_popup.dart';
 import 'package:uangku_app/core/theme/app_colors.dart';
 import 'package:uangku_app/core/providers/preferences_provider.dart';
 
@@ -16,9 +17,7 @@ class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
     await prefsProvider.setThemeString(theme);
 
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Tema aplikasi diubah ke $theme')),
-      );
+      CustomPopup.show(context, 'Tema aplikasi diubah ke $theme', isSuccess: true);
     }
   }
 

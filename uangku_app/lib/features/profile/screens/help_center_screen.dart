@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:uangku_app/core/utils/custom_popup.dart';
 import 'package:uangku_app/core/theme/app_colors.dart';
 import 'package:provider/provider.dart';
 import 'package:uangku_app/core/providers/preferences_provider.dart';
@@ -113,9 +114,7 @@ class HelpCenterScreen extends StatelessWidget {
                     height: 48,
                     child: ElevatedButton(
                       onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Membuka aplikasi email...')),
-                        );
+                        CustomPopup.show(context, 'Membuka aplikasi email...', isSuccess: true);
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.white,
