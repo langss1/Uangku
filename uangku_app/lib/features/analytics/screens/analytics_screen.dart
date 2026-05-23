@@ -408,7 +408,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 _buildSpendingByCategoryCard(filteredTransactions),
                 const SizedBox(height: 32),
                 _buildExportSection(),
-                const SizedBox(height: 32),
+                const SizedBox(height: 120), // Extra space for FAB and Bottom Nav Bar
               ],
             ),
           );

@@ -68,20 +68,72 @@ class _ExportPreviewScreenState extends State<ExportPreviewScreen> {
           return pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
-              // Header
               pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
-                  pw.Text('UANGKU', style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold, color: PdfColors.blue800)),
-                  pw.Text('FINANCIAL REPORT', style: pw.TextStyle(fontSize: 18, color: PdfColors.grey700)),
+                  pw.Row(
+                    children: [
+                      pw.Container(
+                        width: 36,
+                        height: 36,
+                        decoration: pw.BoxDecoration(
+                          color: PdfColor.fromHex('#2962FF'),
+                          borderRadius: pw.BorderRadius.circular(8),
+                        ),
+                        child: pw.Center(
+                          child: pw.Text('U', style: pw.TextStyle(color: PdfColors.white, fontSize: 24, fontWeight: pw.FontWeight.bold)),
+                        ),
+                      ),
+                      pw.SizedBox(width: 10),
+                      pw.Text('Uangku', style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold, color: PdfColors.black)),
+                    ]
+                  ),
+                  pw.Container(
+                    padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: pw.BoxDecoration(
+                      color: PdfColors.grey200,
+                      borderRadius: pw.BorderRadius.circular(20),
+                    ),
+                    child: pw.Text('FINANCIAL REPORT', style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, color: PdfColors.grey700)),
+                  ),
                 ],
               ),
-              pw.SizedBox(height: 20),
+              pw.SizedBox(height: 30),
               
-              // Info
-              pw.Text('Exported by: ${widget.userName}'),
-              pw.Text('Export Date: ${dateFormat.format(DateTime.now())}'),
-              pw.Text('Date Range: ${dateFormat.format(widget.dateRange.start)} - ${dateFormat.format(widget.dateRange.end)}'),
+              // Info Box
+              pw.Container(
+                padding: const pw.EdgeInsets.all(16),
+                decoration: pw.BoxDecoration(
+                  color: PdfColors.grey100,
+                  borderRadius: pw.BorderRadius.circular(8),
+                  border: pw.Border.all(color: PdfColors.grey300),
+                ),
+                child: pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        pw.Text('Exported by', style: pw.TextStyle(color: PdfColors.grey600, fontSize: 10)),
+                        pw.Text(widget.userName, style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 14)),
+                        pw.SizedBox(height: 10),
+                        pw.Text('Export Date', style: pw.TextStyle(color: PdfColors.grey600, fontSize: 10)),
+                        pw.Text(dateFormat.format(DateTime.now()), style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 14)),
+                      ],
+                    ),
+                    pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        pw.Text('Period', style: pw.TextStyle(color: PdfColors.grey600, fontSize: 10)),
+                        pw.Text('${dateFormat.format(widget.dateRange.start)} - ${dateFormat.format(widget.dateRange.end)}', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 14)),
+                        pw.SizedBox(height: 10),
+                        pw.Text('Total Transactions', style: pw.TextStyle(color: PdfColors.grey600, fontSize: 10)),
+                        pw.Text('${widget.transactions.length} items', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 14)),
+                      ],
+                    ),
+                  ]
+                )
+              ),
               pw.SizedBox(height: 30),
               
               // Table
@@ -94,12 +146,14 @@ class _ExportPreviewScreenState extends State<ExportPreviewScreen> {
                   tx.isIncome ? 'Income' : 'Expense',
                   currencyFormat.format(tx.amount),
                 ]).toList(),
-                headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.white),
-                headerDecoration: const pw.BoxDecoration(color: PdfColors.blue600),
+                headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.white, fontSize: 12),
+                headerDecoration: pw.BoxDecoration(color: PdfColor.fromHex('#2962FF')),
                 rowDecoration: const pw.BoxDecoration(
                   border: pw.Border(bottom: pw.BorderSide(color: PdfColors.grey300, width: 0.5)),
                 ),
+                cellStyle: const pw.TextStyle(fontSize: 11),
                 cellAlignment: pw.Alignment.centerLeft,
+                oddRowDecoration: const pw.BoxDecoration(color: PdfColors.grey100),
               ),
               
               if (widget.lineChartImage != null || widget.pieChartImage != null)
@@ -143,30 +197,39 @@ class _ExportPreviewScreenState extends State<ExportPreviewScreen> {
     final currencyFormat = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp', decimalDigits: 0);
 
     // Header metadata
-    rows.add(['UANGKU Financial Report']);
+    rows.add(['==============================================']);
+    rows.add(['            UANGKU FINANCIAL REPORT           ']);
+    rows.add(['==============================================']);
     rows.add(['Exported by:', widget.userName]);
-    rows.add(['Export Date:', DateFormat('dd MMM yyyy').format(DateTime.now())]);
+    rows.add(['Export Date:', DateFormat('dd MMM yyyy HH:mm').format(DateTime.now())]);
     rows.add(['Date Range:', '${DateFormat('dd MMM yyyy').format(widget.dateRange.start)} - ${DateFormat('dd MMM yyyy').format(widget.dateRange.end)}']);
-    rows.add([]);
+    rows.add(['Total Items:', widget.transactions.length.toString()]);
+    rows.add(['']);
+    rows.add(['==============================================']);
+    rows.add(['             TRANSACTION HISTORY              ']);
+    rows.add(['==============================================']);
 
     // Table Header
-    rows.add(['Date', 'Description', 'Category', 'Type', 'Amount']);
+    rows.add(['Date', 'Time', 'Description', 'Category', 'Type', 'Amount (IDR)']);
 
     // Table Data
     for (var tx in widget.transactions) {
       rows.add([
         DateFormat('yyyy-MM-dd').format(tx.date),
+        DateFormat('HH:mm:ss').format(tx.date),
         tx.title,
         tx.category,
         tx.isIncome ? 'Income' : 'Expense',
-        currencyFormat.format(tx.amount),
+        tx.amount.toInt().toString(), // Use raw number for easier spreadsheet calculations
       ]);
     }
 
     // Add Summary Section
-    rows.add([]);
-    rows.add(['--- SUMMARY ---']);
-    rows.add([]);
+    rows.add(['']);
+    rows.add(['==============================================']);
+    rows.add(['                   SUMMARY                    ']);
+    rows.add(['==============================================']);
+    rows.add(['']);
 
     // Category Spending Summary
     Map<String, double> categorySums = {};
@@ -176,13 +239,13 @@ class _ExportPreviewScreenState extends State<ExportPreviewScreen> {
       }
     }
     
-    rows.add(['SPENDING BY CATEGORY']);
-    rows.add(['Category', 'Total Amount']);
+    rows.add(['--- SPENDING BY CATEGORY ---']);
+    rows.add(['Category', 'Total Amount (IDR)']);
     categorySums.forEach((category, amount) {
-      rows.add([category, currencyFormat.format(amount)]);
+      rows.add([category, amount.toInt().toString()]);
     });
 
-    rows.add([]);
+    rows.add(['']);
 
     // Income vs Expense Summary
     double totalIncome = 0;
@@ -195,11 +258,11 @@ class _ExportPreviewScreenState extends State<ExportPreviewScreen> {
       }
     }
     
-    rows.add(['TOTAL SUMMARY']);
-    rows.add(['Type', 'Total Amount']);
-    rows.add(['Total Income', currencyFormat.format(totalIncome)]);
-    rows.add(['Total Expense', currencyFormat.format(totalExpense)]);
-    rows.add(['Net Balance', currencyFormat.format(totalIncome - totalExpense)]);
+    rows.add(['--- TOTAL SUMMARY ---']);
+    rows.add(['Type', 'Total Amount (IDR)']);
+    rows.add(['Total Income', totalIncome.toInt().toString()]);
+    rows.add(['Total Expense', totalExpense.toInt().toString()]);
+    rows.add(['Net Balance', (totalIncome - totalExpense).toInt().toString()]);
 
 
     String csv = rows.map((row) {
@@ -272,87 +335,165 @@ class _ExportPreviewScreenState extends State<ExportPreviewScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  const Icon(Icons.payments, color: Color(0xFF2962FF), size: 32),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'UANGKU',
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF2962FF)),
-                  ),
-                ],
+              Expanded(
+                child: Row(
+                  children: [
+                    Image.asset(
+                      'assets/images/logo.png',
+                      width: 40,
+                      height: 40,
+                      errorBuilder: (context, error, stackTrace) {
+                        // Fallback in case logo is missing
+                        return Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF2962FF),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Center(
+                            child: Text('U', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(width: 12),
+                    const Flexible(
+                      child: Text(
+                        'Uangku',
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 23,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
+                  color: const Color(0xFFF1F5F9),
                   borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
                 ),
                 child: Text(
                   widget.exportFormat == 'PDF' ? 'PDF REPORT' : 'CSV EXPORT',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.black54),
+                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 11, color: Color(0xFF475569), letterSpacing: 0.5),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 32),
           
-          // Metadata
-          Text('Exported by: ${widget.userName}', style: const TextStyle(fontSize: 14, color: Colors.black87)),
-          const SizedBox(height: 4),
-          Text('Export Date: ${dateFormat.format(DateTime.now())}', style: const TextStyle(fontSize: 13, color: Colors.black87)),
-          const SizedBox(height: 4),
-          Text('Date Range: ${dateFormat.format(widget.dateRange.start)} - ${dateFormat.format(widget.dateRange.end)}', style: const TextStyle(fontSize: 13, color: Colors.black54)),
+          // Metadata Box
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Exported by', style: TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.w600)),
+                      const SizedBox(height: 4),
+                      Text(widget.userName, style: const TextStyle(fontSize: 14, color: Color(0xFF1E293B), fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 16),
+                      const Text('Export Date', style: TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.w600)),
+                      const SizedBox(height: 4),
+                      Text(dateFormat.format(DateTime.now()), style: const TextStyle(fontSize: 14, color: Color(0xFF1E293B), fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Period', style: TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.w600)),
+                      const SizedBox(height: 4),
+                      Text('${dateFormat.format(widget.dateRange.start)}\n${dateFormat.format(widget.dateRange.end)}', style: const TextStyle(fontSize: 14, color: Color(0xFF1E293B), fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
           
           const SizedBox(height: 32),
           
           // Transaction Table
+          const Text('TRANSACTIONS', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF94A3B8), letterSpacing: 1)),
+          const SizedBox(height: 12),
           Container(
             width: double.infinity,
             decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade300),
-              borderRadius: BorderRadius.circular(8),
+              color: Colors.white,
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: DataTable(
-                headingRowColor: MaterialStateProperty.all(const Color(0xFFF8FAFC)),
-              columnSpacing: 16,
-              horizontalMargin: 12,
-              columns: const [
-                DataColumn(label: Text('Date', style: TextStyle(fontWeight: FontWeight.bold))),
-                DataColumn(label: Text('Description', style: TextStyle(fontWeight: FontWeight.bold))),
-                DataColumn(label: Text('Type', style: TextStyle(fontWeight: FontWeight.bold))),
-                DataColumn(label: Text('Amount', style: TextStyle(fontWeight: FontWeight.bold))),
-              ],
-              rows: widget.transactions.map((tx) {
-                String typeStr = tx.isIncome ? 'Income' : 'Expense';
-                return DataRow(
-                  cells: [
-                    DataCell(Text(DateFormat('yyyy-MM-dd').format(tx.date), style: const TextStyle(fontSize: 12))),
-                    DataCell(Text(tx.title, style: const TextStyle(fontSize: 12))),
-                    DataCell(
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: tx.isIncome ? const Color(0xFFD1FAE5) : const Color(0xFFFEE2E2),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          typeStr, 
-                          style: TextStyle(
-                            fontSize: 10, 
-                            color: tx.isIncome ? const Color(0xFF059669) : const Color(0xFFDC2626)
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: DataTable(
+                  headingRowColor: MaterialStateProperty.all(const Color(0xFFF1F5F9)),
+                  dataRowColor: MaterialStateProperty.resolveWith<Color>((Set<MaterialState> states) {
+                    return Colors.white; // We'll alternate colors manually if needed
+                  }),
+                columnSpacing: 24,
+                horizontalMargin: 20,
+                headingTextStyle: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF475569), fontSize: 13),
+                dataTextStyle: const TextStyle(color: Color(0xFF1E293B), fontSize: 13, fontWeight: FontWeight.w500),
+                columns: const [
+                  DataColumn(label: Text('Date')),
+                  DataColumn(label: Text('Description')),
+                  DataColumn(label: Text('Category')),
+                  DataColumn(label: Text('Type')),
+                  DataColumn(label: Text('Amount')),
+                ],
+                rows: widget.transactions.asMap().entries.map((entry) {
+                  int idx = entry.key;
+                  TransactionModel tx = entry.value;
+                  String typeStr = tx.isIncome ? 'Income' : 'Expense';
+                  return DataRow(
+                    color: MaterialStateProperty.all(idx % 2 == 0 ? Colors.white : const Color(0xFFF8FAFC)),
+                    cells: [
+                      DataCell(Text(DateFormat('dd MMM').format(tx.date))),
+                      DataCell(Text(tx.title, style: const TextStyle(fontWeight: FontWeight.bold))),
+                      DataCell(Text(tx.category)),
+                      DataCell(
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: tx.isIncome ? const Color(0xFFD1FAE5) : const Color(0xFFFEE2E2),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            typeStr, 
+                            style: TextStyle(
+                              fontSize: 11, 
+                              fontWeight: FontWeight.bold,
+                              color: tx.isIncome ? const Color(0xFF059669) : const Color(0xFFDC2626)
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    DataCell(Text(currencyFormat.format(tx.amount), style: const TextStyle(fontSize: 12))),
-                  ],
-                );
-              }).toList(),
+                      DataCell(Text(currencyFormat.format(tx.amount))),
+                    ],
+                  );
+                }).toList(),
+              ),
             ),
-          ),
+            ),
           ),
           
           const SizedBox(height: 40),

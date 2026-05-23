@@ -119,74 +119,86 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
         child: AnimatedBuilder(
           animation: Listenable.merge([_animationController, _continuousController]),
           builder: (context, child) {
-            final floatY = math.sin(_floatingAnimation.value * math.pi * 2) * 15;
-            final floatX = math.cos(_floatingAnimation.value * math.pi * 2) * 10;
+            final floatY = math.sin(_floatingAnimation.value * math.pi * 2) * 12;
+            final floatX = math.cos(_floatingAnimation.value * math.pi * 2) * 8;
 
             return Stack(
               alignment: Alignment.center,
               children: [
-                // Abstract Orbs Animation - Moved to Background Layer
-                ...List.generate(6, (index) {
-                  final random = math.Random(index + 100);
-                  final speed = 0.3 + random.nextDouble() * 0.4;
-                  final size = 60.0 + random.nextDouble() * 100;
+                // Abstract Orbs Animation - Unified and simplified for modern minimalism
+                ...List.generate(4, (index) {
+                  final random = math.Random(index + 200);
+                  final size = 80.0 + random.nextDouble() * 80;
                   
-                  return AnimatedBuilder(
-                    animation: _continuousController,
-                    builder: (context, child) {
-                      // Gerakan abstrak yang lebih luas di latar belakang
-                      final angle = _continuousController.value * math.pi * 2 * speed;
-                      final radiusX = MediaQuery.of(context).size.width * 0.4;
-                      final radiusY = MediaQuery.of(context).size.height * 0.4;
-                      
-                      final x = math.cos(angle + index) * radiusX;
-                      final y = math.sin(angle * 0.5 + index) * radiusY;
-                      
-                      return Positioned(
-                        left: MediaQuery.of(context).size.width / 2 + x - (size / 2),
-                        top: MediaQuery.of(context).size.height / 2 + y - (size / 2),
-                        child: Transform.scale(
-                          scale: _polarScaleAnimation.value,
-                          child: Opacity(
-                            opacity: 0.08,
-                            child: Container(
-                              width: size,
-                              height: size,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                gradient: RadialGradient(
-                                  colors: [
-                                    AppColors.primaryBlue.withOpacity(0.5),
-                                    AppColors.primaryBlue.withOpacity(0.0),
-                                  ],
-                                ),
+                  double leftOffset = 0;
+                  double topOffset = 0;
+                  if (index == 0) {
+                    leftOffset = -30;
+                    topOffset = 150;
+                  } else if (index == 1) {
+                    leftOffset = MediaQuery.of(context).size.width - 120;
+                    topOffset = 250;
+                  } else if (index == 2) {
+                    leftOffset = 40;
+                    topOffset = MediaQuery.of(context).size.height - 250;
+                  } else {
+                    leftOffset = MediaQuery.of(context).size.width - 150;
+                    topOffset = MediaQuery.of(context).size.height - 180;
+                  }
+
+                  // Float opposite to foreground for subtle premium parallax
+                  final orbFloatX = -floatX * (0.4 + index * 0.15);
+                  final orbFloatY = -floatY * (0.4 + index * 0.15);
+
+                  return Positioned(
+                    left: leftOffset,
+                    top: topOffset,
+                    child: Transform.translate(
+                      offset: Offset(orbFloatX, orbFloatY),
+                      child: Transform.scale(
+                        scale: _polarScaleAnimation.value,
+                        child: Opacity(
+                          opacity: 0.06,
+                          child: Container(
+                            width: size,
+                            height: size,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: RadialGradient(
+                                colors: [
+                                  AppColors.primaryBlue.withOpacity(0.4),
+                                  AppColors.primaryBlue.withOpacity(0.0),
+                                ],
                               ),
                             ),
                           ),
                         ),
-                      );
-                    },
+                      ),
+                    ),
                   );
                 }),
 
-                // Background decorative circles (Polar Static)
+                // Background decorative circles
                 Positioned(
-                  top: -100 + floatY,
-                  right: -100 + floatX,
-                  child: Transform.scale(
-                    scale: _polarScaleAnimation.value,
-                    child: Transform.rotate(
-                      angle: _polarRotateAnimation.value + (_floatingAnimation.value * 0.1),
-                      child: Container(
-                        width: 350,
-                        height: 350,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: RadialGradient(
-                            colors: [
-                              AppColors.primaryBlue.withOpacity(0.12),
-                              AppColors.primaryBlue.withOpacity(0.01),
-                            ],
+                  top: -100,
+                  right: -100,
+                  child: Transform.translate(
+                    offset: Offset(-floatX * 0.6, -floatY * 0.6),
+                    child: Transform.scale(
+                      scale: _polarScaleAnimation.value,
+                      child: Transform.rotate(
+                        angle: _polarRotateAnimation.value + (_floatingAnimation.value * 0.05),
+                        child: Container(
+                          width: 350,
+                          height: 350,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: RadialGradient(
+                              colors: [
+                                AppColors.primaryBlue.withOpacity(0.10),
+                                AppColors.primaryBlue.withOpacity(0.01),
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -194,22 +206,25 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                   ),
                 ),
                 Positioned(
-                  bottom: -80 - floatY,
-                  left: -80 - floatX,
-                  child: Transform.scale(
-                    scale: _polarScaleAnimation.value,
-                    child: Transform.rotate(
-                      angle: -_polarRotateAnimation.value - (_floatingAnimation.value * 0.15),
-                      child: Container(
-                        width: 250,
-                        height: 250,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: RadialGradient(
-                            colors: [
-                              AppColors.primaryBlue.withOpacity(0.1),
-                              AppColors.primaryBlue.withOpacity(0.01),
-                            ],
+                  bottom: -80,
+                  left: -80,
+                  child: Transform.translate(
+                    offset: Offset(-floatX * 0.4, -floatY * 0.4),
+                    child: Transform.scale(
+                      scale: _polarScaleAnimation.value,
+                      child: Transform.rotate(
+                        angle: -_polarRotateAnimation.value - (_floatingAnimation.value * 0.08),
+                        child: Container(
+                          width: 250,
+                          height: 250,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: RadialGradient(
+                              colors: [
+                                AppColors.primaryBlue.withOpacity(0.08),
+                                AppColors.primaryBlue.withOpacity(0.01),
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -218,69 +233,83 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                 ),
                 
                 // Logo and content (Now above the background animations)
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    FadeTransition(
-                      opacity: _fadeAnimation,
-                      child: ScaleTransition(
-                        scale: _scaleAnimation,
-                        child: Container(
-                          width: 180,
-                          height: 180,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(40),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.primaryBlue.withOpacity(0.1),
-                                blurRadius: 40,
-                                offset: const Offset(0, 20),
+                Transform.translate(
+                  offset: Offset(floatX, floatY),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      FadeTransition(
+                        opacity: _fadeAnimation,
+                        child: ScaleTransition(
+                          scale: _scaleAnimation,
+                          child: Container(
+                            width: 160,
+                            height: 160,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(36),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.primaryBlue.withOpacity(0.12),
+                                  blurRadius: 30,
+                                  offset: const Offset(0, 15),
+                                ),
+                              ],
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(36),
+                              child: Image.asset(
+                                'assets/images/Logo SplashScreen.png',
+                                fit: BoxFit.contain,
                               ),
-                            ],
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(40),
-                            child: Image.asset(
-                              'assets/images/Logo SplashScreen.png',
-                              fit: BoxFit.contain,
                             ),
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 50),
-                    FadeTransition(
-                      opacity: _fadeAnimation,
-                      child: Column(
-                        children: [
-                          const SizedBox(height: 24),
-                          Text(
-                            "Kelola Keuangan Jadi Lebih Mudah",
-                            style: TextStyle(
-                              color: AppColors.textDark.withOpacity(0.6),
-                              fontSize: 15,
-                              letterSpacing: 0.5,
-                              fontWeight: FontWeight.w600,
-                            ),
+                      const SizedBox(height: 28),
+                      FadeTransition(
+                        opacity: _fadeAnimation,
+                        child: Text(
+                          "Uangku",
+                          style: TextStyle(
+                            color: AppColors.textDark,
+                            fontSize: 38,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: -1.0,
                           ),
-                        ],
+                        ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 10),
+                      FadeTransition(
+                        opacity: _fadeAnimation,
+                        child: Text(
+                          "Kelola Keuangan Jadi Lebih Mudah",
+                          style: TextStyle(
+                            color: AppColors.textDark.withOpacity(0.55),
+                            fontSize: 15,
+                            letterSpacing: 0.2,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 
                 // Version text at bottom
                 Positioned(
                   bottom: 50,
-                  child: FadeTransition(
-                    opacity: _fadeAnimation,
-                    child: Text(
-                      "Version 1.0.0",
-                      style: TextStyle(
-                        color: AppColors.textLight.withOpacity(0.7),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        letterSpacing: 1,
+                  child: Transform.translate(
+                    offset: Offset(floatX * 0.5, floatY * 0.5),
+                    child: FadeTransition(
+                      opacity: _fadeAnimation,
+                      child: Text(
+                        "Version 1.0.0",
+                        style: TextStyle(
+                          color: AppColors.textLight.withOpacity(0.7),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          letterSpacing: 1.5,
+                        ),
                       ),
                     ),
                   ),

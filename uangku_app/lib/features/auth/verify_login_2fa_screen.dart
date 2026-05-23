@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:uangku_app/core/utils/custom_popup.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -24,7 +25,7 @@ class _VerifyLogin2FAScreenState extends State<VerifyLogin2FAScreen> {
   Future<void> _verify2FA() async {
     final token = _tokenController.text.trim();
     if (token.length != 6) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter a valid 6-digit code')));
+      CustomPopup.show(context, 'Please enter a valid 6-digit code', isSuccess: false);
       return;
     }
 
@@ -67,10 +68,10 @@ class _VerifyLogin2FAScreenState extends State<VerifyLogin2FAScreen> {
         }
       } else {
         final errorMsg = jsonDecode(response.body)['error'] ?? 'Verification failed';
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMsg)));
+        CustomPopup.show(context, errorMsg, isSuccess: false);
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error connecting to server: $e')));
+      CustomPopup.show(context, 'Error connecting to server: $e', isSuccess: false);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

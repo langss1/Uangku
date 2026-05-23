@@ -36,6 +36,23 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late AnimationController _waveController;
   late Animation<double> _waveAnimation;
   Timer? _waveTimer;
+  Timer? _popupTimer;
+  bool _showChatPopup = false;
+
+  // Draggable chatbot position
+  double _dragX = -1; // -1 = not initialized yet
+  double _dragY = -1;
+  bool _isDragging = false;
+
+  void _triggerPopup() {
+    if (!mounted) return;
+    setState(() => _showChatPopup = true);
+    Future.delayed(const Duration(seconds: 5), () {
+      if (mounted) {
+        setState(() => _showChatPopup = false);
+      }
+    });
+  }
 
   @override
   void initState() {
@@ -70,11 +87,20 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         _waveController.forward(from: 0.0);
       }
     });
+
+    // Popup chatbot every 90 seconds (stays for 5 seconds)
+    Future.delayed(const Duration(seconds: 5), () {
+      _triggerPopup();
+    });
+    _popupTimer = Timer.periodic(const Duration(seconds: 90), (timer) {
+      _triggerPopup();
+    });
   }
 
   @override
   void dispose() {
     _waveTimer?.cancel();
+    _popupTimer?.cancel();
     _waveController.dispose();
     _animationController.dispose();
     super.dispose();
@@ -138,43 +164,214 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    final screenW = MediaQuery.of(context).size.width;
+    final screenH = MediaQuery.of(context).size.height;
+    const botSize = 78.0;
+    const navBarH = 90.0; // approx height of bottom nav
+
+    // Initialize default position (bottom right, just above navbar)
+    if (_dragX < 0) {
+      _dragX = screenW - botSize - 16;
+      _dragY = screenH - navBarH - botSize - 16;
+    }
+
     return Scaffold(
       backgroundColor: AppColors.background,
       extendBody: true,
-      body: _buildBody(),
+      body: Stack(
+        children: [
+          _buildBody(),
+          // Draggable chatbot floating image
+          if (_selectedIndex != 2)
+            Positioned(
+              left: _dragX,
+              top: _dragY,
+              child: GestureDetector(
+                onPanStart: (_) => setState(() => _isDragging = true),
+                onPanUpdate: (details) {
+                  setState(() {
+                    _dragX = (_dragX + details.delta.dx).clamp(0.0, screenW - botSize);
+                    _dragY = (_dragY + details.delta.dy).clamp(0.0, screenH - botSize);
+                    _showChatPopup = false;
+                  });
+                },
+                onPanEnd: (_) {
+                  // Snap to nearest horizontal edge
+                  final snapLeft = 16.0;
+                  final snapRight = screenW - botSize - 16.0;
+                  final snapX = (_dragX < screenW / 2) ? snapLeft : snapRight;
+                  setState(() {
+                    _dragX = snapX;
+                    _isDragging = false;
+                  });
+                },
+                onTap: () {
+                  if (!_isDragging) {
+                    setState(() => _showChatPopup = false);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const ChatScreen()),
+                    );
+                  }
+                },
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    // Popup tooltip
+                    if (_showChatPopup)
+                      Positioned(
+                        bottom: botSize + 8,
+                        right: _dragX > screenW / 2 ? 0 : null,
+                        left: _dragX <= screenW / 2 ? 0 : null,
+                        child: GestureDetector(
+                          onTap: () => setState(() => _showChatPopup = false),
+                          child: Container(
+                            constraints: const BoxConstraints(maxWidth: 270),
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFF1E3A8A), Color(0xFF3B82F6)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFF2563EB).withOpacity(0.3),
+                                  blurRadius: 14,
+                                  offset: const Offset(0, 5),
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Row(
+                                  children: const [
+                                    Text(
+                                      '🤖 AI Chatbot',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w900,
+                                        fontSize: 12.5,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                const Text(
+                                  'AI Chatbot yang di personalisasi untuk keuangan anda',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
+                                    height: 1.35,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Align(
+                                  alignment: Alignment.centerRight,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 4.5),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: const Text(
+                                      'Chat Sekarang →',
+                                      style: TextStyle(
+                                        color: Color(0xFF1E3A8A),
+                                        fontWeight: FontWeight.w900,
+                                        fontSize: 10,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    // Pure chatbot.png image — no background
+                    SizedBox(
+                      width: botSize,
+                      height: botSize,
+                      child: Image.asset(
+                        'assets/images/chatbot.png',
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                    // Green dot when popup is showing
+                    if (_showChatPopup)
+                      Positioned(
+                        top: 2,
+                        right: 2,
+                        child: Container(
+                          width: 12,
+                          height: 12,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF22C55E),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 1.5),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
       bottomNavigationBar: _buildBottomNav(),
-      floatingActionButton: _selectedIndex != 2 
-          ? FloatingActionButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const ChatScreen()),
-                );
-              },
-              backgroundColor: Colors.white,
-              child: const Icon(Icons.chat_bubble_rounded, color: Color(0xFF7C3AED)),
-            )
-          : null,
     );
   }
 
+
   Widget _buildBody() {
-    if (_selectedIndex == 1) return const AnalyticsScreen();
-    if (_selectedIndex == 2) {
-      return AddTransactionScreen(onBack: () => setState(() => _selectedIndex = 0));
+    Widget activePage;
+    if (_selectedIndex == 1) {
+      activePage = const AnalyticsScreen(key: ValueKey('AnalyticsPage'));
+    } else if (_selectedIndex == 2) {
+      activePage = AddTransactionScreen(
+        key: const ValueKey('AddTransactionPage'),
+        onBack: () => setState(() => _selectedIndex = 0),
+      );
+    } else if (_selectedIndex == 3) {
+      activePage = const BudgetScreen(key: ValueKey('BudgetPage'));
+    } else if (_selectedIndex == 4) {
+      activePage = const ProfileScreen(key: ValueKey('ProfilePage'));
+    } else {
+      activePage = SingleChildScrollView(
+        key: const ValueKey('DashboardPage'),
+        child: Column(
+          children: [
+            _buildHeader(),
+            const SizedBox(height: 32),
+            _buildRecentTransactions(),
+            const SizedBox(height: 100),
+          ],
+        ),
+      );
     }
-    if (_selectedIndex == 3) return const BudgetScreen();
-    if (_selectedIndex == 4) return const ProfileScreen();
-    
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          _buildHeader(),
-          const SizedBox(height: 32),
-          _buildRecentTransactions(),
-          const SizedBox(height: 100), // Increased to prevent content from hiding behind floating nav
-        ],
-      ),
+
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 300),
+      switchInCurve: Curves.easeOutCubic,
+      switchOutCurve: Curves.easeInCubic,
+      transitionBuilder: (Widget child, Animation<double> animation) {
+        return FadeTransition(
+          opacity: animation,
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0.03, 0.0), // elegant subtle slide in from right
+              end: Offset.zero,
+            ).animate(animation),
+            child: child,
+          ),
+        );
+      },
+      child: activePage,
     );
   }
 

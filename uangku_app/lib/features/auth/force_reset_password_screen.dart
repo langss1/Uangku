@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:uangku_app/core/utils/custom_popup.dart';
 import 'package:uangku_app/core/theme/app_colors.dart';
 import 'package:uangku_app/features/home/home_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -25,11 +26,11 @@ class _ForceResetPasswordScreenState extends State<ForceResetPasswordScreen> {
     final confirm = _confirmController.text;
 
     if (password.length < 6) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Password harus minimal 6 karakter')));
+      CustomPopup.show(context, 'Password harus minimal 6 karakter', isSuccess: false);
       return;
     }
     if (password != confirm) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Konfirmasi password tidak cocok')));
+      CustomPopup.show(context, 'Konfirmasi password tidak cocok', isSuccess: false);
       return;
     }
 
@@ -64,17 +65,17 @@ class _ForceResetPasswordScreenState extends State<ForceResetPasswordScreen> {
           await prefs.setString('user_email', userData['email'] ?? '');
         }
 
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Password berhasil diperbarui!')));
+        CustomPopup.show(context, 'Password berhasil diperbarui!', isSuccess: true);
         
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const HomeScreen()),
         );
       } else {
         final data = jsonDecode(response.body);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(data['error'] ?? 'Gagal update password')));
+        CustomPopup.show(context, data['error'] ?? 'Gagal update password', isSuccess: false);
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Koneksi bermasalah')));
+      CustomPopup.show(context, 'Koneksi bermasalah', isSuccess: false);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

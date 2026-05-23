@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:uangku_app/core/utils/custom_popup.dart';
 import 'package:uangku_app/core/theme/app_colors.dart';
 import 'package:uangku_app/core/models/transaction_model.dart';
 import 'package:uangku_app/core/data/transaction_data.dart';
@@ -138,9 +139,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Single
         });
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to pick image: $e')),
-      );
+      CustomPopup.show(context, 'Failed to pick image: $e', isSuccess: false);
     }
   }
 

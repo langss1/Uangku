@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:uangku_app/core/utils/custom_popup.dart';
 import 'package:uangku_app/core/theme/app_colors.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
@@ -66,20 +67,16 @@ class _TwoFactorAuthScreenState extends State<TwoFactorAuthScreen> {
       if (mounted) {
         if (response.statusCode == 200) {
           await prefs.setString('pref_2fa_method', _selectedMethod ?? 'None');
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Pengaturan 2FA berhasil disimpan!')),
-          );
+          CustomPopup.show(context, 'Pengaturan 2FA berhasil disimpan!', isSuccess: true);
           Navigator.pop(context);
         } else {
           final data = jsonDecode(response.body);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(data['error'] ?? 'Gagal menyimpan 2FA')),
-          );
+          CustomPopup.show(context, data['error'] ?? 'Gagal menyimpan 2FA', isSuccess: false);
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Koneksi bermasalah')));
+        CustomPopup.show(context, 'Koneksi bermasalah', isSuccess: false);
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -105,11 +102,11 @@ class _TwoFactorAuthScreenState extends State<TwoFactorAuthScreen> {
           _show2FADialog(qrCodeUrl, token, prefs);
         }
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Gagal membuat QR Code 2FA')));
+        CustomPopup.show(context, 'Gagal membuat QR Code 2FA', isSuccess: false);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Koneksi bermasalah saat setup 2FA')));
+        CustomPopup.show(context, 'Koneksi bermasalah saat setup 2FA', isSuccess: false);
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -172,7 +169,7 @@ class _TwoFactorAuthScreenState extends State<TwoFactorAuthScreen> {
                       ? null
                       : () async {
                           if (tokenController.text.length != 6) {
-                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Masukkan 6 digit kode yang valid')));
+                            CustomPopup.show(context, 'Masukkan 6 digit kode yang valid', isSuccess: false);
                             return;
                           }
                           setStateDialog(() => isVerifying = true);
@@ -203,22 +200,22 @@ class _TwoFactorAuthScreenState extends State<TwoFactorAuthScreen> {
                                 await prefs.setString('pref_2fa_method', 'Google Auth');
                                 if (mounted) {
                                   Navigator.pop(context); // Tutup dialog
-                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Google Authenticator berhasil diaktifkan!')));
+                                  CustomPopup.show(context, 'Google Authenticator berhasil diaktifkan!', isSuccess: true);
                                   Navigator.pop(context); // Kembali ke pengaturan
                                 }
                               } else {
                                 if (mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Gagal menyimpan tipe 2FA')));
+                                  CustomPopup.show(context, 'Gagal menyimpan tipe 2FA', isSuccess: false);
                                 }
                               }
                             } else {
                               if (mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Kode OTP salah, coba lagi')));
+                                CustomPopup.show(context, 'Kode OTP salah, coba lagi', isSuccess: false);
                               }
                             }
                           } catch (e) {
                             if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Koneksi bermasalah')));
+                              CustomPopup.show(context, 'Koneksi bermasalah', isSuccess: false);
                             }
                           } finally {
                             if (mounted) setStateDialog(() => isVerifying = false);

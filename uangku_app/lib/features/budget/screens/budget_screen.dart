@@ -79,9 +79,13 @@ class _BudgetScreenState extends State<BudgetScreen> with SingleTickerProviderSt
                 double spent = 0;
                 for (var tx in transactions) {
                   if (!tx.isIncome && tx.category == budget.category) {
-                    final txDate = DateTime(tx.date.year, tx.date.month, tx.date.day);
-                    final start = DateTime(budget.startDate.year, budget.startDate.month, budget.startDate.day);
-                    final end = DateTime(budget.endDate.year, budget.endDate.month, budget.endDate.day);
+                    final txLocal = tx.date.toLocal();
+                    final startLocal = budget.startDate.toLocal();
+                    final endLocal = budget.endDate.toLocal();
+                    
+                    final txDate = DateTime(txLocal.year, txLocal.month, txLocal.day);
+                    final start = DateTime(startLocal.year, startLocal.month, startLocal.day);
+                    final end = DateTime(endLocal.year, endLocal.month, endLocal.day);
                     
                     if ((txDate.isAfter(start) || txDate.isAtSameMomentAs(start)) && 
                         (txDate.isBefore(end) || txDate.isAtSameMomentAs(end))) {
@@ -161,134 +165,137 @@ class _BudgetScreenState extends State<BudgetScreen> with SingleTickerProviderSt
                     ),
                   ),
                   SafeArea(
-                    child: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    // Top Section (Arc Chart & Summary)
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.only(top: 20, bottom: 32, left: 24, right: 24),
-                      child: Column(
-                        children: [
-                          _buildArcChart(globalTotalBudget, globalTotalSpent, globalRemaining, daysLeft),
-                          const SizedBox(height: 24),
-                          Container(
-                            width: double.infinity,
-                            height: 50,
-                            padding: const EdgeInsets.only(left: 1.5, right: 1.5, bottom: 2.0, top: 0),
-                            decoration: BoxDecoration(
-                              color: AppColors.primaryBlue,
-                              borderRadius: BorderRadius.circular(25),
-                            ),
-                            child: ElevatedButton(
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(builder: (_) => const AddBudgetScreen()),
-                                );
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.white,
-                                foregroundColor: AppColors.primaryBlue,
-                                shape: RoundedRectangleBorder(
+                    child: Column(
+                      children: [
+                        // ── FIXED TOP SECTION (tidak scroll) ──
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.only(top: 20, bottom: 32, left: 24, right: 24),
+                          child: Column(
+                            children: [
+                              _buildArcChart(globalTotalBudget, globalTotalSpent, globalRemaining, daysLeft),
+                              const SizedBox(height: 24),
+                              Container(
+                                width: double.infinity,
+                                height: 50,
+                                padding: const EdgeInsets.only(left: 1.5, right: 1.5, bottom: 2.0, top: 0),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primaryBlue,
                                   borderRadius: BorderRadius.circular(25),
                                 ),
-                                elevation: 0,
-                              ),
-                              child: const Text(
-                                'Create Budget',
-                                style: TextStyle(
-                                  fontSize: 16, 
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                      // List of Budgets
-                      if (budgets.isEmpty)
-                        Center(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 60.0),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(24),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    shape: BoxShape.circle,
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.05),
-                                        blurRadius: 20,
-                                        offset: const Offset(0, 10),
-                                      ),
-                                    ],
+                                child: ElevatedButton(
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(builder: (_) => const AddBudgetScreen()),
+                                    );
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.white,
+                                    foregroundColor: AppColors.primaryBlue,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(25),
+                                    ),
+                                    elevation: 0,
                                   ),
-                                  child: const Icon(
-                                    Icons.account_balance_wallet_outlined,
-                                    size: 80,
-                                    color: Color(0xFF94A3B8),
-                                  ),
-                                ),
-                                const SizedBox(height: 24),
-                                const Text(
-                                  "Belum Ada Anggaran",
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w800,
-                                    color: Color(0xFF475569),
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                const Padding(
-                                  padding: EdgeInsets.symmetric(horizontal: 40),
-                                  child: Text(
-                                    "Buat rencana anggaranmu untuk mengontrol pengeluaran dengan lebih baik.",
-                                    textAlign: TextAlign.center,
+                                  child: const Text(
+                                    'Create Budget',
                                     style: TextStyle(
-                                      fontSize: 14,
-                                      color: Color(0xFF94A3B8),
-                                      height: 1.5,
+                                      fontSize: 16, 
+                                      fontWeight: FontWeight.bold,
                                     ),
                                   ),
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
-                        )
-                    else
-                      Padding(
-                        padding: const EdgeInsets.all(20.0),
-                        child: Column(
-                          children: budgets.map((budget) {
-                            double spent = 0;
-                            for (var tx in transactions) {
-                              if (!tx.isIncome && tx.category == budget.category) {
-                                final txDate = DateTime(tx.date.year, tx.date.month, tx.date.day);
-                                final start = DateTime(budget.startDate.year, budget.startDate.month, budget.startDate.day);
-                                final end = DateTime(budget.endDate.year, budget.endDate.month, budget.endDate.day);
-                                
-                                if ((txDate.isAfter(start) || txDate.isAtSameMomentAs(start)) && 
-                                    (txDate.isBefore(end) || txDate.isAtSameMomentAs(end))) {
-                                  spent += tx.amount;
-                                }
-                              }
-                            }
-                            return _buildBudgetListTile(budget, spent);
-                          }).toList(),
                         ),
-                      ),
-                  ],
-                ),
-              ),
-              ),
-              ],
-            );
+
+                        // ── SCROLLABLE BUDGET LIST (hanya ini yang scroll) ──
+                        Expanded(
+                          child: budgets.isEmpty
+                            ? Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 60.0),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(24),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          shape: BoxShape.circle,
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black.withOpacity(0.05),
+                                              blurRadius: 20,
+                                              offset: const Offset(0, 10),
+                                            ),
+                                          ],
+                                        ),
+                                        child: const Icon(
+                                          Icons.account_balance_wallet_outlined,
+                                          size: 80,
+                                          color: Color(0xFF94A3B8),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 24),
+                                      const Text(
+                                        "Belum Ada Anggaran",
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w800,
+                                          color: Color(0xFF475569),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      const Padding(
+                                        padding: EdgeInsets.symmetric(horizontal: 40),
+                                        child: Text(
+                                          "Buat rencana anggaranmu untuk mengontrol pengeluaran dengan lebih baik.",
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: Color(0xFF94A3B8),
+                                            height: 1.5,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              )
+                            : ListView.builder(
+                                padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+                                itemCount: budgets.length,
+                                itemBuilder: (context, index) {
+                                  final budget = budgets[index];
+                                  double spent = 0;
+                                  for (var tx in transactions) {
+                                    if (!tx.isIncome && tx.category == budget.category) {
+                                      final txLocal = tx.date.toLocal();
+                                      final startLocal = budget.startDate.toLocal();
+                                      final endLocal = budget.endDate.toLocal();
+                                      
+                                      final txDate = DateTime(txLocal.year, txLocal.month, txLocal.day);
+                                      final start = DateTime(startLocal.year, startLocal.month, startLocal.day);
+                                      final end = DateTime(endLocal.year, endLocal.month, endLocal.day);
+                                      
+                                      if ((txDate.isAfter(start) || txDate.isAtSameMomentAs(start)) && 
+                                          (txDate.isBefore(end) || txDate.isAtSameMomentAs(end))) {
+                                        spent += tx.amount;
+                                      }
+                                    }
+                                  }
+                                  return _buildBudgetListTile(budget, spent);
+                                },
+                              ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              );
             },
           );
         },

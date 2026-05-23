@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:uangku_app/core/utils/custom_popup.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -82,17 +83,17 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
     final confirmPassword = _confirmPassController.text;
 
     if (fullName.isEmpty || email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please fill all fields')));
+      CustomPopup.show(context, 'Please fill all fields', isSuccess: false);
       return;
     }
 
     if (_passwordStrength < 3) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please use a stronger password (min. 8 chars, letters, & numbers)')));
+      CustomPopup.show(context, 'Please use a stronger password (min. 8 chars, letters, & numbers)', isSuccess: false);
       return;
     }
 
     if (password != confirmPassword) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Passwords do not match')));
+      CustomPopup.show(context, 'Passwords do not match', isSuccess: false);
       return;
     }
 
@@ -116,17 +117,17 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
 
       if (response.statusCode == 201) {
         // Registration success, navigate to Login
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Registration successful! Please login.')));
+        CustomPopup.show(context, 'Registration successful! Please login.', isSuccess: true);
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const LoginScreen()),
         );
       } else {
         final errorMsg = jsonDecode(response.body)['error'] ?? 'Registration failed';
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMsg)));
+        CustomPopup.show(context, errorMsg, isSuccess: false);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error connecting to server: $e')));
+        CustomPopup.show(context, 'Error connecting to server: $e', isSuccess: false);
       }
     } finally {
       if (mounted) {
