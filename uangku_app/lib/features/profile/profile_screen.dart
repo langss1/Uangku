@@ -383,7 +383,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           
           // Main content
           Padding(
-            padding: const EdgeInsets.fromLTRB(24, 60, 24, 40),
+            padding: EdgeInsets.fromLTRB(24, MediaQuery.of(context).padding.top + 20, 24, 40),
             child: SizedBox(
               width: double.infinity,
               child: Column(
@@ -429,14 +429,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ],
                 ),
                 const SizedBox(height: 16),
-                Text(
-                  _userName,
-                  style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    _userName,
+                    style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                  ),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  _userEmail,
-                  style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    _userEmail,
+                    style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14),
+                  ),
                 ),
               ],
             ),
@@ -458,15 +464,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildGroupCard(List<Widget> children) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    List<Widget> dividedChildren = [];
+    for (int i = 0; i < children.length; i++) {
+      dividedChildren.add(children[i]);
+      if (i < children.length - 1) {
+        dividedChildren.add(
+          Divider(
+            color: isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.06),
+            height: 1,
+            thickness: 0.5,
+            indent: 20,
+            endIndent: 20,
+          ),
+        );
+      }
+    }
+
     return Container(
       decoration: BoxDecoration(
         color: context.cardColor,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 20, offset: const Offset(0, 10)),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          ),
         ],
       ),
-      child: Column(children: children),
+      child: Column(children: dividedChildren),
     );
   }
 
