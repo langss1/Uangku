@@ -164,6 +164,18 @@ class _PopupNotificationState extends State<_PopupNotification> with SingleTicke
                           ],
                         ),
                       ),
+                      const SizedBox(width: 8),
+                      // Close button
+                      GestureDetector(
+                        onTap: _dismiss,
+                        child: Icon(
+                          Icons.close_rounded,
+                          color: widget.isSuccess 
+                              ? const Color(0xFF2E7D32).withOpacity(0.6) 
+                              : const Color(0xFFC62828).withOpacity(0.6),
+                          size: 18,
+                        ),
+                      ),
                     ],
                   ),
                 ),
