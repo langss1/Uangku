@@ -77,3 +77,29 @@ Sebaliknya, Anda dapat tampil sebagai **software engineer yang kritis dan soluti
 * **Konsep**: Mengalihkan fokus keamanan dari *file-level encryption* ke *access control* fisik (mengunci pintu masuk). Pengguna wajib melewati otentikasi Biometrik (Sidik Jari/FaceID) atau PIN lokal sebelum aplikasi diizinkan membaca file SQLite biasa yang diisolasi di dalam Sandbox privat Android.
 * **Keunggulan Pertahanan**:
   - Menjelaskan bahwa proteksi fisik biometrik yang dipadukan dengan sandbox OS tingkat kernel adalah standar industri modern yang jauh lebih stabil untuk menjaga kerahasiaan data di perangkat pengguna tanpa mengorbankan stabilitas memori.
+
+---
+
+## 🔒 Pengamanan Data Saat Transit (Data in Transit): Enkripsi Pengiriman Data ke Server
+
+Selain mengamankan data lokal (*Data at Rest*), fokus utama dalam pengamanan sistem komunikasi data adalah mengamankan saluran transmisi data antara aplikasi Flutter dan backend server (*Data in Transit*). Hal ini untuk menghindari serangan **Man-in-the-Middle (MitM)** di mana peretas mencoba menyadap data transaksi keuangan pengguna saat dikirim ke server.
+
+Berikut adalah **3 Mekanisme Enkripsi Pengiriman Data ke Server** yang kami terapkan dan dapat Anda presentasikan sebagai keunggulan arsitektur aplikasi Anda:
+
+### 1. Enkripsi Transport-Level (HTTPS / TLS 1.3) - [PERTAHANAN UTAMA]
+* **Cara Kerja**: Semua komunikasi API antara aplikasi Flutter dan Node.js wajib berjalan di atas **HTTPS (Hypertext Transfer Protocol Secure)** menggunakan protokol **TLS 1.2 / TLS 1.3**.
+* **Keunggulan Keamanan**:
+  - Protokol TLS secara otomatis mengenkripsi seluruh request dan response HTTP (termasuk headers, body payload transaksi, parameter URL, dan token JWT) secara asimetris menggunakan RSA/ECC pada proses handshake, dan enkripsi simetris AES-256 selama pengiriman.
+  - Teks polos data transaksi keuangan dijamin 100% tidak dapat disadap oleh pihak ketiga di jaringan internet (seperti admin Wi-Fi publik palsu).
+
+### 2. SSL Certificate Pinning (Proteksi MitM Tingkat Tinggi)
+* **Cara Kerja**: Kami menerapkan kerangka kerja **SSL Pinning** ([ssl_pinning_client.dart](file:///c:/Tugas%20Semester%206/APB/Uangku/uangku_app/lib/core/services/ssl_pinning_client.dart)) pada klien HTTP aplikasi Flutter.
+* **Keunggulan Keamanan**:
+  - Aplikasi Flutter menyimpan/menanamkan (*hardcode*) sidik jari kriptografi (SHA-256 fingerprint) dari sertifikat SSL asli milik server backend Uangku.
+  - Saat aplikasi menembak server, aplikasi akan memeriksa sertifikat SSL yang dikirimkan. Jika ada peretas yang mencoba menyadap menggunakan sertifikat SSL palsu, koneksi akan langsung diputus secara otomatis oleh aplikasi sebelum data sensitif terkirim.
+
+### 3. Payload-Level Encryption (End-to-End Encryption / E2EE) - [OPSIONAL KELAS PREMIUM]
+* **Cara Kerja**: Jika tingkat keamanan ingin ditingkatkan melebihi HTTPS (misalnya untuk menyembunyikan data transaksi dari log server perantara), aplikasi dapat menerapkan **E2EE di Layer Aplikasi**:
+  - **Di Flutter**: Sebelum menembak API `/api/sync`, data JSON mentah dienkripsi menggunakan algoritma **AES-256-CBC** dengan kunci rahasia tertentu menjadi string teks acak tak terbaca.
+  - **Di Node.js**: Server menerima payload acak tersebut, lalu mendekripsinya kembali menggunakan algoritma dan kunci yang sama sebelum disimpan ke database PostgreSQL.
+  - **Keunggulan Keamanan**: Bahkan jika seseorang berhasil menjebol saluran HTTPS, mereka hanya akan melihat string acak terenkripsi yang tidak memiliki arti tanpa kunci dekripsi yang valid.
