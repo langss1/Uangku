@@ -307,31 +307,28 @@ RULE RESPONS (WAJIB DIIKUTI):
     console.error("Chat Error:", error);
     const errMsg = error.message || "";
     
-    // Check if error is due to invalid API key or network and fallback seamlessly
-    if (errMsg.includes("API key not valid") || errMsg.includes("API_KEY_INVALID") || errMsg.includes("403") || errMsg.includes("Forbidden") || errMsg.includes("fetch failed") || errMsg.includes("ENOTFOUND")) {
-      console.warn("⚠️ Gemini API Call failed due to key/network issue. Using intelligent local fallback response.");
-      try {
-        // Re-calculate user variables for the fallback response
-        const userResult = await pool.query('SELECT full_name FROM users WHERE id = $1', [userId]);
-        const userName = userResult.rows[0]?.full_name || 'Pengguna';
-        const result = await pool.query('SELECT title, amount, category, date FROM transactions WHERE user_id = $1 ORDER BY date DESC LIMIT 10', [userId]);
-        const transactions = result.rows;
-        const transactionHistory = transactions.length > 0
-          ? transactions.map(t => `- ${t.date}: ${t.title} (Rp${t.amount}) [${t.category}]`).join('\n')
-          : "Belum ada riwayat transaksi.";
-        const summaryResult = await pool.query(`SELECT SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) AS total_income, SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) AS total_expense FROM transactions WHERE user_id = $1`, [userId]);
-        const totalIncome = parseFloat(summaryResult.rows[0].total_income || 0);
-        const totalExpense = parseFloat(summaryResult.rows[0].total_expense || 0);
-        const balance = totalIncome - totalExpense;
-        const formattedBalance = balance.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 });
-        const financialStatus = balance < 0 ? 'KRITIS' : balance < totalIncome * 0.1 ? 'WASPADA' : 'AMAN';
+    console.warn("⚠️ Gemini API Call failed. Falling back seamlessly to intelligent local response. Error details:", errMsg);
+    try {
+      // Re-calculate user variables for the fallback response
+      const userResult = await pool.query('SELECT full_name FROM users WHERE id = $1', [userId]);
+      const userName = userResult.rows[0]?.full_name || 'Pengguna';
+      const result = await pool.query('SELECT title, amount, category, date FROM transactions WHERE user_id = $1 ORDER BY date DESC LIMIT 10', [userId]);
+      const transactions = result.rows;
+      const transactionHistory = transactions.length > 0
+        ? transactions.map(t => `- ${t.date}: ${t.title} (Rp${t.amount}) [${t.category}]`).join('\n')
+        : "Belum ada riwayat transaksi.";
+      const summaryResult = await pool.query(`SELECT SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) AS total_income, SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) AS total_expense FROM transactions WHERE user_id = $1`, [userId]);
+      const totalIncome = parseFloat(summaryResult.rows[0].total_income || 0);
+      const totalExpense = parseFloat(summaryResult.rows[0].total_expense || 0);
+      const balance = totalIncome - totalExpense;
+      const formattedBalance = balance.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 });
+      const financialStatus = balance < 0 ? 'KRITIS' : balance < totalIncome * 0.1 ? 'WASPADA' : 'AMAN';
 
-        const reply = getMockAIResponse(userMessage, userName, totalIncome, totalExpense, balance, formattedBalance, financialStatus, transactionHistory);
-        return res.json({ reply });
-      } catch (innerError) {
-        console.error("Critical Fallback Error:", innerError);
-      }
+      const reply = getMockAIResponse(userMessage, userName, totalIncome, totalExpense, balance, formattedBalance, financialStatus, transactionHistory);
+      return res.json({ reply });
+    } catch (innerError) {
+      console.error("Critical Fallback Error:", innerError);
+      res.status(500).json({ error: "Gagal memproses pesan AI: " + errMsg });
     }
-    res.status(500).json({ error: "Gagal memproses pesan AI: " + errMsg });
   }
 };
