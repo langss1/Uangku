@@ -6,6 +6,7 @@ import 'package:uangku_app/features/auth/login_screen.dart';
 import 'package:uangku_app/features/home/home_screen.dart';
 import 'package:uangku_app/core/theme/app_colors.dart';
 import 'package:uangku_app/core/services/secure_storage_helper.dart';
+import 'package:uangku_app/core/services/biometric_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -17,6 +18,7 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMixin {
   late AnimationController _animationController;
   late AnimationController _continuousController;
+  bool _showAuthRetryScreen = false;
   late Animation<double> _scaleAnimation;
   late Animation<double> _fadeAnimation;
   late Animation<double> _polarScaleAnimation;
@@ -103,9 +105,25 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     if (!context.mounted) return;
 
     if (isLoggedIn) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
-      );
+      final isLockEnabled = await BiometricService.isAppLockEnabled();
+      if (isLockEnabled) {
+        final authenticated = await BiometricService.authenticate();
+        if (authenticated) {
+          if (!context.mounted) return;
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const HomeScreen()),
+          );
+        } else {
+          setState(() {
+            _showAuthRetryScreen = true;
+          });
+        }
+      } else {
+        if (!context.mounted) return;
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
+        );
+      }
     } else {
       Navigator.of(context).pushReplacement(
         PageRouteBuilder(
@@ -148,6 +166,79 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
         child: AnimatedBuilder(
           animation: Listenable.merge([_animationController, _continuousController]),
           builder: (context, child) {
+            if (_showAuthRetryScreen) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryBlue.withOpacity(0.08),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.lock_outline,
+                        size: 72,
+                        color: AppColors.primaryBlue,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    const Text(
+                      "Uangku Terkunci",
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w900,
+                        color: AppColors.textDark,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 40),
+                      child: Text(
+                        "Silakan verifikasi sidik jari atau PIN Anda untuk masuk ke aplikasi.",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: AppColors.textDark.withOpacity(0.6),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 40),
+                    ElevatedButton.icon(
+                      onPressed: () async {
+                        final authenticated = await BiometricService.authenticate();
+                        if (authenticated) {
+                          if (!context.mounted) return;
+                          Navigator.of(context).pushReplacement(
+                            MaterialPageRoute(builder: (_) => const HomeScreen()),
+                          );
+                        }
+                      },
+                      icon: const Icon(Icons.fingerprint, color: Colors.white),
+                      label: const Text(
+                        "Verifikasi & Masuk",
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primaryBlue,
+                        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        elevation: 2,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+
             final floatY = math.sin(_floatingAnimation.value * math.pi * 2) * 12;
             final floatX = math.cos(_floatingAnimation.value * math.pi * 2) * 8;
 

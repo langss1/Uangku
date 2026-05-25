@@ -11,6 +11,7 @@ import 'package:provider/provider.dart';
 import 'package:uangku_app/core/providers/preferences_provider.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
+import 'package:uangku_app/core/services/biometric_service.dart';
 
 class SettingsEditorScreen extends StatefulWidget {
   final String title;
@@ -40,6 +41,8 @@ class _SettingsEditorScreenState extends State<SettingsEditorScreen> {
   String _twoFactorType = 'NONE';
   bool _hasTotpSecret = false;
   String? _profileImagePath;
+  bool _isAppLockEnabled = false;
+  bool _isBiometricsSupported = false;
 
   @override
   void initState() {
@@ -50,6 +53,7 @@ class _SettingsEditorScreenState extends State<SettingsEditorScreen> {
       _loadProfileImage();
     } else {
       _load2FAStatus();
+      _loadAppLockStatus();
     }
   }
 
@@ -181,6 +185,15 @@ class _SettingsEditorScreenState extends State<SettingsEditorScreen> {
     } catch (e) {
       debugPrint("Error loading 2FA status: $e");
     }
+  }
+
+  Future<void> _loadAppLockStatus() async {
+    final isSupported = await BiometricService.isBiometricsAvailable();
+    final isEnabled = await BiometricService.isAppLockEnabled();
+    setState(() {
+      _isBiometricsSupported = isSupported;
+      _isAppLockEnabled = isEnabled;
+    });
   }
 
 
@@ -436,6 +449,77 @@ class _SettingsEditorScreenState extends State<SettingsEditorScreen> {
               ),
               const SizedBox(height: 8),
               const Text('Selecting Google Authenticator will require setting up the app.', style: TextStyle(fontSize: 12, color: AppColors.textLight)),
+              const SizedBox(height: 24),
+              const Divider(color: Color(0xFFE2E8F0), thickness: 1),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          isIndo ? 'Kunci Aplikasi (Biometrik / PIN)' : 'App Lock (Biometrics / PIN)',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: context.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          isIndo
+                              ? 'Minta sidik jari atau PIN saat membuka aplikasi Uangku.'
+                              : 'Require fingerprint or PIN when launching Uangku.',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textLight,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Switch(
+                    value: _isAppLockEnabled,
+                    activeColor: AppColors.primaryBlue,
+                    onChanged: (bool newValue) async {
+                      if (newValue) {
+                        // Confirm biometric ownership first before enabling
+                        final authenticated = await BiometricService.authenticate();
+                        if (authenticated) {
+                          await BiometricService.setAppLockEnabled(true);
+                          setState(() {
+                            _isAppLockEnabled = true;
+                          });
+                          CustomPopup.show(
+                            context,
+                            isIndo ? 'Kunci aplikasi berhasil diaktifkan!' : 'App lock enabled successfully!',
+                            isSuccess: true,
+                          );
+                        } else {
+                          CustomPopup.show(
+                            context,
+                            isIndo ? 'Gagal memverifikasi sidik jari.' : 'Failed to verify biometrics.',
+                            isSuccess: false,
+                          );
+                        }
+                      } else {
+                        // Turn off lock
+                        await BiometricService.setAppLockEnabled(false);
+                        setState(() {
+                          _isAppLockEnabled = false;
+                        });
+                        CustomPopup.show(
+                          context,
+                          isIndo ? 'Kunci aplikasi dinonaktifkan.' : 'App lock disabled.',
+                          isSuccess: true,
+                        );
+                      }
+                    },
+                  ),
+                ],
+              ),
             ],
             const SizedBox(height: 48),
             SizedBox(
