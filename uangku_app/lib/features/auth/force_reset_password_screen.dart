@@ -62,10 +62,12 @@ class _ForceResetPasswordScreenState extends State<ForceResetPasswordScreen> {
 
         if (userResponse.statusCode == 200) {
           final userData = jsonDecode(userResponse.body)['user'];
+          final userEmail = userData['email'] ?? '';
           await SecureStorageHelper.saveUserData(
             name: userData['full_name'] ?? '',
-            email: userData['email'] ?? '',
+            email: userEmail,
           );
+          await prefs.setString('user_email', userEmail);
         }
 
         CustomPopup.show(context, 'Password berhasil diperbarui!', isSuccess: true);

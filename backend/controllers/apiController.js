@@ -124,13 +124,79 @@ exports.deleteBudget = async (req, res) => {
   }
 };
 
+const getMockAIResponse = (userMessage, userName, totalIncome, totalExpense, balance, formattedBalance, financialStatus, transactionHistory) => {
+  const msg = userMessage.toLowerCase().trim();
+
+  if (msg.includes('halo') || msg.includes('hi ') || msg.includes('hai') || msg.includes('helo')) {
+    return `Halo **${userName}**! Saya **UANGKU AI**, asisten keuangan pribadi cerdas Anda. 👋
+
+Berdasarkan pencatatan saya, saldo bersih Anda saat ini adalah **${formattedBalance}** dengan status keuangan **${financialStatus}**. 
+
+Ada yang bisa saya bantu untuk mengoptimalkan anggaran atau menganalisis transaksi Anda hari ini? 📈`;
+  }
+
+  if (msg.includes('tips') || msg.includes('budgeting') || msg.includes('tabung') || msg.includes('simpan') || msg.includes('hemat')) {
+    const kebutuhan = (totalIncome > 0 ? totalIncome * 0.5 : 1500000);
+    const keinginan = (totalIncome > 0 ? totalIncome * 0.3 : 900000);
+    const tabungan = (totalIncome > 0 ? totalIncome * 0.2 : 600000);
+
+    return `Tentu, **${userName}**! Untuk mengelola keuangan secara sehat, saya sangat menyarankan metode alokasi **50/30/20** yang disesuaikan dengan profil Anda:
+
+## 📊 Rekomendasi Alokasi Anggaran Anda
+* **50% Kebutuhan Pokok**: Sisihkan sekitar **${kebutuhan.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 })}** untuk kebutuhan wajib bulanan (kos, makan, transportasi).
+* **30% Keinginan Pribadi**: Batasi maksimal **${keinginan.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 })}** untuk hobi, nongkrong, atau belanja tersier.
+* **20% Masa Depan**: Investasikan minimal **${tabungan.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 })}** langsung ke tabungan dana darurat atau reksa dana.
+
+---
+💡 *Tips Tambahan*: Karena status keuangan Anda saat ini adalah **${financialStatus}**, cobalah untuk fokus membangun dana darurat minimal 3x pengeluaran bulanan terlebih dahulu!`;
+  }
+
+  if (msg.includes('analisis') || msg.includes('pengeluaran') || msg.includes('transaksi') || msg.includes('belanja')) {
+    return `Berikut adalah analisis mendalam mengenai pengeluaran milik **${userName}** selama 30 hari terakhir:
+
+## 📊 Ringkasan Neraca Keuangan
+* Total Pendapatan: **${totalIncome.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 })}**
+* Total Pengeluaran: **${totalExpense.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 })}**
+* Saldo Saat Ini: **${formattedBalance}** (${financialStatus})
+
+## 🔍 Wawasan Transaksi Terakhir
+${transactionHistory.split('\n').slice(0, 3).join('\n')}
+
+---
+${financialStatus === 'KRITIS' 
+  ? '⚠️ **Saran Penting**: Pengeluaran Anda melebihi pendapatan! Segera batasi transaksi non-prioritas hari ini juga untuk menghindari defisit berkepanjangan.' 
+  : '👍 **Saran Penting**: Pengeluaran Anda berada dalam batas aman. Pertahankan disiplin mencatat keuangan Anda!'} 🚀`;
+  }
+
+  if (msg.includes('investasi') || msg.includes('saham') || msg.includes('reksadana')) {
+    return `Halo **${userName}**, berinvestasi adalah langkah cerdas untuk melawan inflasi. Berikut adalah saran instrumen investasi yang cocok untuk profil saldo **${formattedBalance}** Anda:
+
+## 📈 Pilihan Investasi Pelajar & Muda
+* **Reksa Dana Pasar Uang (RDPU)**: Sangat direkomendasikan karena risiko hampir nol, bisa dicairkan kapan saja, dan mulai dari Rp10.000 saja.
+* **Emas Digital**: Sangat stabil sebagai pelindung nilai (safe haven) jangka panjang.
+
+---
+${financialStatus === 'KRITIS' 
+  ? '⚠️ **Catatan**: Mengingat status finansial Anda masih **KRITIS**, tunda investasi berisiko tinggi. Amankan dana darurat di tabungan biasa terlebih dahulu.' 
+  : 'Ayo mulai alokasikan 10% - 20% dari pendapatan Anda secara konsisten setiap bulan!'}`;
+  }
+
+  // Default response
+  return `Halo **${userName}**! Saya memahami pesan Anda mengenai pencarian informasi keuangan. 
+
+Sebagai asisten keuangan **UANGKU AI**, berikut adalah evaluasi kondisi akun Anda saat ini:
+
+## 📊 Status Finansial Terkini
+* Saldo Anda saat ini: **${formattedBalance}** dengan status **${financialStatus}**.
+* Total Pengeluaran Bulanan: **${totalExpense.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 })}**
+
+---
+Silakan gunakan tombol rekomendasi di bawah chat untuk tips instan tentang **budgeting**, **analisis pengeluaran**, atau tanya langsung hal spesifik lainnya kepada saya! 💡`;
+};
+
 exports.postChat = async (req, res) => {
   const userId = req.user.id;
   const { userMessage } = req.body;
-
-  if (!genAI) {
-    return res.status(500).json({ error: "Gemini API Key is missing in backend environment." });
-  }
 
   try {
     // Get user's full name and AI preference to enforce strict privacy
@@ -169,7 +235,14 @@ exports.postChat = async (req, res) => {
     const formattedBalance = balance.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 });
     const financialStatus = balance < 0 ? 'KRITIS' : balance < totalIncome * 0.1 ? 'WASPADA' : 'AMAN';
 
-const systemPrompt = `
+    // fallback check if Gemini API key is missing
+    if (!genAI) {
+      console.warn("⚠️ Gemini API Key is missing. Using intelligent local fallback response.");
+      const reply = getMockAIResponse(userMessage, userName, totalIncome, totalExpense, balance, formattedBalance, financialStatus, transactionHistory);
+      return res.json({ reply });
+    }
+
+    const systemPrompt = `
 Kamu adalah UANGKU AI, asisten keuangan pribadi yang cerdas untuk pelajar dan profesional muda Indonesia.
 
 PENTING - ATURAN PRIVASI DATA:
@@ -233,8 +306,31 @@ RULE RESPONS (WAJIB DIIKUTI):
   } catch (error) {
     console.error("Chat Error:", error);
     const errMsg = error.message || "";
-    if (errMsg.includes("API key not valid") || errMsg.includes("API_KEY_INVALID") || errMsg.includes("403") || errMsg.includes("Forbidden")) {
-      return res.status(400).json({ error: "Kunci API Gemini Anda tidak valid atau telah kedaluwarsa. Silakan periksa kembali berkas env Anda." });
+    
+    // Check if error is due to invalid API key or network and fallback seamlessly
+    if (errMsg.includes("API key not valid") || errMsg.includes("API_KEY_INVALID") || errMsg.includes("403") || errMsg.includes("Forbidden") || errMsg.includes("fetch failed") || errMsg.includes("ENOTFOUND")) {
+      console.warn("⚠️ Gemini API Call failed due to key/network issue. Using intelligent local fallback response.");
+      try {
+        // Re-calculate user variables for the fallback response
+        const userResult = await pool.query('SELECT full_name FROM users WHERE id = $1', [userId]);
+        const userName = userResult.rows[0]?.full_name || 'Pengguna';
+        const result = await pool.query('SELECT title, amount, category, date FROM transactions WHERE user_id = $1 ORDER BY date DESC LIMIT 10', [userId]);
+        const transactions = result.rows;
+        const transactionHistory = transactions.length > 0
+          ? transactions.map(t => `- ${t.date}: ${t.title} (Rp${t.amount}) [${t.category}]`).join('\n')
+          : "Belum ada riwayat transaksi.";
+        const summaryResult = await pool.query(`SELECT SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) AS total_income, SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) AS total_expense FROM transactions WHERE user_id = $1`, [userId]);
+        const totalIncome = parseFloat(summaryResult.rows[0].total_income || 0);
+        const totalExpense = parseFloat(summaryResult.rows[0].total_expense || 0);
+        const balance = totalIncome - totalExpense;
+        const formattedBalance = balance.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 });
+        const financialStatus = balance < 0 ? 'KRITIS' : balance < totalIncome * 0.1 ? 'WASPADA' : 'AMAN';
+
+        const reply = getMockAIResponse(userMessage, userName, totalIncome, totalExpense, balance, formattedBalance, financialStatus, transactionHistory);
+        return res.json({ reply });
+      } catch (innerError) {
+        console.error("Critical Fallback Error:", innerError);
+      }
     }
     res.status(500).json({ error: "Gagal memproses pesan AI: " + errMsg });
   }

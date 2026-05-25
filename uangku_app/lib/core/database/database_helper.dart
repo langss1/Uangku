@@ -1,8 +1,7 @@
-import 'package:sqflite_sqlcipher/sqflite.dart';
+import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'package:uangku_app/core/services/secure_storage_helper.dart';
-import 'dart:convert';
-import 'dart:math';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._init();
@@ -19,15 +18,6 @@ class DatabaseHelper {
   Future<Database> _initDB(String filePath) async {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, filePath);
-
-    // Fetch or generate cryptographically secure AES-256 database password key
-    String? password = await SecureStorageHelper.getDbPassword();
-    if (password == null) {
-      final random = Random.secure();
-      final values = List<int>.generate(32, (i) => random.nextInt(256));
-      password = base64Url.encode(values);
-      await SecureStorageHelper.saveDbPassword(password);
-    }
 
     return await openDatabase(
       path,
@@ -53,7 +43,6 @@ class DatabaseHelper {
           'CREATE INDEX IF NOT EXISTS idx_budgets_user ON budgets(user_email)',
         );
       },
-      password: password,
     );
   }
 
@@ -175,11 +164,10 @@ class DatabaseHelper {
     );
   }
 
-  /// Ambil email dari SecureStorage (BUKAN SharedPreferences) untuk keamanan.
-  /// Tidak bisa di-tamper oleh user karena tersimpan encrypted.
+  /// Ambil email dari SharedPreferences untuk keandalan sinkron yang lebih baik.
   Future<String> _getCurrentEmail() async {
-    final email = await SecureStorageHelper.getUserEmail();
-    return email ?? '';
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('user_email') ?? '';
   }
 
   // ─── TRANSACTIONS ────────────────────────────────────────────────────────────

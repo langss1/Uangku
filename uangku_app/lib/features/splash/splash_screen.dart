@@ -80,7 +80,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     if (isLoggedInPref) {
       try {
         final token = await SecureStorageHelper.getToken();
-        final email = await SecureStorageHelper.getUserEmail();
+        final email = prefs.getString('user_email');
         if (token != null && token.isNotEmpty && email != null && email.isNotEmpty) {
           isLoggedIn = true;
         } else {

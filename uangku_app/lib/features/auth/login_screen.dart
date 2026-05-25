@@ -122,10 +122,12 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
         await prefs.setBool('isLoggedIn', true);
         await SecureStorageHelper.saveToken(data['token']);
         if (data['user'] != null) {
+          final userEmail = data['user']['email'] ?? '';
           await SecureStorageHelper.saveUserData(
             name: data['user']['full_name'] ?? '',
-            email: data['user']['email'] ?? '',
+            email: userEmail,
           );
+          await prefs.setString('user_email', userEmail);
         }
 
         Navigator.of(context).pushReplacement(

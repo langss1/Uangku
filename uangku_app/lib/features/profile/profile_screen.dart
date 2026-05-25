@@ -144,6 +144,8 @@ class _ProfileScreenState extends State<ProfileScreen>
           if (user['pref_ai_insights'] != null) _aiInsights = user['pref_ai_insights'];
         });
         await SecureStorageHelper.saveUserData(name: _userName, email: _userEmail);
+        await prefs.setString('user_name', _userName);
+        await prefs.setString('user_email', _userEmail);
         await prefs.setBool('pref_morning_report', _morningReport);
         await prefs.setBool('pref_budget_alerts', _budgetAlerts);
         await prefs.setBool('pref_ai_insights', _aiInsights);

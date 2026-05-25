@@ -48,7 +48,7 @@ dependencies:
   share_plus: any
   path_provider: ^2.1.5
   flutter_dotenv: any
-  sqflite_sqlcipher: ^3.0.1
+  sqflite: ^2.3.0
   connectivity_plus: any
   video_player: any
   image_picker: ^1.2.1
