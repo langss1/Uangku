@@ -1,6 +1,6 @@
 import 'dart:io';
 
 void main() {
-  const z = ZLibDecoder();
+  final z = ZLibDecoder();
   print(z);
 }

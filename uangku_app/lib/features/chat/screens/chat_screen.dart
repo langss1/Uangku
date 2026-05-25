@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
-import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:math' as math;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uangku_app/core/theme/app_colors.dart';
+import 'package:uangku_app/core/services/network_service.dart';
+import 'package:uangku_app/core/services/secure_storage_helper.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({Key? key}) : super(key: key);
@@ -91,10 +92,9 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
 
     try {
       final baseUrl = dotenv.env['API_BASE_URL'] ?? 'http://10.0.2.2:8000';
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('token') ?? '';
+      final token = await SecureStorageHelper.getToken() ?? '';
 
-      final response = await http.post(
+      final response = await NetworkService.post(
         Uri.parse('$baseUrl/api/data/chat'),
         headers: {
           'Content-Type': 'application/json',
@@ -116,11 +116,18 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
           });
         });
       } else {
+        String errorMsg = 'Gagal menghubungi server (Status: ${response.statusCode})';
+        try {
+          final data = jsonDecode(response.body);
+          if (data['error'] != null) {
+            errorMsg = data['error'].toString();
+          }
+        } catch (_) {}
         setState(() {
           _isTyping = false;
           _messages.add({
             'isUser': false,
-            'text': 'Gagal menghubungi server (Status: ${response.statusCode})',
+            'text': errorMsg,
             'time': _getCurrentTime(),
           });
         });

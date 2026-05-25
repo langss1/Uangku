@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:uangku_app/core/utils/custom_popup.dart';
 import 'package:uangku_app/core/theme/app_colors.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uangku_app/core/services/network_service.dart';
+import 'package:uangku_app/core/services/secure_storage_helper.dart';
 import 'package:provider/provider.dart';
 import 'package:uangku_app/core/providers/preferences_provider.dart';
+import 'dart:convert';
 
 class ChangePasswordScreen extends StatefulWidget {
   const ChangePasswordScreen({super.key});
@@ -34,15 +34,14 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     });
 
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final email = prefs.getString('user_email') ?? '';
+      final email = await SecureStorageHelper.getUserEmail() ?? '';
 
       if (email.isEmpty) {
         if (mounted) CustomPopup.show(context, 'Email tidak ditemukan, silakan login ulang.', isSuccess: false);
         return;
       }
 
-      final response = await http.post(
+      final response = await NetworkService.post(
         Uri.parse('http://145.79.10.157:8000/api/auth/login'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
@@ -91,10 +90,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     });
 
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('token') ?? '';
+      final token = await SecureStorageHelper.getToken() ?? '';
 
-      final response = await http.put(
+      final response = await NetworkService.put(
         Uri.parse('http://145.79.10.157:8000/api/auth/security'),
         headers: {
           'Content-Type': 'application/json',

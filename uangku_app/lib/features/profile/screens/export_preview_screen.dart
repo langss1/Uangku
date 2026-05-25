@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:uangku_app/core/models/transaction_model.dart';
+import 'package:uangku_app/core/theme/app_colors.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:path_provider/path_provider.dart';
@@ -284,12 +285,12 @@ class _ExportPreviewScreenState extends State<ExportPreviewScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF1F5F9), // Light grey background
+      backgroundColor: context.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Export Preview', style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 18)),
-        backgroundColor: Colors.white,
-        elevation: 1,
-        iconTheme: const IconThemeData(color: Colors.black87),
+        title: Text('Export Preview', style: TextStyle(color: context.textPrimary, fontWeight: FontWeight.bold, fontSize: 18)),
+        backgroundColor: context.scaffoldBackgroundColor,
+        elevation: 0,
+        iconTheme: IconThemeData(color: context.textPrimary),
       ),
       body: Column(
         children: [
@@ -531,7 +532,7 @@ class _ExportPreviewScreenState extends State<ExportPreviewScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.cardColor,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -549,9 +550,9 @@ class _ExportPreviewScreenState extends State<ExportPreviewScreen> {
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  side: const BorderSide(color: Colors.grey),
+                  side: BorderSide(color: context.borderColor),
                 ),
-                child: const Text('Cancel', style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold)),
+                child: Text('Cancel', style: TextStyle(color: context.textPrimary, fontWeight: FontWeight.bold)),
               ),
             ),
             const SizedBox(width: 16),

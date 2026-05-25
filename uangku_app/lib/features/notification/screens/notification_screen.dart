@@ -22,16 +22,25 @@ class _NotificationScreenState extends State<NotificationScreen> {
   }
 
   Future<void> _loadNotifications() async {
-    final data = await DatabaseHelper.instance.getNotifications();
-    setState(() {
-      _notifications = data.map((e) => NotificationModel.fromMap(e)).toList();
-      _isLoading = false;
-    });
+    try {
+      final data = await DatabaseHelper.instance.getNotifications();
+      setState(() {
+        _notifications = data.map((e) => NotificationModel.fromMap(e)).toList();
+        _isLoading = false;
+      });
 
-    // Mark all as read when opened
-    for (var notif in _notifications) {
-      if (!notif.isRead) {
-        await DatabaseHelper.instance.markNotificationAsRead(notif.id);
+      // Mark all as read when opened
+      for (var notif in _notifications) {
+        if (!notif.isRead) {
+          await DatabaseHelper.instance.markNotificationAsRead(notif.id);
+        }
+      }
+    } catch (e) {
+      debugPrint('Error loading notifications: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
       }
     }
   }
@@ -111,23 +120,23 @@ class _NotificationScreenState extends State<NotificationScreen> {
                           ),
                         ),
                         const SizedBox(height: 24),
-                        const Text(
+                        Text(
                           'Notifikasi mu kosong',
                           style: TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.bold,
-                            color: AppColors.textDark,
+                            color: context.textPrimary,
                           ),
                         ),
                         const SizedBox(height: 12),
-                        const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 40),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 40),
                           child: Text(
                             'notifikasi mu kosong kayak dompet mu nih hahaha',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 14,
-                              color: Color(0xFF64748B),
+                              color: context.textSecondary,
                               height: 1.5,
                             ),
                           ),

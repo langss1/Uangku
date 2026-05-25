@@ -8,6 +8,8 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:uangku_app/core/data/transaction_data.dart';
 import 'package:uangku_app/core/services/notification_service.dart';
 import 'package:workmanager/workmanager.dart';
+import 'package:uangku_app/core/services/network_service.dart';
+import 'package:uangku_app/core/services/security_service.dart';
 
 @pragma('vm:entry-point')
 void callbackDispatcher() {
@@ -30,6 +32,10 @@ void callbackDispatcher() {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
+  
+  // Initialize Security and SSL Pinning HTTP Client
+  await NetworkService.init();
+  await SecurityService.checkEnvironment();
   
   // Inisialisasi WorkManager untuk berjalan meski aplikasi di-kill
   Workmanager().initialize(

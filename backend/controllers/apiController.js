@@ -219,7 +219,7 @@ RULE RESPONS (WAJIB DIIKUTI):
 7. TOPIK: Jawab HANYA pertanyaan seputar keuangan milik "${userName}". Jika ditanya hal lain atau data orang lain, tolak dengan sopan.
 `;
 
-    const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     const prompt = `${systemPrompt}\n\nPertanyaan User: ${userMessage}`;
 
     const response = await model.generateContent(prompt);
@@ -232,6 +232,10 @@ RULE RESPONS (WAJIB DIIKUTI):
 
   } catch (error) {
     console.error("Chat Error:", error);
-    res.status(500).json({ error: "Gagal memproses pesan AI." });
+    const errMsg = error.message || "";
+    if (errMsg.includes("API key not valid") || errMsg.includes("API_KEY_INVALID") || errMsg.includes("403") || errMsg.includes("Forbidden")) {
+      return res.status(400).json({ error: "Kunci API Gemini Anda tidak valid atau telah kedaluwarsa. Silakan periksa kembali berkas env Anda." });
+    }
+    res.status(500).json({ error: "Gagal memproses pesan AI: " + errMsg });
   }
 };

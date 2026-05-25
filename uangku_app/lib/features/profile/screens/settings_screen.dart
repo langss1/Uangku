@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:uangku_app/core/utils/custom_popup.dart';
 import 'package:uangku_app/core/theme/app_colors.dart';
+import 'package:uangku_app/core/utils/responsive.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http/http.dart' as http;
+import 'package:uangku_app/core/services/network_service.dart';
+import 'package:uangku_app/core/services/secure_storage_helper.dart';
 import 'dart:convert';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:uangku_app/core/providers/preferences_provider.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsEditorScreen extends StatefulWidget {
   final String title;
@@ -61,7 +62,11 @@ class _SettingsEditorScreenState extends State<SettingsEditorScreen> {
 
   Future<void> _pickImage() async {
     final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+    final XFile? image = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+      maxWidth: 800,
+    );
     if (image != null) {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('profile_image_path', image.path);
@@ -71,13 +76,96 @@ class _SettingsEditorScreenState extends State<SettingsEditorScreen> {
     }
   }
 
-  Future<void> _load2FAStatus() async {
+  Future<void> _removePhoto() async {
     final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token');
+    await prefs.remove('profile_image_path');
+    if (mounted) {
+      setState(() {
+        _profileImagePath = null;
+      });
+    }
+  }
+
+  void _showPhotoOptions() {
+    final isIndo = Provider.of<PreferencesProvider>(context, listen: false).language.toLowerCase() == 'id';
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        margin: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: context.cardColor,
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: context.borderColor,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryBlue.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Icon(Icons.photo_library_outlined, color: AppColors.primaryBlue, size: 22),
+                  ),
+                  title: Text(
+                    isIndo ? 'Pilih dari Galeri' : 'Choose from Gallery',
+                    style: TextStyle(fontWeight: FontWeight.w700, color: context.textPrimary),
+                  ),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _pickImage();
+                  },
+                ),
+                if (_profileImagePath != null) ...[
+                  Divider(height: 1, indent: 20, endIndent: 20, color: context.borderColor),
+                  ListTile(
+                    leading: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE11D48).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: const Icon(Icons.delete_outline_rounded, color: Color(0xFFE11D48), size: 22),
+                    ),
+                    title: Text(
+                      isIndo ? 'Hapus Foto Profil' : 'Remove Profile Photo',
+                      style: const TextStyle(fontWeight: FontWeight.w700, color: Color(0xFFE11D48)),
+                    ),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _removePhoto();
+                    },
+                  ),
+                ],
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _load2FAStatus() async {
+    final token = await SecureStorageHelper.getToken();
     
     // Update user profile
     try {
-      final response = await http.get(
+      final response = await NetworkService.get(
         Uri.parse('http://145.79.10.157:8000/api/auth/profile'),
         headers: {'Authorization': 'Bearer $token'},
       );
@@ -104,11 +192,26 @@ class _SettingsEditorScreenState extends State<SettingsEditorScreen> {
   }
 
   Future<void> _saveSettings() async {
-    setState(() => _isLoading = true);
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token');
+    final isIndo = Provider.of<PreferencesProvider>(context, listen: false).language == 'id';
 
-    final String url = widget.isSecurity 
+    // ─── Validasi input ──────────────────────────────────────────────────────
+    if (!widget.isSecurity) {
+      final name = _field1Controller.text.trim();
+      final email = _field2Controller.text.trim();
+      if (name.isEmpty) {
+        CustomPopup.show(context, isIndo ? 'Nama tidak boleh kosong' : 'Name cannot be empty', isSuccess: false);
+        return;
+      }
+      if (email.isEmpty || !email.contains('@')) {
+        CustomPopup.show(context, isIndo ? 'Email tidak valid' : 'Invalid email address', isSuccess: false);
+        return;
+      }
+    }
+
+    setState(() => _isLoading = true);
+    final token = await SecureStorageHelper.getToken();
+
+    final String url = widget.isSecurity
         ? 'http://145.79.10.157:8000/api/auth/security'
         : 'http://145.79.10.157:8000/api/auth/profile';
 
@@ -117,47 +220,97 @@ class _SettingsEditorScreenState extends State<SettingsEditorScreen> {
             "password": _field1Controller.text.isNotEmpty ? _field1Controller.text : null,
           }
         : {
-            "full_name": _field1Controller.text,
-            "email": _field2Controller.text,
+            "full_name": _field1Controller.text.trim(),
+            "email": _field2Controller.text.trim(),
           };
 
-    // Remove nulls
     body.removeWhere((key, value) => value == null);
 
     if (body.isEmpty && widget.isSecurity) {
-        // If nothing to save for security, just pop
-        setState(() => _isLoading = false);
-        Navigator.pop(context, true);
-        return;
+      setState(() => _isLoading = false);
+      Navigator.pop(context, true);
+      return;
     }
 
     try {
-      final response = await http.put(
+      final response = await NetworkService.put(
         Uri.parse(url),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
         body: jsonEncode(body),
-      );
+      ).timeout(const Duration(seconds: 15));
 
       if (response.statusCode == 200) {
+        // Simpan ke SecureStorage dan SharedPreferences
         if (!widget.isSecurity) {
-          await prefs.setString('user_name', _field1Controller.text);
-          await prefs.setString('user_email', _field2Controller.text);
+          final newName = _field1Controller.text.trim();
+          final newEmail = _field2Controller.text.trim();
+          await SecureStorageHelper.saveUserData(name: newName, email: newEmail);
+
+          // Sync ke SharedPreferences untuk komponen lain yang masih pakai prefs
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('user_name', newName);
+          await prefs.setString('user_email', newEmail);
         }
         if (mounted) {
-          CustomPopup.show(context, 'Profil berhasil diperbarui', isSuccess: true);
+          CustomPopup.show(context, isIndo ? 'Profil berhasil diperbarui' : 'Profile updated successfully', isSuccess: true);
+          Navigator.pop(context, true);
+        }
+      } else if (response.statusCode == 401) {
+        // Token expired
+        if (mounted) {
+          CustomPopup.show(context, isIndo ? 'Sesi habis, silakan login ulang' : 'Session expired, please login again', isSuccess: false);
+        }
+      } else {
+        // Server error — simpan lokal tetap berjalan tapi beri tahu user
+        if (!widget.isSecurity) {
+          final newName = _field1Controller.text.trim();
+          final newEmail = _field2Controller.text.trim();
+          await SecureStorageHelper.saveUserData(name: newName, email: newEmail);
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('user_name', newName);
+          await prefs.setString('user_email', newEmail);
+          if (mounted) {
+            CustomPopup.show(
+              context,
+              isIndo
+                  ? 'Disimpan lokal. Server error: ${response.statusCode}'
+                  : 'Saved locally. Server error: ${response.statusCode}',
+              isSuccess: false,
+            );
+            Navigator.pop(context, true);
+          }
+        } else {
+          if (mounted) {
+            CustomPopup.show(context, 'Error ${response.statusCode}', isSuccess: false);
+          }
+        }
+      }
+    } on Exception catch (e) {
+      // Network/timeout error — simpan lokal untuk non-security
+      if (!widget.isSecurity) {
+        final newName = _field1Controller.text.trim();
+        final newEmail = _field2Controller.text.trim();
+        await SecureStorageHelper.saveUserData(name: newName, email: newEmail);
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('user_name', newName);
+        await prefs.setString('user_email', newEmail);
+        if (mounted) {
+          CustomPopup.show(
+            context,
+            isIndo
+                ? 'Tidak bisa terhubung ke server. Perubahan disimpan lokal.'
+                : 'Cannot connect to server. Changes saved locally.',
+            isSuccess: false,
+          );
           Navigator.pop(context, true);
         }
       } else {
         if (mounted) {
-          CustomPopup.show(context, 'Gagal memperbarui profil', isSuccess: false);
+          CustomPopup.show(context, isIndo ? 'Terjadi kesalahan: $e' : 'Error: $e', isSuccess: false);
         }
-      }
-    } catch (e) {
-      if (mounted) {
-        CustomPopup.show(context, 'Terjadi kesalahan: $e', isSuccess: false);
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -200,40 +353,44 @@ class _SettingsEditorScreenState extends State<SettingsEditorScreen> {
               Center(
                 child: Stack(
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(color: context.borderColor, shape: BoxShape.circle),
-                      child: CircleAvatar(
-                        radius: 50,
-                        backgroundColor: context.cardColor,
-                        child: _profileImagePath != null
-                            ? ClipOval(
-                                child: Image.file(
-                                  File(_profileImagePath!),
-                                  width: 100,
-                                  height: 100,
-                                  fit: BoxFit.cover,
-                                ),
-                              )
-                            : Icon(Icons.person, size: 60, color: AppColors.primaryBlue.withOpacity(0.5)),
+                    GestureDetector(
+                      onTap: _showPhotoOptions,
+                      behavior: HitTestBehavior.opaque,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(color: context.borderColor, shape: BoxShape.circle),
+                        child: CircleAvatar(
+                          radius: Responsive.r(context, 50),
+                          backgroundColor: context.cardColor,
+                          child: _profileImagePath != null
+                              ? ClipOval(
+                                  child: Image.file(
+                                    File(_profileImagePath!),
+                                    width: Responsive.r(context, 100),
+                                    height: Responsive.r(context, 100),
+                                    fit: BoxFit.cover,
+                                  ),
+                                )
+                              : Icon(Icons.person, size: Responsive.r(context, 60), color: AppColors.primaryBlue.withOpacity(0.5)),
+                        ),
                       ),
                     ),
                     Positioned(
                       bottom: 0,
                       right: 0,
                       child: GestureDetector(
-                        onTap: _pickImage,
+                        onTap: _showPhotoOptions,
                         child: Container(
-                          padding: const EdgeInsets.all(8),
+                          padding: EdgeInsets.all(Responsive.r(context, 8)),
                           decoration: const BoxDecoration(color: AppColors.primaryBlue, shape: BoxShape.circle),
-                          child: const Icon(Icons.camera_alt, size: 18, color: Colors.white),
+                          child: Icon(Icons.camera_alt, size: Responsive.r(context, 18), color: Colors.white),
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 32),
+              SizedBox(height: Responsive.r(context, 32)),
             ],
             _buildInputField(
               label: widget.isSecurity ? (isIndo ? 'Password Baru' : 'New Password') : (isIndo ? 'Nama Lengkap' : 'Full Name'),
@@ -322,11 +479,10 @@ class _SettingsEditorScreenState extends State<SettingsEditorScreen> {
 
   Future<void> _update2FAType(String type, bool enabled) async {
     setState(() => _isLoading = true);
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token');
+    final token = await SecureStorageHelper.getToken();
 
     try {
-      final response = await http.post(
+      final response = await NetworkService.post(
         Uri.parse('http://145.79.10.157:8000/api/auth/2fa/update-type'),
         headers: {
           'Authorization': 'Bearer $token',
@@ -359,11 +515,10 @@ class _SettingsEditorScreenState extends State<SettingsEditorScreen> {
 
   Future<void> _enable2FA(String intendedType) async {
     setState(() => _isLoading = true);
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token');
+    final token = await SecureStorageHelper.getToken();
 
     try {
-      final response = await http.post(
+      final response = await NetworkService.post(
         Uri.parse('http://145.79.10.157:8000/api/auth/2fa/generate'),
         headers: {'Authorization': 'Bearer $token'},
       );
@@ -446,12 +601,11 @@ class _SettingsEditorScreenState extends State<SettingsEditorScreen> {
                             return;
                           }
                           setStateDialog(() => isVerifying = true);
-                          final prefs = await SharedPreferences.getInstance();
-                          final token = prefs.getString('token');
+                          final token = await SecureStorageHelper.getToken();
 
                           try {
                             // Verify TOTP
-                            final response = await http.post(
+                            final response = await NetworkService.post(
                               Uri.parse('http://145.79.10.157:8000/api/auth/2fa/verify'),
                               headers: {
                                 'Authorization': 'Bearer $token',

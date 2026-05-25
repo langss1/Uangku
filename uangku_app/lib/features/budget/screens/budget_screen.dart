@@ -24,7 +24,11 @@ class _BudgetScreenState extends State<BudgetScreen> with SingleTickerProviderSt
   @override
   void initState() {
     super.initState();
-    BudgetData().loadBudgets();
+    // Only load from SQLite if no budgets are in memory yet (avoids overwriting
+    // newly-added optimistic entries when re-entering the tab).
+    if (BudgetData().budgetsNotifier.value.isEmpty) {
+      BudgetData().loadBudgets();
+    }
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 5),
@@ -37,26 +41,133 @@ class _BudgetScreenState extends State<BudgetScreen> with SingleTickerProviderSt
     super.dispose();
   }
 
+  void _showHelpDialog(BuildContext context) {
+    final isIndo = Provider.of<PreferencesProvider>(context, listen: false).language == 'id';
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: context.cardColor,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                isIndo ? 'Cara Penggunaan' : 'How to Use',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: context.textPrimary,
+                  fontSize: 18,
+                ),
+              ),
+              IconButton(
+                icon: Icon(Icons.close, color: context.textSecondary),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHelpItem(
+                context,
+                '1',
+                isIndo 
+                  ? 'Buat anggaran dengan memilih kategori transaksi, memasukkan nominal batas, dan jangka waktu.'
+                  : 'Create a budget by selecting a category, entering a limit, and choosing a duration.',
+              ),
+              const SizedBox(height: 12),
+              _buildHelpItem(
+                context,
+                '2',
+                isIndo
+                  ? 'Sistem akan otomatis memantau pengeluaran Anda pada kategori tersebut secara real-time.'
+                  : 'The system will automatically monitor your spending in that category in real-time.',
+              ),
+              const SizedBox(height: 12),
+              _buildHelpItem(
+                context,
+                '3',
+                isIndo
+                  ? 'Lihat sisa dana yang bisa dipakai dan jumlah hari tersisa sebelum periode berakhir.'
+                  : 'View the remaining funds and the number of days left before the period ends.',
+              ),
+              const SizedBox(height: 12),
+              _buildHelpItem(
+                context,
+                '4',
+                isIndo
+                  ? 'Jika pengeluaran melebihi anggaran, sistem akan memberi tahu Anda.'
+                  : 'If spending exceeds the budget, the system will notify you.',
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildHelpItem(BuildContext context, String number, String text) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(6),
+          decoration: const BoxDecoration(
+            color: AppColors.primaryBlue,
+            shape: BoxShape.circle,
+          ),
+          child: Text(
+            number,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(
+              color: context.textSecondary,
+              fontSize: 14,
+              height: 1.4,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: context.scaffoldBackgroundColor,
       extendBodyBehindAppBar: true,
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: Builder(builder: (context) {
           final isIndo = Provider.of<PreferencesProvider>(context).language == 'id';
           return Text(
             isIndo ? 'Anggaran' : 'Budgets',
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+            style: const TextStyle(
+              color: Colors.white, 
+              fontWeight: FontWeight.w800, 
+              fontSize: 20,
+              letterSpacing: -0.5,
+            ),
           );
         }),
         centerTitle: true,
         actions: [
           IconButton(
             icon: const Icon(Icons.help_outline, color: Colors.white),
-            onPressed: () {},
+            onPressed: () => _showHelpDialog(context),
           )
         ],
       ),
@@ -110,119 +221,112 @@ class _BudgetScreenState extends State<BudgetScreen> with SingleTickerProviderSt
                 daysLeft = diff < 0 ? 0 : diff;
               }
 
+              final headerHeight = MediaQuery.of(context).padding.top + 285;
+
               return Stack(
                 children: [
+                  const SizedBox.expand(),
                   // Blue Gradient Header Background with Polar Circles
-                  Container(
-                    height: 380,
-                    width: double.infinity,
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [Color(0xFF1E3A8A), Color(0xFF3B82F6)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: headerHeight,
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Color(0xFF1E3A8A), Color(0xFF3B82F6)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
                       ),
-                    ),
-                    child: AnimatedBuilder(
-                      animation: _animationController,
-                      builder: (context, child) {
-                        return Stack(
-                          clipBehavior: Clip.none,
-                          children: [
-                            Positioned(
-                              top: -60 + (math.sin(_animationController.value * math.pi * 2) * 20),
-                              right: -50 + (math.cos(_animationController.value * math.pi * 2) * 15),
-                              child: Container(
-                                width: 220,
-                                height: 220,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: Colors.white.withOpacity(0.06),
-                                ),
-                              ),
-                            ),
-                            Positioned(
-                              top: 150 + (math.cos(_animationController.value * math.pi * 2) * 25),
-                              left: -40 + (math.sin(_animationController.value * math.pi * 2) * 10),
-                              child: Container(
-                                width: 140,
-                                height: 140,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: Colors.white.withOpacity(0.05),
-                                ),
-                              ),
-                            ),
-                            Positioned(
-                              bottom: 20 + (math.sin(_animationController.value * math.pi * 2) * 15),
-                              right: 20 + (math.cos(_animationController.value * math.pi * 2) * 10),
-                              child: Container(
-                                width: 60,
-                                height: 60,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: Colors.white.withOpacity(0.04),
-                                ),
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                  ),
-                  SafeArea(
-                    child: Column(
-                      children: [
-                        // ── FIXED TOP SECTION (tidak scroll) ──
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.only(top: 20, bottom: 32, left: 24, right: 24),
-                          child: Column(
+                      child: AnimatedBuilder(
+                        animation: _animationController,
+                        builder: (context, child) {
+                          return Stack(
+                            clipBehavior: Clip.none,
                             children: [
-                              _buildArcChart(globalTotalBudget, globalTotalSpent, globalRemaining, daysLeft, isIndo),
-                              const SizedBox(height: 24),
-                              Container(
-                                width: double.infinity,
-                                height: 50,
-                                padding: const EdgeInsets.only(left: 1.5, right: 1.5, bottom: 2.0, top: 0),
-                                decoration: BoxDecoration(
-                                  color: AppColors.primaryBlue,
-                                  borderRadius: BorderRadius.circular(25),
-                                ),
-                                child: ElevatedButton(
-                                  onPressed: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(builder: (_) => const AddBudgetScreen()),
-                                    );
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.white,
-                                    foregroundColor: AppColors.primaryBlue,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(25),
-                                    ),
-                                    elevation: 0,
+                              Positioned(
+                                top: -60 + (math.sin(_animationController.value * math.pi * 2) * 20),
+                                right: -50 + (math.cos(_animationController.value * math.pi * 2) * 15),
+                                child: Container(
+                                  width: 220,
+                                  height: 220,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Colors.white.withOpacity(0.06),
                                   ),
-                                  child: Text(
-                                    isIndo ? 'Buat Anggaran' : 'Create Budget',
-                                    style: const TextStyle(
-                                      fontSize: 16, 
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                                ),
+                              ),
+                              Positioned(
+                                top: 60 + (math.cos(_animationController.value * math.pi * 2) * 25),
+                                left: -40 + (math.sin(_animationController.value * math.pi * 2) * 10),
+                                child: Container(
+                                  width: 140,
+                                  height: 140,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Colors.white.withOpacity(0.05),
+                                  ),
+                                ),
+                              ),
+                              Positioned(
+                                bottom: 10 + (math.sin(_animationController.value * math.pi * 2) * 15),
+                                right: 20 + (math.cos(_animationController.value * math.pi * 2) * 10),
+                                child: Container(
+                                  width: 60,
+                                  height: 60,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Colors.white.withOpacity(0.04),
                                   ),
                                 ),
                               ),
                             ],
-                          ),
-                        ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
 
-                        // ── SCROLLABLE BUDGET LIST (hanya ini yang scroll) ──
-                        Expanded(
-                          child: budgets.isEmpty
-                            ? Center(
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: headerHeight,
+                    child: SafeArea(
+                      bottom: false,
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
+                        child: _buildArcChart(globalTotalBudget, globalTotalSpent, globalRemaining, daysLeft, isIndo),
+                      ),
+                    ),
+                  ),
+
+                  Positioned(
+                    top: headerHeight,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: context.scaffoldBackgroundColor,
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(30),
+                          topRight: Radius.circular(30),
+                        ),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(30),
+                          topRight: Radius.circular(30),
+                        ),
+                        child: budgets.isEmpty
+                          ? SingleChildScrollView(
+                              physics: const BouncingScrollPhysics(),
+                              child: Center(
                                 child: Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 60.0),
+                                  padding: const EdgeInsets.fromLTRB(40, 60, 40, 40),
                                   child: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
@@ -255,49 +359,98 @@ class _BudgetScreenState extends State<BudgetScreen> with SingleTickerProviderSt
                                         ),
                                       ),
                                       const SizedBox(height: 8),
-                                      Padding(
-                                        padding: const EdgeInsets.symmetric(horizontal: 40),
-                                        child: Text(
-                                          isIndo ? "Buat rencana anggaranmu untuk mengontrol pengeluaran dengan lebih baik." : "Create your budget plan to control expenses better.",
-                                          textAlign: TextAlign.center,
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            color: context.textSecondary,
-                                            height: 1.5,
-                                          ),
+                                      Text(
+                                        isIndo ? "Buat rencana anggaranmu untuk mengontrol pengeluaran dengan lebih baik." : "Create your budget plan to control expenses better.",
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: context.textSecondary,
+                                          height: 1.5,
                                         ),
                                       ),
                                     ],
                                   ),
                                 ),
-                              )
-                            : ListView.builder(
-                                padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
-                                itemCount: budgets.length,
-                                itemBuilder: (context, index) {
-                                  final budget = budgets[index];
-                                  double spent = 0;
-                                  for (var tx in transactions) {
-                                    if (!tx.isIncome && tx.category == budget.category) {
-                                      final txLocal = tx.date.toLocal();
-                                      final startLocal = budget.startDate.toLocal();
-                                      final endLocal = budget.endDate.toLocal();
-                                      
-                                      final txDate = DateTime(txLocal.year, txLocal.month, txLocal.day);
-                                      final start = DateTime(startLocal.year, startLocal.month, startLocal.day);
-                                      final end = DateTime(endLocal.year, endLocal.month, endLocal.day);
-                                      
-                                      if ((txDate.isAfter(start) || txDate.isAtSameMomentAs(start)) && 
-                                          (txDate.isBefore(end) || txDate.isAtSameMomentAs(end))) {
-                                        spent += tx.amount;
-                                      }
+                              ),
+                            )
+                          : ListView.builder(
+                              physics: const BouncingScrollPhysics(),
+                              padding: const EdgeInsets.fromLTRB(20, 45, 20, 20),
+                              itemCount: budgets.length,
+                              itemBuilder: (context, index) {
+                                final budget = budgets[index];
+                                double spent = 0;
+                                for (var tx in transactions) {
+                                  if (!tx.isIncome && tx.category == budget.category) {
+                                    final txLocal = tx.date.toLocal();
+                                    final startLocal = budget.startDate.toLocal();
+                                    final endLocal = budget.endDate.toLocal();
+                                    
+                                    final txDate = DateTime(txLocal.year, txLocal.month, txLocal.day);
+                                    final start = DateTime(startLocal.year, startLocal.month, startLocal.day);
+                                    final end = DateTime(endLocal.year, endLocal.month, endLocal.day);
+                                    
+                                    if ((txDate.isAfter(start) || txDate.isAtSameMomentAs(start)) && 
+                                        (txDate.isBefore(end) || txDate.isAtSameMomentAs(end))) {
+                                      spent += tx.amount;
                                     }
                                   }
-                                  return _buildBudgetListTile(budget, spent, isIndo);
-                                },
-                              ),
+                                }
+                                return _buildBudgetListTile(budget, spent, isIndo);
+                              },
+                            ),
+                      ),
+                    ),
+                  ),
+
+                  Positioned(
+                    top: headerHeight - 25,
+                    left: 24,
+                    right: 24,
+                    child: Container(
+                      height: 50,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(25),
+                        border: Border.all(
+                          color: const Color(0xFF1E3A8A),
+                          width: 1.8,
                         ),
-                      ],
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.08),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(25),
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const AddBudgetScreen()),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: const Color(0xFF1E3A8A),
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(25),
+                            ),
+                          ),
+                          child: Text(
+                            isIndo ? 'Buat Anggaran' : 'Create Budget',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF1E3A8A),
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ],

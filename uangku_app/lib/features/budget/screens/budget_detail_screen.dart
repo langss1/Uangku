@@ -32,22 +32,22 @@ class BudgetDetailScreen extends StatelessWidget {
     final actualDaily = passedDays > 0 ? spent / passedDays : spent;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF1F5F9),
+      backgroundColor: context.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: context.scaffoldBackgroundColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.close, color: AppColors.textDark),
+          icon: Icon(Icons.close, color: context.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           'Budget Details',
-          style: TextStyle(color: AppColors.textDark, fontWeight: FontWeight.bold, fontSize: 18),
+          style: TextStyle(color: context.textPrimary, fontWeight: FontWeight.bold, fontSize: 18),
         ),
         centerTitle: false,
         actions: [
           IconButton(
-            icon: const Icon(Icons.edit_outlined, color: AppColors.textDark),
+            icon: Icon(Icons.edit_outlined, color: context.textPrimary),
             onPressed: () async {
               await Navigator.push(
                 context,
@@ -59,7 +59,7 @@ class BudgetDetailScreen extends StatelessWidget {
             },
           ),
           IconButton(
-            icon: const Icon(Icons.delete_outline, color: AppColors.textDark),
+            icon: Icon(Icons.delete_outline, color: context.textPrimary),
             onPressed: () {
               BudgetData().removeBudget(budget.id);
               Navigator.pop(context);
@@ -72,7 +72,7 @@ class BudgetDetailScreen extends StatelessWidget {
           children: [
             // Header Info
             Container(
-              color: Colors.white,
+              color: context.cardColor,
               padding: const EdgeInsets.all(24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -91,14 +91,14 @@ class BudgetDetailScreen extends StatelessWidget {
                       const SizedBox(width: 16),
                       Text(
                         budget.category,
-                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textDark),
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: context.textPrimary),
                       ),
                     ],
                   ),
                   const SizedBox(height: 32),
                   Text(
                     format.format(budget.amount),
-                    style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w800, color: AppColors.textDark),
+                    style: TextStyle(fontSize: 32, fontWeight: FontWeight.w800, color: context.textPrimary),
                   ),
                   const SizedBox(height: 16),
                   Row(
@@ -107,22 +107,22 @@ class BudgetDetailScreen extends StatelessWidget {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Spent', style: TextStyle(color: Color(0xFF64748B), fontSize: 12)),
+                          Text('Spent', style: TextStyle(color: context.textSecondary, fontSize: 12)),
                           const SizedBox(height: 4),
                           Text(
                             format.format(spent),
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.textDark),
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: context.textPrimary),
                           ),
                         ],
                       ),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          const Text('Remaining', style: TextStyle(color: Color(0xFF64748B), fontSize: 12)),
+                          Text('Remaining', style: TextStyle(color: context.textSecondary, fontSize: 12)),
                           const SizedBox(height: 4),
                           Text(
                             format.format(remaining < 0 ? 0 : remaining),
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.textDark),
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: context.textPrimary),
                           ),
                         ],
                       ),
@@ -140,7 +140,7 @@ class BudgetDetailScreen extends StatelessWidget {
                             width: double.infinity,
                             height: 8,
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF1F5F9),
+                              color: context.borderColor,
                               borderRadius: BorderRadius.circular(4),
                             ),
                           ),
@@ -158,7 +158,7 @@ class BudgetDetailScreen extends StatelessWidget {
                             child: Container(
                               width: 2,
                               height: 16,
-                              color: const Color(0xFF94A3B8),
+                              color: context.textSecondary,
                             ),
                           ),
                           Positioned(
@@ -167,12 +167,12 @@ class BudgetDetailScreen extends StatelessWidget {
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFF1F5F9),
+                                color: context.borderColor,
                                 borderRadius: BorderRadius.circular(4),
                               ),
-                              child: const Text(
+                              child: Text(
                                 'Today',
-                                style: TextStyle(fontSize: 10, color: Color(0xFF64748B)),
+                                style: TextStyle(fontSize: 10, color: context.textSecondary),
                               ),
                             ),
                           ),
@@ -184,19 +184,19 @@ class BudgetDetailScreen extends StatelessWidget {
                   // Dates Info
                   Row(
                     children: [
-                      const Icon(Icons.calendar_month, color: Color(0xFF94A3B8), size: 24),
+                      Icon(Icons.calendar_month, color: context.textSecondary, size: 24),
                       const SizedBox(width: 16),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             '${DateFormat('dd/MM/yyyy').format(budget.startDate)} - ${DateFormat('dd/MM/yyyy').format(budget.endDate)}',
-                            style: const TextStyle(fontSize: 16, color: AppColors.textDark),
+                            style: TextStyle(fontSize: 16, color: context.textPrimary),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             '${daysLeft > 0 ? daysLeft : 0} days left',
-                            style: const TextStyle(fontSize: 14, color: Color(0xFF64748B)),
+                            style: TextStyle(fontSize: 14, color: context.textSecondary),
                           ),
                         ],
                       ),
@@ -210,7 +210,7 @@ class BudgetDetailScreen extends StatelessWidget {
 
             // Line Chart & Details
             Container(
-              color: Colors.white,
+              color: context.cardColor,
               padding: const EdgeInsets.all(24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -236,11 +236,11 @@ class BudgetDetailScreen extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 32),
-                  _buildDetailRow('Recommended daily spending', format.format(recommendedDaily)),
+                  _buildDetailRow(context, 'Recommended daily spending', format.format(recommendedDaily)),
                   const SizedBox(height: 16),
-                  _buildDetailRow('Spending projection', format.format(actualDaily * totalDays)),
+                  _buildDetailRow(context, 'Spending projection', format.format(actualDaily * totalDays)),
                   const SizedBox(height: 16),
-                  _buildDetailRow('Actual daily spending', format.format(actualDaily)),
+                  _buildDetailRow(context, 'Actual daily spending', format.format(actualDaily)),
                 ],
               ),
             ),
@@ -250,20 +250,20 @@ class BudgetDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildDetailRow(String label, String value) {
+  Widget _buildDetailRow(BuildContext context, String label, String value) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
           child: Text(
             label,
-            style: const TextStyle(fontSize: 14, color: Color(0xFF64748B)),
+            style: TextStyle(fontSize: 14, color: context.textSecondary),
           ),
         ),
         const SizedBox(width: 16),
         Text(
           value,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textDark),
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: context.textPrimary),
         ),
       ],
     );

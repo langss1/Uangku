@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uangku_app/features/auth/login_screen.dart';
 import 'package:uangku_app/features/home/home_screen.dart';
 import 'package:uangku_app/core/theme/app_colors.dart';
+import 'package:uangku_app/core/services/secure_storage_helper.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -73,7 +74,33 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     if (!context.mounted) return;
 
     final prefs = await SharedPreferences.getInstance();
-    final bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+    final bool isLoggedInPref = prefs.getBool('isLoggedIn') ?? false;
+
+    bool isLoggedIn = false;
+    if (isLoggedInPref) {
+      try {
+        final token = await SecureStorageHelper.getToken();
+        final email = await SecureStorageHelper.getUserEmail();
+        if (token != null && token.isNotEmpty && email != null && email.isNotEmpty) {
+          isLoggedIn = true;
+        } else {
+          debugPrint("⚠️ Secure session invalid or empty. Forcing clean logout...");
+          await prefs.setBool('isLoggedIn', false);
+          await prefs.remove('profile_image_path');
+          await prefs.remove('user_name');
+          await prefs.remove('user_email');
+          await SecureStorageHelper.clearAll();
+        }
+      } catch (e) {
+        debugPrint("⚠️ Secure storage failed on startup: $e. Forcing clean logout...");
+        await prefs.setBool('isLoggedIn', false);
+        await prefs.remove('profile_image_path');
+        await prefs.remove('user_name');
+        await prefs.remove('user_email');
+        await SecureStorageHelper.clearAll();
+      }
+    }
+    if (!context.mounted) return;
 
     if (isLoggedIn) {
       Navigator.of(context).pushReplacement(

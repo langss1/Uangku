@@ -14,14 +14,14 @@ class TransactionSuccessScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: context.scaffoldBackgroundColor,
         elevation: 0,
         automaticallyImplyLeading: false,
-        title: const Text(
+        title: Text(
           'Transaction Saved',
-          style: TextStyle(color: AppColors.textDark, fontWeight: FontWeight.bold, fontSize: 18),
+          style: TextStyle(color: context.textPrimary, fontWeight: FontWeight.bold, fontSize: 18),
         ),
         centerTitle: true,
         actions: [
@@ -30,10 +30,10 @@ class TransactionSuccessScreen extends StatelessWidget {
             icon: Container(
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: Colors.grey[200],
+                color: context.isDarkMode ? Colors.grey[800] : Colors.grey[200],
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.close, color: AppColors.textDark, size: 16),
+              child: Icon(Icons.close, color: context.textPrimary, size: 16),
             ),
           ),
           const SizedBox(width: 16),
@@ -62,21 +62,21 @@ class TransactionSuccessScreen extends StatelessWidget {
               child: const Icon(Icons.check, color: Colors.white, size: 50),
             ),
             const SizedBox(height: 48),
-            const Text(
+            Text(
               'Transaction Saved',
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: AppColors.textDark,
+                color: context.textPrimary,
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'Your transaction has been recorded\nsuccessfully',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 16,
-                color: AppColors.textLight,
+                color: context.textSecondary,
                 height: 1.5,
               ),
             ),

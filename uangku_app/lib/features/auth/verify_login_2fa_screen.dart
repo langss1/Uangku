@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:uangku_app/core/utils/custom_popup.dart';
 import 'package:flutter/services.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uangku_app/core/services/network_service.dart';
+import 'package:uangku_app/core/services/secure_storage_helper.dart';
 import 'package:uangku_app/core/theme/app_colors.dart';
+import 'dart:convert';
 import 'package:uangku_app/features/home/home_screen.dart';
 import 'package:uangku_app/features/auth/force_reset_password_screen.dart';
 
@@ -32,7 +33,7 @@ class _VerifyLogin2FAScreenState extends State<VerifyLogin2FAScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final response = await http.post(
+      final response = await NetworkService.post(
         Uri.parse('http://145.79.10.157:8000/api/auth/login-2fa'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
@@ -47,10 +48,12 @@ class _VerifyLogin2FAScreenState extends State<VerifyLogin2FAScreen> {
         final data = jsonDecode(response.body);
         final prefs = await SharedPreferences.getInstance();
         await prefs.setBool('isLoggedIn', true);
-        await prefs.setString('token', data['token']);
+        await SecureStorageHelper.saveToken(data['token']);
         if (data['user'] != null) {
-          await prefs.setString('user_name', data['user']['full_name'] ?? '');
-          await prefs.setString('user_email', data['user']['email'] ?? '');
+          await SecureStorageHelper.saveUserData(
+            name: data['user']['full_name'] ?? '',
+            email: data['user']['email'] ?? '',
+          );
         }
 
         if (data['requiresPasswordChange'] == true) {

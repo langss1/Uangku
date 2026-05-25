@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:uangku_app/core/theme/app_theme.dart';
 import 'package:uangku_app/core/utils/custom_popup.dart';
 import 'dart:convert';
-import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uangku_app/core/services/network_service.dart';
+import 'package:uangku_app/core/services/secure_storage_helper.dart';
 import 'package:uangku_app/core/theme/app_colors.dart';
 import 'package:uangku_app/features/home/home_screen.dart';
 import 'package:uangku_app/features/auth/register_screen.dart';
@@ -82,7 +83,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     });
 
     try {
-      final response = await http.post(
+      final response = await NetworkService.post(
         Uri.parse('http://145.79.10.157:8000/api/auth/login'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
@@ -119,10 +120,12 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
         
         final prefs = await SharedPreferences.getInstance();
         await prefs.setBool('isLoggedIn', true);
-        await prefs.setString('token', data['token']);
+        await SecureStorageHelper.saveToken(data['token']);
         if (data['user'] != null) {
-          await prefs.setString('user_name', data['user']['full_name'] ?? '');
-          await prefs.setString('user_email', data['user']['email'] ?? '');
+          await SecureStorageHelper.saveUserData(
+            name: data['user']['full_name'] ?? '',
+            email: data['user']['email'] ?? '',
+          );
         }
 
         Navigator.of(context).pushReplacement(
@@ -146,54 +149,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   }
 
   void _showErrorDialog(String message) {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                height: 160,
-                decoration: const BoxDecoration(
-                  image: DecorationImage(
-                    image: AssetImage('assets/images/invalid_credential.png'),
-                    fit: BoxFit.contain,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-              const Text(
-                'Oops, something is wrong!',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.textDark),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                message,
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 14, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryBlue,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  ),
-                  child: const Text('Try Again', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+    CustomPopup.show(context, message, isSuccess: false);
   }
 
   @override

@@ -3,7 +3,8 @@ import 'package:uangku_app/core/utils/custom_popup.dart';
 import 'package:uangku_app/core/theme/app_colors.dart';
 import 'package:uangku_app/features/home/home_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http/http.dart' as http;
+import 'package:uangku_app/core/services/network_service.dart';
+import 'package:uangku_app/core/services/secure_storage_helper.dart';
 import 'dart:convert';
 
 class ForceResetPasswordScreen extends StatefulWidget {
@@ -37,7 +38,7 @@ class _ForceResetPasswordScreenState extends State<ForceResetPasswordScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final response = await http.put(
+      final response = await NetworkService.put(
         Uri.parse('http://145.79.10.157:8000/api/auth/security'),
         headers: {
           'Content-Type': 'application/json',
@@ -50,19 +51,21 @@ class _ForceResetPasswordScreenState extends State<ForceResetPasswordScreen> {
 
       if (response.statusCode == 200) {
         // Fetch user data directly from profile
-        final userResponse = await http.get(
+        final userResponse = await NetworkService.get(
           Uri.parse('http://145.79.10.157:8000/api/auth/profile'),
           headers: {'Authorization': 'Bearer ${widget.token}'},
         );
 
         final prefs = await SharedPreferences.getInstance();
         await prefs.setBool('isLoggedIn', true);
-        await prefs.setString('token', widget.token);
+        await SecureStorageHelper.saveToken(widget.token);
 
         if (userResponse.statusCode == 200) {
           final userData = jsonDecode(userResponse.body)['user'];
-          await prefs.setString('user_name', userData['full_name'] ?? '');
-          await prefs.setString('user_email', userData['email'] ?? '');
+          await SecureStorageHelper.saveUserData(
+            name: userData['full_name'] ?? '',
+            email: userData['email'] ?? '',
+          );
         }
 
         CustomPopup.show(context, 'Password berhasil diperbarui!', isSuccess: true);

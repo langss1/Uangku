@@ -1,11 +1,39 @@
 import 'package:flutter/material.dart';
 import 'package:uangku_app/core/utils/custom_popup.dart';
 import 'package:uangku_app/core/theme/app_colors.dart';
+import 'package:uangku_app/core/utils/responsive.dart';
 import 'package:provider/provider.dart';
 import 'package:uangku_app/core/providers/preferences_provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-class HelpCenterScreen extends StatelessWidget {
+class HelpCenterScreen extends StatefulWidget {
   const HelpCenterScreen({super.key});
+
+  @override
+  State<HelpCenterScreen> createState() => _HelpCenterScreenState();
+}
+
+class _HelpCenterScreenState extends State<HelpCenterScreen>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _fadeCtrl;
+  late Animation<double> _fadeAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _fadeCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+    );
+    _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut);
+    _fadeCtrl.forward();
+  }
+
+  @override
+  void dispose() {
+    _fadeCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -18,28 +46,38 @@ class HelpCenterScreen extends StatelessWidget {
         centerTitle: true,
         title: Text(
           isIndo ? 'Pusat Bantuan' : 'Help Center',
-          style: TextStyle(color: context.textPrimary, fontWeight: FontWeight.w800, fontSize: 18),
+          style: TextStyle(
+            color: context.textPrimary,
+            fontWeight: FontWeight.w800,
+            fontSize: Responsive.sp(context, 18),
+          ),
         ),
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: context.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              isIndo ? 'FAQ & Solusi Cepat' : 'FAQ & Quick Solutions',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: context.textPrimary),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              isIndo ? 'Temukan jawaban untuk pertanyaan umum seputar aplikasi Uangku.' : 'Find answers to frequently asked questions about the Uangku app.',
-              style: TextStyle(fontSize: 14, color: context.textSecondary),
-            ),
-            const SizedBox(height: 24),
+      body: FadeTransition(
+        opacity: _fadeAnim,
+        child: SingleChildScrollView(
+          padding: EdgeInsets.all(Responsive.r(context, 20)),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                isIndo ? 'FAQ & Solusi Cepat' : 'FAQ & Quick Solutions',
+                style: TextStyle(
+                  fontSize: Responsive.sp(context, 20),
+                  fontWeight: FontWeight.bold,
+                  color: context.textPrimary,
+                ),
+              ),
+              SizedBox(height: Responsive.r(context, 8)),
+              Text(
+                isIndo ? 'Temukan jawaban untuk pertanyaan umum seputar aplikasi Uangku.' : 'Find answers to frequently asked questions about the Uangku app.',
+                style: TextStyle(fontSize: Responsive.sp(context, 14), color: context.textSecondary),
+              ),
+              SizedBox(height: Responsive.r(context, 24)),
             
             _buildFaqItem(
               context: context,
@@ -104,7 +142,7 @@ class HelpCenterScreen extends StatelessWidget {
                       children: [
                         Icon(Icons.email_outlined, color: Colors.white, size: 18),
                         SizedBox(width: 8),
-                        Text('support@uangku.com', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                        Text('uangku.apps@gmail.com', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
                       ],
                     ),
                   ),
@@ -113,8 +151,25 @@ class HelpCenterScreen extends StatelessWidget {
                     width: double.infinity,
                     height: 48,
                     child: ElevatedButton(
-                      onPressed: () {
-                        CustomPopup.show(context, 'Membuka aplikasi email...', isSuccess: true);
+                      onPressed: () async {
+                        final String url = 'mailto:uangku.apps@gmail.com?subject=Bantuan%20Uangku&body=Halo%20Tim%20Uangku,%0A%0A';
+                        final Uri emailUri = Uri.parse(url);
+                        try {
+                          await launchUrl(
+                            emailUri,
+                            mode: LaunchMode.externalApplication,
+                          );
+                        } catch (e) {
+                          if (context.mounted) {
+                            CustomPopup.show(
+                              context,
+                              isIndo
+                                  ? 'Tidak ada aplikasi email terpasang. Silakan email ke uangku.apps@gmail.com'
+                                  : 'No email app installed. Please send an email to uangku.apps@gmail.com',
+                              isSuccess: false,
+                            );
+                          }
+                        }
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.white,
@@ -123,16 +178,18 @@ class HelpCenterScreen extends StatelessWidget {
                         elevation: 0,
                       ),
                       child: Text(isIndo ? 'Hubungi Kami Sekarang' : 'Contact Us Now', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+                    ),  // ElevatedButton SizedBox
+                  ),  // Column children (inner)
+                ],    // Column(children:) of contact Container
+              ),      // Column of contact Container
+            ),        // Contact Container
+          ],          // Column(children:) main
+        ),            // Column main
+      ),              // SingleChildScrollView
+    ),                // FadeTransition
+  );                  // Scaffold
   }
+
 
   Widget _buildFaqItem({required BuildContext context, required String question, required String answer}) {
     return Container(

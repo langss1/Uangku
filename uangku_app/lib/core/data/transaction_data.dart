@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:uangku_app/core/models/transaction_model.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http/http.dart' as http;
+import 'package:uangku_app/core/services/network_service.dart';
+import 'package:uangku_app/core/services/secure_storage_helper.dart';
 import 'dart:convert';
 import 'package:uangku_app/core/services/notification_service.dart';
 import 'package:uangku_app/core/database/database_helper.dart';
@@ -45,12 +45,11 @@ class TransactionData {
     syncUnsyncedTransactions();
 
     // 3. Fetch data terbaru dari backend
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token');
+    final token = await SecureStorageHelper.getToken();
     if (token == null) return;
 
     try {
-      final response = await http.get(
+      final response = await NetworkService.get(
         Uri.parse('http://145.79.10.157:8000/api/data/transactions'),
         headers: {'Authorization': 'Bearer $token'},
       );
@@ -72,8 +71,7 @@ class TransactionData {
           );
         }).toList();
 
-        // Update memory & SQLite agar sinkron
-        transactionsNotifier.value = loaded;
+        // Persist to local SQLite
         for (var tx in loaded) {
           await DatabaseHelper.instance.insertTransaction({
             'id': tx.id,
@@ -85,6 +83,23 @@ class TransactionData {
             'is_synced': 1,
           });
         }
+
+        // Reload combined SQLite data to prevent offline transactions from disappearing
+        final localData = await DatabaseHelper.instance.getAllTransactions();
+        transactionsNotifier.value = localData.map((item) {
+          final isIncome = item['type'] == 'income';
+          return TransactionModel(
+            id: item['id'].toString(),
+            title: item['title'],
+            category: item['category'] ?? 'Other',
+            amount: double.parse(item['amount'].toString()),
+            date: DateTime.parse(item['date']),
+            icon: isIncome ? Icons.arrow_downward : Icons.arrow_upward,
+            bgColor: isIncome ? const Color(0xFFD1FAE5) : const Color(0xFFFEE2E2),
+            iconColor: isIncome ? const Color(0xFF059669) : const Color(0xFFDC2626),
+            isIncome: isIncome,
+          );
+        }).toList();
       }
     } catch (e) {
       debugPrint('Error fetching transactions: $e');
@@ -95,15 +110,14 @@ class TransactionData {
     final unsynced = await DatabaseHelper.instance.getUnsyncedTransactions();
     if (unsynced.isEmpty) return;
 
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token');
+    final token = await SecureStorageHelper.getToken();
     if (token == null) return;
 
     debugPrint('🔄 Syncing ${unsynced.length} unsynced transactions...');
 
     for (var item in unsynced) {
       try {
-        final response = await http.post(
+        final response = await NetworkService.post(
           Uri.parse('http://145.79.10.157:8000/api/data/transactions'),
           headers: {
             'Authorization': 'Bearer $token',
@@ -166,12 +180,11 @@ class TransactionData {
     transactionsNotifier.value = [transaction, ...transactionsNotifier.value];
     
     // 3. Coba kirim ke Backend
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token');
+    final token = await SecureStorageHelper.getToken();
     if (token == null) return;
 
     try {
-      final response = await http.post(
+      final response = await NetworkService.post(
         Uri.parse('http://145.79.10.157:8000/api/data/transactions'),
         headers: {
           'Authorization': 'Bearer $token',

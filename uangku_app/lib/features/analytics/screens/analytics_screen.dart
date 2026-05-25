@@ -447,8 +447,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           isIndo ? 'Analisis Keuangan' : 'Financial Analytics',
           style: TextStyle(
             color: context.textPrimary,
-            fontWeight: FontWeight.w700,
-            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            fontSize: 20,
+            letterSpacing: -0.5,
           ),
         ),
         actions: [

@@ -48,7 +48,7 @@ dependencies:
   share_plus: any
   path_provider: ^2.1.5
   flutter_dotenv: any
-  sqflite: any
+  sqflite_sqlcipher: ^3.0.1
   connectivity_plus: any
   video_player: any
   image_picker: ^1.2.1
@@ -58,6 +58,11 @@ dependencies:
   url_launcher: ^6.3.2
   provider: ^6.1.5+1
   workmanager: ^0.7.0
+  flutter_secure_storage: ^9.2.2
+  flutter_jailbreak_detection:
+    git:
+      url: https://github.com/pdurasie-ecovery/flutter_jailbreak_detection.git
+      ref: add-namespace
 
 dev_dependencies:
   flutter_test:

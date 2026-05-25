@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:uangku_app/core/database/database_helper.dart';
 import 'package:uangku_app/core/models/notification_model.dart';
+import 'package:uangku_app/core/services/secure_storage_helper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -76,18 +77,33 @@ class NotificationService {
       type: type,
       createdAt: DateTime.now(),
     );
-    await DatabaseHelper.instance.insertNotification(notification.toMap());
+    
+    try {
+      await DatabaseHelper.instance.insertNotification(notification.toMap());
+    } catch (e) {
+      debugPrint('Error saving notification locally: $e');
+    }
     
     // Also trigger system notification
-    await _showSystemNotification(title, message);
+    try {
+      await _showSystemNotification(title, message);
+    } catch (e) {
+      debugPrint('Error showing system notification: $e');
+    }
   }
 
   Future<void> triggerMorningReport() async {
+    // Ambil email user aktif dari SecureStorage
+    final userEmail = await SecureStorageHelper.getUserEmail() ?? '';
+    if (userEmail.isEmpty) return; // Tidak ada user aktif, jangan kirim notif
+
     final prefs = await SharedPreferences.getInstance();
-    final String lastReportDate = prefs.getString('last_morning_report_date') ?? '';
+    // Key di-prefix dengan email agar tiap akun punya state sendiri
+    final reportKey = 'last_morning_report_date_$userEmail';
+    final String lastReportDate = prefs.getString(reportKey) ?? '';
     final String todayDate = DateFormat('yyyy-MM-dd').format(DateTime.now());
 
-    // Only generate if it's past 6 AM and hasn't been generated today
+    // Only generate if it's past 6 AM and hasn't been generated today for THIS user
     if (DateTime.now().hour >= 6 && lastReportDate != todayDate) {
       final transactions = await DatabaseHelper.instance.getAllTransactions();
       
@@ -124,8 +140,19 @@ class NotificationService {
         type: "info",
       );
 
-      await prefs.setString('last_morning_report_date', todayDate);
+      // Simpan dengan key yang sudah di-prefix email agar tidak bocor ke akun lain
+      await prefs.setString(reportKey, todayDate);
     }
+  }
+
+  /// Hapus semua SharedPreferences yang terkait dengan notifikasi user tertentu.
+  /// Dipanggil saat logout untuk mencegah data notifikasi bocor ke akun lain.
+  Future<void> clearUserNotificationPrefs(String userEmail) async {
+    if (userEmail.isEmpty) return;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('last_morning_report_date_$userEmail');
+    // Hapus juga key lama (tanpa prefix) jika masih ada untuk backward compat
+    await prefs.remove('last_morning_report_date');
   }
 
   Future<void> triggerTransactionAdded(String title, double amount) async {

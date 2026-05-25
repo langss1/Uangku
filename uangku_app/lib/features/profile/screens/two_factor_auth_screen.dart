@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:uangku_app/core/utils/custom_popup.dart';
 import 'package:uangku_app/core/theme/app_colors.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http/http.dart' as http;
+import 'package:uangku_app/core/services/network_service.dart';
+import 'package:uangku_app/core/services/secure_storage_helper.dart';
 import 'dart:convert';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:provider/provider.dart';
@@ -43,8 +44,8 @@ class _TwoFactorAuthScreenState extends State<TwoFactorAuthScreen> {
     setState(() => _isLoading = true);
 
     try {
+      final token = await SecureStorageHelper.getToken() ?? '';
       final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('token') ?? '';
 
       String type = 'NONE';
       bool enabled = false;
@@ -57,7 +58,7 @@ class _TwoFactorAuthScreenState extends State<TwoFactorAuthScreen> {
         return;
       }
 
-      final response = await http.post(
+      final response = await NetworkService.post(
         Uri.parse('http://145.79.10.157:8000/api/auth/2fa/update-type'),
         headers: {
           'Authorization': 'Bearer $token',
@@ -87,11 +88,11 @@ class _TwoFactorAuthScreenState extends State<TwoFactorAuthScreen> {
 
   Future<void> _setupGoogleAuth() async {
     setState(() => _isLoading = true);
+    final token = await SecureStorageHelper.getToken() ?? '';
     final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token') ?? '';
 
     try {
-      final response = await http.post(
+      final response = await NetworkService.post(
         Uri.parse('http://145.79.10.157:8000/api/auth/2fa/generate'),
         headers: {'Authorization': 'Bearer $token'},
       );
@@ -180,7 +181,7 @@ class _TwoFactorAuthScreenState extends State<TwoFactorAuthScreen> {
 
                           try {
                             // 1. Verifikasi TOTP
-                            final verifyResponse = await http.post(
+                            final verifyResponse = await NetworkService.post(
                               Uri.parse('http://145.79.10.157:8000/api/auth/2fa/verify'),
                               headers: {
                                 'Authorization': 'Bearer $token',
@@ -191,7 +192,7 @@ class _TwoFactorAuthScreenState extends State<TwoFactorAuthScreen> {
 
                             if (verifyResponse.statusCode == 200) {
                               // 2. Set sebagai TOTP enabled
-                              final updateResponse = await http.post(
+                              final updateResponse = await NetworkService.post(
                                 Uri.parse('http://145.79.10.157:8000/api/auth/2fa/update-type'),
                                 headers: {
                                   'Authorization': 'Bearer $token',

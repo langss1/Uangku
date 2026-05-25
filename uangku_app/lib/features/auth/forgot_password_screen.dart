@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:uangku_app/core/utils/custom_popup.dart';
-import 'package:http/http.dart' as http;
+import 'package:uangku_app/core/services/network_service.dart';
 import 'package:flutter/material.dart';
 import 'package:uangku_app/core/theme/app_colors.dart';
 import 'package:uangku_app/features/auth/otp_screen.dart';
@@ -26,9 +26,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   void _sendRecoveryLink() async {
     final email = _emailController.text.trim();
     if (email.isEmpty || !email.contains('@')) {
-      setState(() {
-        _errorMessage = "Please enter a valid email address.";
-      });
+      CustomPopup.show(context, 'Please enter a valid email address.', isSuccess: false);
       return;
     }
 
@@ -38,7 +36,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     });
 
     try {
-      final response = await http.post(
+      final response = await NetworkService.post(
         Uri.parse('http://145.79.10.157:8000/api/auth/forgot-password'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'email': email}),
@@ -47,19 +45,22 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       if (!mounted) return;
 
       if (response.statusCode == 200) {
-        CustomPopup.show(context, 'Password pemulihan telah dikirim ke email Anda.', isSuccess: true);
-        Navigator.of(context).pop(); // Back to login screen
+        CustomPopup.show(context, 'Recovery link sent! Please check your email.', isSuccess: true);
+        await Future.delayed(const Duration(seconds: 2));
+        if (mounted) Navigator.of(context).pop();
       } else {
-        final data = jsonDecode(response.body);
-        setState(() {
-          _errorMessage = data['error'] ?? "Gagal mengirim password pemulihan.";
-        });
+        String errorMsg;
+        try {
+          final data = jsonDecode(response.body);
+          errorMsg = data['error'] ?? data['message'] ?? 'Failed to send recovery link.';
+        } catch (_) {
+          errorMsg = 'Server returned an error (${response.statusCode}). Please try again.';
+        }
+        CustomPopup.show(context, errorMsg, isSuccess: false);
       }
     } catch (e) {
       if (!mounted) return;
-      setState(() {
-        _errorMessage = "Koneksi bermasalah. Silakan coba lagi.";
-      });
+      CustomPopup.show(context, 'Connection issue. Please check your internet and try again.', isSuccess: false);
     } finally {
       if (mounted) {
         setState(() {

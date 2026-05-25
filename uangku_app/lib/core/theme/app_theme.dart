@@ -26,7 +26,7 @@ class AppTheme {
 
   static ThemeData get darkTheme {
     return ThemeData(
-      scaffoldBackgroundColor: const Color(0xFF121212),
+      scaffoldBackgroundColor: const Color(0xFF181A1E),
       colorScheme: ColorScheme.fromSeed(
         seedColor: const Color(0xFF0056B3),
         brightness: Brightness.dark,

@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:uangku_app/core/theme/app_colors.dart';
+import 'package:uangku_app/core/utils/responsive.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 import 'package:uangku_app/core/providers/preferences_provider.dart';
@@ -21,7 +22,10 @@ import 'package:uangku_app/features/notification/screens/notification_screen.dar
 import 'package:uangku_app/features/budget/screens/budget_screen.dart';
 import 'package:uangku_app/core/services/notification_service.dart';
 import 'package:uangku_app/core/database/database_helper.dart';
+import 'package:uangku_app/core/services/secure_storage_helper.dart';
 import 'package:intl/intl.dart';
+import 'dart:io';
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -32,6 +36,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   int _selectedIndex = 0;
   String _userName = 'Guest';
+  String? _profileImagePath;
   int _unreadNotifs = 0;
 
   late AnimationController _animationController;
@@ -124,11 +129,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Future<void> _loadUser() async {
     try {
       final prefs = await SharedPreferences.getInstance();
+      final secureName = await SecureStorageHelper.getUserName();
       if (mounted) {
         setState(() {
-          _userName = prefs.getString('user_name') ?? 'Guest';
+          _userName = secureName ?? prefs.getString('user_name') ?? 'Guest';
+          _profileImagePath = prefs.getString('profile_image_path');
         });
       }
+      // Load budgets at startup so threshold notifications can check them immediately
+      BudgetData().loadBudgets().catchError((e) => debugPrint("Budget load error: $e"));
+
       // Trigger sync secara background tanpa await agar tidak menghalangi rendering
       TransactionData().fetchFromBackend().catchError((e) => debugPrint("Fetch error: $e"));
       
@@ -184,6 +194,110 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         children: [
           _buildBody(),
           // Draggable chatbot floating image
+          // Chatbot popup tooltip (independent child in outer Stack to prevent hit-test clipping)
+          if (_selectedIndex != 2 && _showChatPopup)
+            Positioned(
+              left: _dragX > screenW / 2 ? null : _dragX,
+              right: _dragX > screenW / 2 ? (screenW - _dragX - botSize) : null,
+              bottom: (screenH - _dragY) + 8,
+              child: Container(
+                constraints: const BoxConstraints(maxWidth: 270),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF1E3A8A), Color(0xFF3B82F6)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF2563EB).withOpacity(0.3),
+                      blurRadius: 14,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          '🤖 AI Chatbot',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 12.5,
+                          ),
+                        ),
+                        // Tombol X untuk close popup
+                        GestureDetector(
+                          onTap: () => setState(() => _showChatPopup = false),
+                          behavior: HitTestBehavior.opaque,
+                          child: Container(
+                            width: 24,
+                            height: 24,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.25),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.close_rounded,
+                              color: Colors.white,
+                              size: 14,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'AI Chatbot yang di personalisasi untuk keuangan anda',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                        height: 1.35,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    GestureDetector(
+                      onTap: () {
+                        setState(() => _showChatPopup = false);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const ChatScreen()),
+                        );
+                      },
+                      behavior: HitTestBehavior.opaque,
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 4.5),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Text(
+                            'Chat Sekarang →',
+                            style: TextStyle(
+                              color: Color(0xFF1E3A8A),
+                              fontWeight: FontWeight.w900,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          // Draggable chatbot floating image
           if (_selectedIndex != 2)
             Positioned(
               left: _dragX,
@@ -217,84 +331,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   }
                 },
                 child: Stack(
-                  clipBehavior: Clip.none,
                   children: [
-                    // Popup tooltip
-                    if (_showChatPopup)
-                      Positioned(
-                        bottom: botSize + 8,
-                        right: _dragX > screenW / 2 ? 0 : null,
-                        left: _dragX <= screenW / 2 ? 0 : null,
-                        child: GestureDetector(
-                          onTap: () => setState(() => _showChatPopup = false),
-                          child: Container(
-                            constraints: const BoxConstraints(maxWidth: 270),
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFF1E3A8A), Color(0xFF3B82F6)],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              borderRadius: BorderRadius.circular(16),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: const Color(0xFF2563EB).withOpacity(0.3),
-                                  blurRadius: 14,
-                                  offset: const Offset(0, 5),
-                                ),
-                              ],
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Row(
-                                  children: const [
-                                    Text(
-                                      '🤖 AI Chatbot',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w900,
-                                        fontSize: 12.5,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 4),
-                                const Text(
-                                  'AI Chatbot yang di personalisasi untuk keuangan anda',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w500,
-                                    height: 1.35,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Align(
-                                  alignment: Alignment.centerRight,
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 4.5),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    child: const Text(
-                                      'Chat Sekarang →',
-                                      style: TextStyle(
-                                        color: Color(0xFF1E3A8A),
-                                        fontWeight: FontWeight.w900,
-                                        fontSize: 10,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
                     // Pure chatbot.png image — no background
                     SizedBox(
                       width: botSize,
@@ -436,39 +473,59 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           Positioned.fill(child: _buildAbstractBackground()), // Polar circles background
           SafeArea(
             bottom: false,
-            child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Top Row (Avatar, Name, Notif)
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Top Row (Avatar, Name, Notif)
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Row(
                     children: [
-                      Container(
-                        width: 54,
-                        height: 54,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.9),
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Center(
-                          child: Text(
-                            _userName.isNotEmpty ? _userName[0].toUpperCase() : 'G',
-                            style: const TextStyle(
-                              color: Color(0xFF2563EB),
-                              fontWeight: FontWeight.w800,
-                              fontSize: 22,
-                            ),
+                      GestureDetector(
+                        onTap: () async {
+                          // Reload profile image when tapping avatar
+                          final prefs = await SharedPreferences.getInstance();
+                          if (mounted) {
+                            setState(() {
+                              _profileImagePath = prefs.getString('profile_image_path');
+                            });
+                          }
+                        },
+                        child: Container(
+                          width: 54,
+                          height: 54,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.9),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: ClipOval(
+                            child: _profileImagePath != null && File(_profileImagePath!).existsSync()
+                                ? Image.file(
+                                    File(_profileImagePath!),
+                                    width: 54,
+                                    height: 54,
+                                    fit: BoxFit.cover,
+                                  )
+                                : Center(
+                                    child: Text(
+                                      _userName.isNotEmpty ? _userName[0].toUpperCase() : 'G',
+                                      style: const TextStyle(
+                                        color: Color(0xFF2563EB),
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 22,
+                                      ),
+                                    ),
+                                  ),
                           ),
                         ),
                       ),
@@ -955,19 +1012,21 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildBottomNav() {
+    final hPad = Responsive.r(context, 20);
+    final vPad = Responsive.r(context, 8);
     return SafeArea(
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        margin: EdgeInsets.symmetric(horizontal: hPad, vertical: vPad),
         child: ClipRRect(
-            borderRadius: BorderRadius.circular(32),
+            borderRadius: BorderRadius.circular(Responsive.r(context, 36)),
             child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16), // Stronger blur
+              filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
               child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 8),
+                padding: EdgeInsets.symmetric(vertical: Responsive.r(context, 4)),
                 decoration: BoxDecoration(
-                  color: context.isDarkMode ? Colors.black.withOpacity(0.65) : Colors.white.withOpacity(0.65), // More transparent to see background
-                  borderRadius: BorderRadius.circular(32), // Pill shaped
-                  border: Border.all(color: const Color(0xFF2563EB).withOpacity(0.4), width: 1.5), // Blue outline
+                  color: context.isDarkMode ? Colors.black.withOpacity(0.65) : Colors.white.withOpacity(0.65),
+                  borderRadius: BorderRadius.circular(Responsive.r(context, 36)),
+                  border: Border.all(color: const Color(0xFF2563EB).withOpacity(0.4), width: 1.5),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withOpacity(0.05),
@@ -1011,80 +1070,137 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Widget _buildNavItem({required IconData icon, required String label, required int index}) {
     final isSelected = _selectedIndex == index;
     final color = isSelected ? const Color(0xFF2563EB) : const Color(0xFF94A3B8);
-    
+    final iconSize = Responsive.r(context, 24);
+    final fontSize = Responsive.sp(context, 10);
+    final btnSize = Responsive.r(context, 50);
+
+    // Tombol + tengah
     if (index == 2) {
-      return GestureDetector(
-        onTap: () {
-          setState(() {
-            _selectedIndex = index;
-          });
-        },
-        behavior: HitTestBehavior.opaque,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 52,
-              height: 52,
-              decoration: BoxDecoration(
-                color: const Color(0xFF2563EB),
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF2563EB).withOpacity(0.4),
-                    blurRadius: 15,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
+      return _AnimatedNavTap(
+        onTap: () => setState(() => _selectedIndex = index),
+        child: Container(
+          width: btnSize,
+          height: btnSize,
+          decoration: BoxDecoration(
+            color: const Color(0xFF2563EB),
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF2563EB).withOpacity(0.4),
+                blurRadius: 15,
+                offset: const Offset(0, 6),
               ),
-              child: const Icon(Icons.add, color: Colors.white, size: 28),
-            ),
-          ],
+            ],
+          ),
+          child: Icon(Icons.add, color: Colors.white, size: iconSize + 4),
         ),
       );
     }
 
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedIndex = index;
-        });
+    return _AnimatedNavTap(
+      onTap: () async {
+        setState(() => _selectedIndex = index);
+        if (index == 0) {
+          await _loadUser();
+        }
       },
-      behavior: HitTestBehavior.opaque,
-      child: SizedBox(
-        width: 56, // Fixed width to ensure even spacing
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutBack,
+        width: Responsive.r(context, 58),
+        height: Responsive.r(context, 58),
+        alignment: Alignment.center,
+        decoration: isSelected
+            ? BoxDecoration(
+                // Lingkaran bulat sempurna, sangat tipis/halus (subtle)
+                color: const Color(0xFF2563EB).withOpacity(0.08),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF2563EB).withOpacity(0.06),
+                    blurRadius: 8,
+                    spreadRadius: 1,
+                  ),
+                ],
+              )
+            : const BoxDecoration(),
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              decoration: isSelected
-                  ? BoxDecoration(
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF2563EB).withOpacity(0.35),
-                          blurRadius: 20,
-                          spreadRadius: 8,
-                        ),
-                      ],
-                    )
-                  : null,
-              child: Icon(icon, color: color, size: 26),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.visible,
-              style: TextStyle(
-                color: color,
-                fontSize: 10,
-                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+            Icon(icon, color: color, size: iconSize),
+            SizedBox(height: Responsive.r(context, 2)),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: fontSize,
+                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+                  ),
+                ),
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Widget helper: animasi scale saat icon/tab di-tap
+class _AnimatedNavTap extends StatefulWidget {
+  final Widget child;
+  final VoidCallback onTap;
+  const _AnimatedNavTap({required this.child, required this.onTap});
+
+  @override
+  State<_AnimatedNavTap> createState() => _AnimatedNavTapState();
+}
+
+class _AnimatedNavTapState extends State<_AnimatedNavTap>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 120),
+      lowerBound: 0.0,
+      upperBound: 1.0,
+    );
+    _scale = Tween<double>(begin: 1.0, end: 0.82)
+        .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _onTap() async {
+    await _ctrl.forward();
+    await _ctrl.reverse();
+    widget.onTap();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: _onTap,
+      behavior: HitTestBehavior.opaque,
+      child: ScaleTransition(
+        scale: _scale,
+        child: widget.child,
       ),
     );
   }
