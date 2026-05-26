@@ -1110,20 +1110,21 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         width: Responsive.r(context, 58),
         height: Responsive.r(context, 58),
         alignment: Alignment.center,
-        decoration: isSelected
-            ? BoxDecoration(
-                // Lingkaran bulat sempurna, sangat tipis/halus (subtle)
-                color: const Color(0xFF2563EB).withOpacity(0.08),
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF2563EB).withOpacity(0.06),
-                    blurRadius: 8,
-                    spreadRadius: 1,
-                  ),
-                ],
-              )
-            : const BoxDecoration(),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? const Color(0xFF2563EB).withValues(alpha: 0.08)
+              : Colors.transparent,
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: isSelected
+                  ? const Color(0xFF2563EB).withValues(alpha: 0.06)
+                  : Colors.transparent,
+              blurRadius: isSelected ? 8 : 0,
+              spreadRadius: isSelected ? 1 : 0,
+            ),
+          ],
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
