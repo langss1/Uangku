@@ -15,6 +15,7 @@ import 'package:uangku_app/features/profile/screens/settings_screen.dart';
 import 'package:uangku_app/features/profile/screens/dummy_screens.dart';
 import 'package:uangku_app/features/profile/screens/change_password_screen.dart';
 import 'package:uangku_app/features/profile/screens/two_factor_auth_screen.dart';
+import 'package:uangku_app/features/profile/screens/app_lock_screen.dart';
 import 'package:uangku_app/features/profile/screens/theme_settings_screen.dart';
 import 'package:uangku_app/features/profile/screens/language_settings_screen.dart';
 import 'package:uangku_app/features/profile/screens/about_screen.dart';
@@ -342,6 +343,18 @@ class _ProfileScreenState extends State<ProfileScreen>
                           Navigator.push(
                             context,
                             MaterialPageRoute(builder: (_) => const TwoFactorAuthScreen()),
+                          );
+                        },
+                      ),
+                      _buildSettingTile(
+                        icon: Icons.fingerprint_rounded,
+                        iconColor: const Color(0xFF10B981),
+                        title: isIndo ? 'Kunci Aplikasi' : 'App Lock',
+                        subtitle: isIndo ? 'Sandi & sidik jari untuk membuka app' : 'PIN & fingerprint to unlock app',
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const AppLockScreen()),
                           );
                         },
                       ),

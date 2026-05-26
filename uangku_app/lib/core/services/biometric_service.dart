@@ -36,12 +36,13 @@ class BiometricService {
   // Check if optional app lock is enabled by the user in SharedPreferences
   static Future<bool> isAppLockEnabled() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(_keyAppLock) ?? false;
+    return prefs.getBool('app_lock_enabled') ?? prefs.getBool(_keyAppLock) ?? false;
   }
 
   // Save the user's preference for app lock in SharedPreferences
   static Future<void> setAppLockEnabled(bool value) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('app_lock_enabled', value);
     await prefs.setBool(_keyAppLock, value);
   }
 }
