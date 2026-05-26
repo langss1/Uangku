@@ -5,6 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uangku_app/core/theme/app_colors.dart';
 import 'package:provider/provider.dart';
 import 'package:uangku_app/core/providers/preferences_provider.dart';
+import 'package:uangku_app/core/utils/custom_popup.dart';
+import 'package:uangku_app/features/profile/screens/pin_entry_screen.dart';
 
 class AppLockScreen extends StatefulWidget {
   const AppLockScreen({super.key});
@@ -13,13 +15,38 @@ class AppLockScreen extends StatefulWidget {
   State<AppLockScreen> createState() => _AppLockScreenState();
 }
 
+class _PinLockService {
+  static const String _keyPin = 'app_lock_pin_code';
+
+  static Future<bool> hasPin() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final pin = prefs.getString(_keyPin);
+    return pin != null && pin.isNotEmpty;
+  }
+
+  static Future<void> savePin(String pin) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_keyPin, pin);
+  }
+
+  static Future<void> clearPin() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_keyPin);
+  }
+
+  static Future<bool> verifyPin(String enteredPin) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final savedPin = prefs.getString(_keyPin);
+    return savedPin == enteredPin;
+  }
+}
+
 class _AppLockScreenState extends State<AppLockScreen>
     with SingleTickerProviderStateMixin {
   final LocalAuthentication _localAuth = LocalAuthentication();
 
-  bool _isAppLockEnabled = false;
+  bool _isPinLockEnabled = false;
   bool _isBiometricEnabled = false;
-  bool _canCheckBiometrics = false;
   bool _isBiometricAvailable = false;
   List<BiometricType> _availableBiometrics = [];
   bool _isLoading = true;
@@ -45,7 +72,6 @@ class _AppLockScreenState extends State<AppLockScreen>
 
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
-
     bool canCheck = false;
     bool biometricAvailable = false;
     List<BiometricType> biometrics = [];
@@ -60,11 +86,17 @@ class _AppLockScreenState extends State<AppLockScreen>
       canCheck = false;
     }
 
+    final hasPinCode = await _PinLockService.hasPin();
+
     if (mounted) {
       setState(() {
-        _isAppLockEnabled = prefs.getBool('app_lock_enabled') ?? false;
+        _isPinLockEnabled = prefs.getBool('app_lock_enabled') ?? false;
+        // If has no PIN code but pref says true, sync it
+        if (_isPinLockEnabled && !hasPinCode) {
+          _isPinLockEnabled = false;
+          prefs.setBool('app_lock_enabled', false);
+        }
         _isBiometricEnabled = prefs.getBool('biometric_lock_enabled') ?? false;
-        _canCheckBiometrics = canCheck;
         _isBiometricAvailable = biometricAvailable;
         _availableBiometrics = biometrics;
         _isLoading = false;
@@ -72,138 +104,175 @@ class _AppLockScreenState extends State<AppLockScreen>
     }
   }
 
-  Future<void> _toggleAppLock(bool value, bool isIndo) async {
-    if (value) {
-      final authenticated = await _authenticate(isIndo);
-      if (!authenticated) return;
-    } else {
-      final confirm = await _showConfirmDialog(isIndo);
-      if (!confirm) return;
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('biometric_lock_enabled', false);
-      if (mounted) setState(() => _isBiometricEnabled = false);
-    }
-
+  Future<void> _togglePinLock(bool value, bool isIndo) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('app_lock_enabled', value);
-    if (mounted) {
-      setState(() => _isAppLockEnabled = value);
-      _showSnackBar(
-        isIndo
-            ? (value ? 'Kunci aplikasi diaktifkan' : 'Kunci aplikasi dinonaktifkan')
-            : (value ? 'App lock enabled' : 'App lock disabled'),
-        value ? Colors.green : Colors.orange,
+
+    if (value) {
+      // 1. Enabling lock: Open PIN entry screen in setup mode
+      final result = await Navigator.push<String>(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const PinEntryScreen(mode: PinEntryMode.setup),
+        ),
       );
+
+      if (result != null && result.length == 4) {
+        await _PinLockService.savePin(result);
+        await prefs.setBool('app_lock_enabled', true);
+        setState(() {
+          _isPinLockEnabled = true;
+        });
+        if (mounted) {
+          CustomPopup.show(
+            context,
+            isIndo ? 'PIN pengunci berhasil diaktifkan!' : 'Lock PIN enabled successfully!',
+            isSuccess: true,
+          );
+        }
+      }
+    } else {
+      // 2. Disabling lock: Confirm with current PIN first
+      final result = await Navigator.push<String>(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const PinEntryScreen(mode: PinEntryMode.verifyToDisable),
+        ),
+      );
+
+      if (result != null) {
+        final isCorrect = await _PinLockService.verifyPin(result);
+        if (isCorrect) {
+          await _PinLockService.clearPin();
+          await prefs.setBool('app_lock_enabled', false);
+          await prefs.setBool('biometric_lock_enabled', false);
+          setState(() {
+            _isPinLockEnabled = false;
+            _isBiometricEnabled = false;
+          });
+          if (mounted) {
+            CustomPopup.show(
+              context,
+              isIndo ? 'Kunci aplikasi dinonaktifkan' : 'App lock disabled',
+              isSuccess: true,
+            );
+          }
+        } else {
+          if (mounted) {
+            CustomPopup.show(
+              context,
+              isIndo ? 'PIN salah, gagal menonaktifkan kunci' : 'Incorrect PIN, failed to disable lock',
+              isSuccess: false,
+            );
+          }
+        }
+      }
+    }
+  }
+
+  Future<void> _changePin(bool isIndo) async {
+    // 1. Verify current PIN
+    final result = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const PinEntryScreen(mode: PinEntryMode.verifyToChange),
+      ),
+    );
+
+    if (result != null) {
+      final isCorrect = await _PinLockService.verifyPin(result);
+      if (isCorrect) {
+        // 2. Enter new PIN
+        if (!mounted) return;
+        final newPin = await Navigator.push<String>(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const PinEntryScreen(mode: PinEntryMode.setup),
+          ),
+        );
+
+        if (newPin != null && newPin.length == 4) {
+          await _PinLockService.savePin(newPin);
+          if (mounted) {
+            CustomPopup.show(
+              context,
+              isIndo ? 'PIN berhasil diubah!' : 'PIN changed successfully!',
+              isSuccess: true,
+            );
+          }
+        }
+      } else {
+        if (mounted) {
+          CustomPopup.show(
+            context,
+            isIndo ? 'PIN saat ini salah' : 'Current PIN is incorrect',
+            isSuccess: false,
+          );
+        }
+      }
     }
   }
 
   Future<void> _toggleBiometric(bool value, bool isIndo) async {
-    if (!_isAppLockEnabled) {
-      _showSnackBar(
-        isIndo ? 'Aktifkan kunci aplikasi terlebih dahulu' : 'Enable app lock first',
-        Colors.orange,
-      );
-      return;
-    }
-
-    if (value && !_isBiometricAvailable) {
-      _showSnackBar(
-        isIndo
-            ? 'Perangkat tidak mendukung biometrik atau belum diatur'
-            : 'Device does not support biometrics or not enrolled',
-        Colors.red,
+    if (!_isPinLockEnabled) {
+      CustomPopup.show(
+        context,
+        isIndo ? 'Aktifkan PIN pengunci terlebih dahulu' : 'Enable security PIN lock first',
+        isSuccess: false,
       );
       return;
     }
 
     if (value) {
-      final authenticated = await _authenticate(isIndo);
-      if (!authenticated) return;
-    }
+      // Prompt biometric authentication to verify it works
+      try {
+        final authenticated = await _localAuth.authenticate(
+          localizedReason: isIndo
+              ? 'Konfirmasi identitas Anda untuk mengaktifkan biometrik'
+              : 'Confirm your identity to enable biometrics',
+          options: const AuthenticationOptions(
+            biometricOnly: true,
+            stickyAuth: true,
+          ),
+        );
 
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('biometric_lock_enabled', value);
-    if (mounted) {
-      setState(() => _isBiometricEnabled = value);
-      _showSnackBar(
-        isIndo
-            ? (value ? 'Sidik jari/wajah diaktifkan' : 'Sidik jari/wajah dinonaktifkan')
-            : (value ? 'Biometric enabled' : 'Biometric disabled'),
-        value ? Colors.green : Colors.orange,
-      );
-    }
-  }
-
-  Future<bool> _authenticate(bool isIndo) async {
-    try {
-      return await _localAuth.authenticate(
-        localizedReason: isIndo
-            ? 'Konfirmasi identitas Anda untuk mengubah pengaturan keamanan'
-            : 'Confirm your identity to change security settings',
-        options: const AuthenticationOptions(
-          biometricOnly: false,
-          stickyAuth: true,
-        ),
-      );
-    } on PlatformException catch (e) {
-      debugPrint('Auth error: $e');
+        if (authenticated) {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setBool('biometric_lock_enabled', true);
+          setState(() {
+            _isBiometricEnabled = true;
+          });
+          if (mounted) {
+            CustomPopup.show(
+              context,
+              isIndo ? 'Autentikasi biometrik berhasil diaktifkan!' : 'Biometric lock enabled successfully!',
+              isSuccess: true,
+            );
+          }
+        }
+      } on PlatformException catch (e) {
+        if (mounted) {
+          CustomPopup.show(
+            context,
+            isIndo ? 'Sensor biometrik tidak dapat diakses: ${e.message}' : 'Biometric sensor not accessible: ${e.message}',
+            isSuccess: false,
+          );
+        }
+      }
+    } else {
+      // Directly disable biometric
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('biometric_lock_enabled', false);
+      setState(() {
+        _isBiometricEnabled = false;
+      });
       if (mounted) {
-        _showSnackBar(
-          isIndo
-              ? 'Autentikasi gagal: ${e.message}'
-              : 'Authentication failed: ${e.message}',
-          Colors.red,
+        CustomPopup.show(
+          context,
+          isIndo ? 'Autentikasi biometrik dinonaktifkan' : 'Biometric lock disabled',
+          isSuccess: true,
         );
       }
-      return false;
     }
-  }
-
-  Future<bool> _showConfirmDialog(bool isIndo) async {
-    return await showDialog<bool>(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-            title: Text(
-              isIndo ? 'Nonaktifkan Kunci?' : 'Disable Lock?',
-              style: const TextStyle(fontWeight: FontWeight.w800),
-            ),
-            content: Text(
-              isIndo
-                  ? 'Menonaktifkan kunci akan membuat aplikasi dapat dibuka tanpa verifikasi. Yakin?'
-                  : 'Disabling app lock will allow the app to open without verification. Are you sure?',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx, false),
-                child: Text(isIndo ? 'Batal' : 'Cancel'),
-              ),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                onPressed: () => Navigator.pop(ctx, true),
-                child: Text(isIndo ? 'Nonaktifkan' : 'Disable'),
-              ),
-            ],
-          ),
-        ) ??
-        false;
-  }
-
-  void _showSnackBar(String message, Color color) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message, style: const TextStyle(fontWeight: FontWeight.w600)),
-        backgroundColor: color,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.all(16),
-        duration: const Duration(seconds: 3),
-      ),
-    );
   }
 
   String _getBiometricTypeLabel(bool isIndo) {
@@ -213,10 +282,7 @@ class _AppLockScreenState extends State<AppLockScreen>
     if (_availableBiometrics.contains(BiometricType.fingerprint)) {
       return isIndo ? 'Sidik Jari' : 'Fingerprint';
     }
-    if (_availableBiometrics.contains(BiometricType.iris)) {
-      return isIndo ? 'Iris Mata' : 'Iris';
-    }
-    return isIndo ? 'Biometrik' : 'Biometric';
+    return isIndo ? 'Biometrik Perangkat' : 'Device Biometric';
   }
 
   IconData _getBiometricIcon() {
@@ -233,22 +299,13 @@ class _AppLockScreenState extends State<AppLockScreen>
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
+      backgroundColor: context.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: context.scaffoldBackgroundColor,
         elevation: 0,
+        centerTitle: true,
         leading: IconButton(
-          icon: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.1)
-                  : Colors.black.withValues(alpha: 0.06),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(Icons.arrow_back_ios_new_rounded,
-                size: 16, color: isDark ? Colors.white : Colors.black87),
-          ),
+          icon: Icon(Icons.arrow_back, color: context.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
@@ -256,7 +313,7 @@ class _AppLockScreenState extends State<AppLockScreen>
           style: TextStyle(
             fontWeight: FontWeight.w800,
             fontSize: 18,
-            color: isDark ? Colors.white : Colors.black87,
+            color: context.textPrimary,
           ),
         ),
       ),
@@ -265,81 +322,117 @@ class _AppLockScreenState extends State<AppLockScreen>
           : FadeTransition(
               opacity: _fadeAnim,
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(24.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildInfoCard(isIndo),
-                    const SizedBox(height: 24),
-                    _buildSectionLabel(
-                        isIndo ? 'KUNCI APLIKASI' : 'APP LOCK', isDark),
-                    const SizedBox(height: 12),
-                    _buildGroupCard(isDark, [
-                      _buildSwitchTile(
-                        icon: Icons.lock_outlined,
-                        iconColor: AppColors.primaryBlue,
-                        title: isIndo
-                            ? 'Aktifkan Kunci Aplikasi'
-                            : 'Enable App Lock',
-                        subtitle: isIndo
-                            ? 'Aplikasi memerlukan verifikasi saat dibuka'
-                            : 'App requires verification when opened',
-                        value: _isAppLockEnabled,
-                        onChanged: (val) => _toggleAppLock(val, isIndo),
-                        isDark: isDark,
-                      ),
-                    ]),
-                    const SizedBox(height: 24),
-                    _buildSectionLabel(
-                        isIndo ? 'BIOMETRIK' : 'BIOMETRICS', isDark),
-                    const SizedBox(height: 12),
-                    _buildGroupCard(isDark, [
-                      _buildSwitchTile(
-                        icon: _getBiometricIcon(),
-                        iconColor: _isBiometricAvailable
-                            ? const Color(0xFF10B981)
-                            : Colors.grey,
-                        title: _getBiometricTypeLabel(isIndo),
-                        subtitle: _isBiometricAvailable
-                            ? (isIndo
-                                ? 'Gunakan ${_getBiometricTypeLabel(isIndo).toLowerCase()} untuk membuka aplikasi'
-                                : 'Use ${_getBiometricTypeLabel(isIndo)} to unlock the app')
-                            : (isIndo
-                                ? 'Tidak tersedia di perangkat ini'
-                                : 'Not available on this device'),
-                        value: _isBiometricEnabled,
-                        onChanged: _isBiometricAvailable
-                            ? (val) => _toggleBiometric(val, isIndo)
-                            : null,
-                        isDark: isDark,
-                        enabled: _isBiometricAvailable && _isAppLockEnabled,
-                      ),
-                    ]),
-                    if (_canCheckBiometrics && _isBiometricAvailable) ...[
+                    Text(
+                      isIndo
+                          ? 'Gunakan kunci PIN dan sensor biometrik perangkat Anda untuk mencegah akses fisik tidak sah ke data keuangan Anda.'
+                          : 'Use a PIN lock and your device biometric sensor to prevent unauthorized physical access to your financial data.',
+                      style: TextStyle(fontSize: 14, color: context.textSecondary, height: 1.5),
+                    ),
+                    const SizedBox(height: 32),
+
+                    // Card 1: PIN Lock Switch Card
+                    _buildSwitchCard(
+                      title: isIndo ? 'Kunci PIN Keamanan' : 'PIN Security Lock',
+                      subtitle: isIndo
+                          ? 'Minta 4-digit PIN keamanan saat aplikasi dibuka.'
+                          : 'Require a 4-digit security PIN when launching Uangku.',
+                      icon: Icons.dialpad_rounded,
+                      iconColor: AppColors.primaryBlue,
+                      value: _isPinLockEnabled,
+                      onChanged: (val) => _togglePinLock(val, isIndo),
+                    ),
+
+                    // Additional action button for changing PIN if lock is enabled
+                    if (_isPinLockEnabled) ...[
                       const SizedBox(height: 12),
-                      _buildNoteCard(
-                        isIndo
-                            ? 'Jika sidik jari/wajah gagal, PIN perangkat akan digunakan sebagai cadangan.'
-                            : 'If biometric fails, device PIN will be used as fallback.',
-                        Icons.info_outline_rounded,
-                        const Color(0xFF3B82F6),
-                        isDark,
+                      GestureDetector(
+                        onTap: () => _changePin(isIndo),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                          decoration: BoxDecoration(
+                            color: context.cardColor,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: context.borderColor, width: 1),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(Icons.lock_reset_rounded, color: AppColors.primaryBlue, size: 22),
+                                  const SizedBox(width: 16),
+                                  Text(
+                                    isIndo ? 'Ubah PIN Keamanan' : 'Change Security PIN',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      color: context.textPrimary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              Icon(Icons.chevron_right_rounded, color: context.textSecondary),
+                            ],
+                          ),
+                        ),
                       ),
                     ],
+
+                    const SizedBox(height: 20),
+
+                    // Card 2: Biometric Authentication Card
+                    _buildSwitchCard(
+                      title: _getBiometricTypeLabel(isIndo),
+                      subtitle: _isBiometricAvailable
+                          ? (isIndo
+                              ? 'Gunakan sensor biometrik untuk mempercepat proses membuka kunci.'
+                              : 'Use biometric sensor to unlock the app instantly.')
+                          : (isIndo
+                              ? 'Sensor biometrik tidak tersedia pada perangkat Anda.'
+                              : 'Biometric sensor is not available on this device.'),
+                      icon: _getBiometricIcon(),
+                      iconColor: AppColors.primaryBlue, // ALWAYS PURE BLUE!
+                      value: _isBiometricEnabled,
+                      onChanged: _isBiometricAvailable && _isPinLockEnabled
+                          ? (val) => _toggleBiometric(val, isIndo)
+                          : null,
+                      isEnabled: _isBiometricAvailable && _isPinLockEnabled,
+                    ),
+
                     if (!_isBiometricAvailable) ...[
-                      const SizedBox(height: 12),
-                      _buildNoteCard(
-                        isIndo
-                            ? 'Biometrik tidak tersedia. Pastikan sidik jari/wajah sudah didaftarkan di Pengaturan perangkat.'
-                            : 'Biometrics not available. Make sure fingerprint/face is enrolled in device Settings.',
-                        Icons.warning_amber_rounded,
-                        Colors.orange,
-                        isDark,
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.orange.withOpacity(0.2), width: 1),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(Icons.info_outline_rounded, color: Colors.orange, size: 20),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                isIndo
+                                    ? 'Biometrik tidak terdeteksi. Silakan daftarkan sidik jari atau wajah terlebih dahulu di menu Pengaturan HP Anda.'
+                                    : 'Biometrics not detected. Please enroll your fingerprint or face in your device Settings first.',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: isDark ? Colors.white70 : Colors.black54,
+                                  height: 1.5,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
-                    const SizedBox(height: 24),
-                    _buildHowItWorksCard(isIndo, isDark),
-                    const SizedBox(height: 40),
                   ],
                 ),
               ),
@@ -347,266 +440,71 @@ class _AppLockScreenState extends State<AppLockScreen>
     );
   }
 
-  Widget _buildInfoCard(bool isIndo) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1E3A8A), Color(0xFF3B82F6)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primaryBlue.withValues(alpha: 0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: const Icon(Icons.shield_outlined, color: Colors.white, size: 28),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  isIndo ? 'Keamanan Ekstra' : 'Extra Security',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  isIndo
-                      ? 'Lindungi data keuangan kamu dari akses tidak sah'
-                      : 'Protect your financial data from unauthorized access',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.85),
-                    fontSize: 12,
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSectionLabel(String label, bool isDark) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 4),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w800,
-          letterSpacing: 1.2,
-          color: isDark ? Colors.white54 : Colors.black45,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildGroupCard(bool isDark, List<Widget> children) {
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(children: children),
-    );
-  }
-
-  Widget _buildSwitchTile({
-    required IconData icon,
-    required Color iconColor,
+  Widget _buildSwitchCard({
     required String title,
     required String subtitle,
+    required IconData icon,
+    required Color iconColor,
     required bool value,
     required ValueChanged<bool>? onChanged,
-    required bool isDark,
-    bool enabled = true,
+    bool isEnabled = true,
   }) {
     return Opacity(
-      opacity: enabled ? 1.0 : 0.45,
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        leading: Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: iconColor.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Icon(icon, color: iconColor, size: 22),
-        ),
-        title: Text(
-          title,
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w700,
-            color: isDark ? Colors.white : Colors.black87,
+      opacity: isEnabled ? 1.0 : 0.5,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: context.cardColor,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: value ? AppColors.primaryBlue : context.borderColor,
+            width: 1.5,
           ),
         ),
-        subtitle: Text(
-          subtitle,
-          style: TextStyle(
-            fontSize: 12,
-            color: isDark ? Colors.white54 : Colors.black45,
-            height: 1.4,
-          ),
-        ),
-        trailing: Switch(
-          value: value,
-          onChanged: enabled ? onChanged : null,
-          activeColor: AppColors.primaryBlue,
-          activeTrackColor: AppColors.primaryBlue.withValues(alpha: 0.3),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNoteCard(String text, IconData icon, Color color, bool isDark) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withValues(alpha: 0.2), width: 1),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: color, size: 18),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              text,
-              style: TextStyle(
-                fontSize: 12,
-                color: isDark ? Colors.white70 : Colors.black54,
-                height: 1.5,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: iconColor.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: iconColor, size: 26),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: context.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: context.textSecondary,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHowItWorksCard(bool isIndo, bool isDark) {
-    final steps = isIndo
-        ? [
-            'Kunci aplikasi akan aktif setelah aplikasi ditutup atau layar terkunci.',
-            'Buka aplikasi → Verifikasi identitas Anda dengan sidik jari, wajah, atau PIN perangkat.',
-            'Pilihan ini bersifat opsional dan dapat diubah kapan saja.',
-          ]
-        : [
-            'App lock activates after the app is closed or the screen is locked.',
-            'Open app → Verify your identity with fingerprint, face, or device PIN.',
-            'This option is optional and can be changed at any time.',
-          ];
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryBlue.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(Icons.help_outline_rounded,
-                    color: AppColors.primaryBlue, size: 18),
-              ),
-              const SizedBox(width: 10),
-              Text(
-                isIndo ? 'Cara Kerja' : 'How It Works',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w800,
-                  color: isDark ? Colors.white : Colors.black87,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          ...steps.asMap().entries.map(
-                (entry) => Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        width: 22,
-                        height: 22,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryBlue.withValues(alpha: 0.12),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Text(
-                          '${entry.key + 1}',
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.primaryBlue,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          entry.value,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: isDark ? Colors.white60 : Colors.black54,
-                            height: 1.5,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-        ],
+            Switch(
+              value: value,
+              onChanged: onChanged,
+              activeColor: AppColors.primaryBlue,
+              activeTrackColor: AppColors.primaryBlue.withOpacity(0.3),
+            ),
+          ],
+        ),
       ),
     );
   }

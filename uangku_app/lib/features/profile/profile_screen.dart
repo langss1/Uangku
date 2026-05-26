@@ -348,7 +348,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                       ),
                       _buildSettingTile(
                         icon: Icons.fingerprint_rounded,
-                        iconColor: const Color(0xFF10B981),
+                        iconColor: AppColors.primaryBlue,
                         title: isIndo ? 'Kunci Aplikasi' : 'App Lock',
                         subtitle: isIndo ? 'Sandi & sidik jari untuk membuka app' : 'PIN & fingerprint to unlock app',
                         onTap: () {

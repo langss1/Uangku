@@ -7,6 +7,7 @@ import 'package:uangku_app/features/home/home_screen.dart';
 import 'package:uangku_app/core/theme/app_colors.dart';
 import 'package:uangku_app/core/services/secure_storage_helper.dart';
 import 'package:uangku_app/core/services/biometric_service.dart';
+import 'package:uangku_app/features/profile/screens/pin_entry_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -107,16 +108,21 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     if (isLoggedIn) {
       final isLockEnabled = await BiometricService.isAppLockEnabled();
       if (isLockEnabled) {
-        final authenticated = await BiometricService.authenticate();
-        if (authenticated) {
+        if (!context.mounted) return;
+        final result = await Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => const PinEntryScreen(mode: PinEntryMode.unlock),
+          ),
+        );
+        
+        if (result == 'PIN_SUCCESS' || result == 'BIOMETRIC_SUCCESS') {
           if (!context.mounted) return;
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(builder: (_) => const HomeScreen()),
           );
         } else {
-          setState(() {
-            _showAuthRetryScreen = true;
-          });
+          // If they pop out or cancel, re-trigger it or keep them on splash screen
+          _checkLoginState();
         }
       } else {
         if (!context.mounted) return;
