@@ -96,7 +96,15 @@ class _AppLockScreenState extends State<AppLockScreen>
           _isPinLockEnabled = false;
           prefs.setBool('app_lock_enabled', false);
         }
-        _isBiometricEnabled = prefs.getBool('biometric_lock_enabled') ?? false;
+        
+        // Force biometric off in UI and Prefs if PIN lock is disabled
+        if (!_isPinLockEnabled) {
+          _isBiometricEnabled = false;
+          prefs.setBool('biometric_lock_enabled', false);
+        } else {
+          _isBiometricEnabled = prefs.getBool('biometric_lock_enabled') ?? false;
+        }
+        
         _isBiometricAvailable = biometricAvailable;
         _availableBiometrics = biometrics;
         _isLoading = false;
@@ -449,19 +457,23 @@ class _AppLockScreenState extends State<AppLockScreen>
     required ValueChanged<bool>? onChanged,
     bool isEnabled = true,
   }) {
-    return Opacity(
-      opacity: isEnabled ? 1.0 : 0.5,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: context.cardColor,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: value ? AppColors.primaryBlue : context.borderColor,
-            width: 1.5,
+    return GestureDetector(
+      onTap: isEnabled && onChanged != null
+          ? () => onChanged(!value)
+          : null,
+      child: Opacity(
+        opacity: isEnabled ? 1.0 : 0.5,
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: context.cardColor,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: value ? AppColors.primaryBlue : context.borderColor,
+              width: 1.5,
+            ),
           ),
-        ),
-        child: Row(
+          child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
@@ -506,6 +518,7 @@ class _AppLockScreenState extends State<AppLockScreen>
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
