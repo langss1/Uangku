@@ -33,6 +33,7 @@ class _PinEntryScreenState extends State<PinEntryScreen>
     with SingleTickerProviderStateMixin {
   String _enteredPin = '';
   String? _firstPin;
+  late PinEntryMode _currentMode;
   late AnimationController _shakeController;
   late Animation<double> _shakeAnimation;
   bool _isError = false;
@@ -44,6 +45,7 @@ class _PinEntryScreenState extends State<PinEntryScreen>
   @override
   void initState() {
     super.initState();
+    _currentMode = widget.mode;
     _firstPin = widget.pinToConfirm;
     _shakeController = AnimationController(
       vsync: this,
@@ -53,7 +55,7 @@ class _PinEntryScreenState extends State<PinEntryScreen>
         .chain(CurveTween(curve: Curves.elasticIn))
         .animate(_shakeController);
 
-    if (widget.mode == PinEntryMode.unlock) {
+    if (_currentMode == PinEntryMode.unlock) {
       _checkBiometricAvailability();
     }
   }
@@ -131,17 +133,13 @@ class _PinEntryScreenState extends State<PinEntryScreen>
     final isIndo =
         Provider.of<PreferencesProvider>(context, listen: false).language == 'id';
 
-    if (widget.mode == PinEntryMode.setup) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => PinEntryScreen(
-            mode: PinEntryMode.confirm,
-            pinToConfirm: _enteredPin,
-          ),
-        ),
-      );
-    } else if (widget.mode == PinEntryMode.confirm) {
+    if (_currentMode == PinEntryMode.setup) {
+      setState(() {
+        _firstPin = _enteredPin;
+        _enteredPin = '';
+        _currentMode = PinEntryMode.confirm;
+      });
+    } else if (_currentMode == PinEntryMode.confirm) {
       if (_enteredPin == _firstPin) {
         Navigator.pop(context, _enteredPin);
       } else {
@@ -160,7 +158,7 @@ class _PinEntryScreenState extends State<PinEntryScreen>
           ),
         );
       }
-    } else if (widget.mode == PinEntryMode.unlock) {
+    } else if (_currentMode == PinEntryMode.unlock) {
       final isCorrect = await _verifyPin(_enteredPin);
       if (isCorrect) {
         if (mounted) Navigator.pop(context, 'PIN_SUCCESS');
@@ -199,7 +197,7 @@ class _PinEntryScreenState extends State<PinEntryScreen>
   }
 
   String _getInstructionText(bool isIndo) {
-    switch (widget.mode) {
+    switch (_currentMode) {
       case PinEntryMode.setup:
         return isIndo ? 'Atur 4-Digit PIN Keamanan' : 'Set 4-Digit Security PIN';
       case PinEntryMode.confirm:
@@ -213,7 +211,7 @@ class _PinEntryScreenState extends State<PinEntryScreen>
   }
 
   String _getSubtitleText(bool isIndo) {
-    switch (widget.mode) {
+    switch (_currentMode) {
       case PinEntryMode.setup:
         return isIndo
             ? 'Buat PIN numerik untuk mengamankan data Anda'
@@ -247,7 +245,7 @@ class _PinEntryScreenState extends State<PinEntryScreen>
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: widget.mode != PinEntryMode.unlock
+        leading: _currentMode != PinEntryMode.unlock
             ? IconButton(
                 icon: Icon(Icons.arrow_back, color: isDark ? Colors.white : Colors.black87),
                 onPressed: () => Navigator.pop(context),
@@ -265,7 +263,7 @@ class _PinEntryScreenState extends State<PinEntryScreen>
                 shape: BoxShape.circle,
               ),
               child: Icon(
-                widget.mode == PinEntryMode.unlock
+                _currentMode == PinEntryMode.unlock
                     ? Icons.lock_outline_rounded
                     : Icons.dialpad_rounded,
                 size: 40,
@@ -351,7 +349,7 @@ class _PinEntryScreenState extends State<PinEntryScreen>
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // Biometric button (Face/Fingerprint) if enabled and in unlock mode
+                      // Biometric button if enabled and in unlock mode
                       _showBiometricButton
                           ? _buildBiometricButton()
                           : const SizedBox(width: 70, height: 70),
