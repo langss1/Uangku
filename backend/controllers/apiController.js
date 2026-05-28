@@ -235,8 +235,12 @@ exports.postChat = async (req, res) => {
     const formattedBalance = balance.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 });
     const financialStatus = balance < 0 ? 'KRITIS' : balance < totalIncome * 0.1 ? 'WASPADA' : 'AMAN';
 
+    // Ambil instance genAI secara dinamis setiap kali request agar variabel env dari server selalu terbaca
+    const apiKey = process.env.GEMINI_API_KEY; 
+    const localGenAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
+
     // fallback check if Gemini API key is missing
-    if (!genAI) {
+    if (!localGenAI) {
       console.warn("⚠️ Gemini API Key is missing. Using intelligent local fallback response.");
       const reply = getMockAIResponse(userMessage, userName, totalIncome, totalExpense, balance, formattedBalance, financialStatus, transactionHistory);
       return res.json({ reply });
@@ -292,7 +296,7 @@ RULE RESPONS (WAJIB DIIKUTI):
 7. TOPIK: Jawab HANYA pertanyaan seputar keuangan milik "${userName}". Jika ditanya hal lain atau data orang lain, tolak dengan sopan.
 `;
 
-    const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite" });
+    const model = localGenAI.getGenerativeModel({ model: "gemini-3.1-flash-lite" });
     const prompt = `${systemPrompt}\n\nPertanyaan User: ${userMessage}`;
 
     const response = await model.generateContent(prompt);

@@ -3,3 +3,5 @@ backend/node_modules/
 uangku_app/.env
 .env
 .vscode/
+
+backend/.env
