@@ -1,5 +1,5 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
-const genAI = new GoogleGenerativeAI('AIzaSyA1Nau05aMxOLpLEAzI_TNOCSEJG5esWmE');
+const genAI = new GoogleGenerativeAI('DUMMY_API_KEY_UNTUK_TEST');
 
 async function test() {
   const systemPrompt = `Kamu adalah UANGKU AI, asisten keuangan pribadi yang cerdas untuk pelajar dan profesional muda Indonesia.
@@ -50,7 +50,7 @@ RULE RESPONS (WAJIB DIIKUTI):
 
 7. TOPIK: Jawab HANYA pertanyaan seputar keuangan milik "Budi". Jika ditanya hal lain atau data orang lain, tolak dengan sopan.`;
 
-  const model = genAI.getGenerativeModel({ model: 'gemini-3.1-flash-lite' });
+  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
   const prompt = `${systemPrompt}\n\nPertanyaan User: Halo, apakah saya bisa beli PS5?`;
 
   try {

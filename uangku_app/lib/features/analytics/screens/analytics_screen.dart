@@ -653,6 +653,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                         reservedSize: 30,
                         interval: 1,
                         getTitlesWidget: (value, meta) {
+                          if (value != value.toInt()) {
+                            return const SizedBox.shrink();
+                          }
                           const style = TextStyle(
                             color: Color(0xFF64748B),
                             fontSize: 11,
