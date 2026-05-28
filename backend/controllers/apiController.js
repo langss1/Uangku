@@ -296,7 +296,7 @@ RULE RESPONS (WAJIB DIIKUTI):
 7. TOPIK: Jawab HANYA pertanyaan seputar keuangan milik "${userName}". Jika ditanya hal lain atau data orang lain, tolak dengan sopan.
 `;
 
-    const model = localGenAI.getGenerativeModel({ model: "gemini-3.1-flash-lite" });
+    const model = localGenAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     const prompt = `${systemPrompt}\n\nPertanyaan User: ${userMessage}`;
 
     const response = await model.generateContent(prompt);
